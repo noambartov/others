@@ -206,7 +206,7 @@
         <option value="write">כתיבה</option>
       </select>
       <select id="type_${id}" onchange="onTypeChange(${id})">
-        <option value="intervals">מרווחים הרמוניים</option>
+        <option value="intervals">מרווחים</option>
         <option value="chords">אקורדים משולשים</option>
         <option value="scales">סולמות</option>
       </select>
@@ -553,7 +553,7 @@
         }
 
         let clefName = (clef === 'fa') ? 'מפתח פה' : 'מפתח סול';
-        let typeLabel = (type === 'intervals') ? 'מרווחים הרמוניים' : 'אקורדים משולשים';
+        let typeLabel = (type === 'intervals') ? 'מרווחים' : 'אקורדים משולשים';
         let skillLabel = (skill === 'id') ? 'זהה/י' : 'כתוב/י';
 
         const staffDiv = document.createElement('div');
