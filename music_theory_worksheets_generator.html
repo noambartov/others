@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>מחולל דפי תרגול במוזיקה</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     :root {
       --primary: #2c3e50;
@@ -38,7 +38,7 @@
 
     .row-control {
       display: grid;
-      grid-template-columns: 75px 130px 95px 140px 1fr 35px;
+      grid-template-columns: 75px 130px 95px 160px 1fr 35px;
       align-items: center;
       gap: 10px;
       padding: 10px 0;
@@ -64,7 +64,7 @@
     }
     .multi-select-dropdown {
       display: none; position: absolute; top: calc(100% + 4px); right: 0;
-      width: 250px; background: #fff; border: 1px solid var(--border-color);
+      width: 270px; background: #fff; border: 1px solid var(--border-color);
       border-radius: 8px; max-height: 250px; overflow-y: auto; z-index: 1000;
       box-shadow: 0 10px 25px rgba(0,0,0,0.15); padding: 8px 12px;
     }
@@ -90,7 +90,8 @@
     .btn-generate { background-color: var(--accent); color: white; }
     .btn-pdf { background-color: #2ecc71; color: white; }
 
-    .a4-page-container { display: flex; justify-content: center; }
+    .a4-page-container { display: flex; justify-content: center; margin-top: 20px; }
+
     #worksheet-a4 {
       width: 210mm; min-height: 297mm; padding: 12mm 15mm;
       background: white; box-shadow: 0 5px 20px rgba(0,0,0,0.1); box-sizing: border-box; direction: rtl;
@@ -103,11 +104,9 @@
     .staff-system { margin-bottom: 16px; page-break-inside: avoid; }
     .exercise-title { font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #222; direction: rtl; }
 
-    .staff-svg { width: 100%; height: 85px; display: block; }
-    .answer-row { display: flex; justify-content: space-around; font-size: 9px; color: #333; margin-top: 2px; }
+    .staff-svg { width: 100%; height: 95px; display: block; }
+    .answer-row { display: flex; justify-content: space-around; font-size: 9.5px; color: #333; margin-top: 2px; }
     .answer-cell { width: 18%; text-align: center; }
-    .scale-answer-row { display: flex; justify-content: space-between; font-size: 9.5px; color: #333; margin-top: 2px; padding: 0 10px; }
-    .scale-answer-cell { width: 48%; text-align: right; }
   </style>
 </head>
 <body>
@@ -126,8 +125,6 @@
     <button class="btn btn-generate" onclick="generateSheet()">צור/רענן תרגילים</button>
     <button class="btn btn-pdf" onclick="downloadPDF()">הורד קובץ PDF</button>
   </div>
-
-  <br>
 
   <div class="a4-page-container">
     <div id="worksheet-a4">
@@ -148,25 +145,51 @@
   let rowCounter = 0;
 
   const CLEFS_LIST = [{ val: 'sol', label: 'מפתח סול' }, { val: 'fa', label: 'מפתח פה' }];
-  const INTERVALS_LIST = ['פרימה זכה', 'סקונדה קטנה', 'סקונדה גדולה', 'טרצה קטנה', 'טרצה גדולה', 'קוורטה זכה', 'קוורטה מוגדלת', 'קווינטה מוקטנת', 'טריטון', 'קווינטה זכה', 'סקסטה קטנה', 'סקסטה גדולה', 'ספטימה קטנה', 'ספטימה גדולה', 'אוקטבה זכה'];
-  const CHORDS_LIST = ['מז׳ור יסודי', 'מז׳ור היפוך ראשון', 'מז׳ור היפוך שני', 'מינור יסודי', 'מינור היפוך ראשון', 'מינור היפוך שני', 'מוקטן יסודי', 'מוקטן היפוך ראשון', 'מוקטן היפוך שני', 'מוגדל יסודי', 'מוגדל היפוך ראשון', 'מוגדל היפוך שני'];
-  const SCALE_MODES = ['מז׳ור', 'מינור טבעי', 'מינור הרמוני', 'מינור מלודי'];
-  const ROOT_NOTES = ['דו', 'דו דיאז', 'רה במול', 'רה', 'רה דיאז', 'מי במול', 'מי', 'פה', 'פה דיאז', 'סול במול', 'סול', 'סול דיאז', 'לה במול', 'לה', 'לה דיאז', 'סי במול', 'סי'];
-  const KEY_SIGNATURES = [{ val: '0', label: 'ללא סימני התק' }, { val: '1d', label: '1 דיאז' }, { val: '2d', label: '2 דיאזים' }, { val: '3d', label: '3 דיאזים' }, { val: '4d', label: '4 דיאזים' }, { val: '5d', label: '5 דיאזים' }, { val: '6d', label: '6 דיאזים' }, { val: '7d', label: '7 דיאזים' }, { val: '1b', label: '1 במול' }, { val: '2b', label: '2 במולים' }, { val: '3b', label: '3 במולים' }, { val: '4b', label: '4 במולים' }, { val: '5b', label: '5 במולים' }, { val: '6b', label: '6 במולים' }, { val: '7b', label: '7 במולים' }];
+  
+  const INTERVALS_LIST = [
+    'פרימה זכה', 'סקונדה קטנה', 'סקונדה גדולה', 'טרצה קטנה', 'טרצה גדולה', 
+    'קוורטה זכה', 'קוורטה מוגדלת', 'קווינטה מוקטנת', 'קווינטה זכה', 
+    'סקסטה קטנה', 'סקסטה גדולה', 'ספטימה קטנה', 'ספטימה גדולה', 'אוקטבה זכה'
+  ];
+
+  const CHORDS_LIST = [
+    'מז׳ור יסודי', 'מז׳ור היפוך ראשון', 'מז׳ור היפוך שני',
+    'מינור יסודי', 'מינור היפוך ראשון', 'מינור היפוך שני',
+    'מוקטן יסודי', 'מוקטן היפוך ראשון', 'מוקטן היפוך שני',
+    'מוגדל יסודי', 'מוגדל היפוך ראשון', 'מוגדל היפוך שני'
+  ];
+
+  const SEPTACHORDS_LIST = [
+    'דומיננטי יסודי (7)', 'דומיננטי 6/5', 'דומיננטי 4/3', 'דומיננטי 2',
+    'שבע גדול יסודי (Maj7)', 'שבע גדול 6/5', 'שבע גדול 4/3', 'שבע גדול 2',
+    'מינור שבע יסודי (m7)', 'מינור שבע 6/5', 'מינור שבע 4/3', 'מינור שבע 2',
+    'חצי מוקטן יסודי (m7b5)', 'חצי מוקטן 6/5', 'חצי מוקטן 4/3', 'חצי מוקטן 2'
+  ];
+
+  const SCALES_LIST = ['דו מז׳ור', 'לה מינור טבעי', 'לה מינור הרמוני', 'סול מז׳ור', 'רמינור'];
+
+  const KEY_SIGNATURES = [
+    { val: '0', label: 'ללא סימני התק' },
+    { val: '1d', label: '1 דיאז' }, { val: '2d', label: '2 דיאזים' }, { val: '3d', label: '3 דיאזים' },
+    { val: '1b', label: '1 במול' }, { val: '2b', label: '2 במולים' }, { val: '3b', label: '3 במולים' }
+  ];
+
+  function shuffle(array) {
+    let arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
 
   function getDiverseSelection(pool, count = 5) {
-    let selection = [];
-    let counts = {};
-
+    let shuffled = shuffle(pool);
+    let result = [];
     for (let i = 0; i < count; i++) {
-      let available = pool.filter(item => (counts[item] || 0) < 3);
-      if (available.length === 0) available = pool;
-
-      let chosen = available[Math.floor(Math.random() * available.length)];
-      selection.push(chosen);
-      counts[chosen] = (counts[chosen] || 0) + 1;
+      result.push(shuffled[i % shuffled.length]);
     }
-    return selection;
+    return shuffle(result);
   }
 
   function buildDropdownHTML(dropdownId, items, labelProperty = null) {
@@ -206,8 +229,9 @@
         <option value="write">כתיבה</option>
       </select>
       <select id="type_${id}" onchange="onTypeChange(${id})">
-        <option value="intervals">מרווחים</option>
+        <option value="intervals">מרווחים הרמוניים</option>
         <option value="chords">אקורדים משולשים</option>
+        <option value="septachords">ספטאקורדים (מרובעים)</option>
         <option value="scales">סולמות</option>
       </select>
       <div id="sub_container_${id}"></div>
@@ -230,64 +254,36 @@
     });
   }
 
-  function onSkillChange(i) {
-    onTypeChange(i);
-  }
+  function onSkillChange(i) { onTypeChange(i); }
 
   function onTypeChange(i) {
     const type = document.getElementById(`type_${i}`).value;
     const container = document.getElementById(`sub_container_${i}`);
     container.innerHTML = '';
 
-    if (type === 'intervals') {
-      container.innerHTML = `
-        <div class="sub-group">
-          <div class="multi-select-container">
-            <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown('intervals_${i}')">מרווחים (הכל)</div>
-            <div class="multi-select-dropdown" id="intervals_${i}">
-              ${buildDropdownHTML(`intervals_${i}`, INTERVALS_LIST)}
-            </div>
+    let itemsList = [];
+    let titleName = '';
+
+    if (type === 'intervals') { itemsList = INTERVALS_LIST; titleName = 'מרווחים'; }
+    else if (type === 'chords') { itemsList = CHORDS_LIST; titleName = 'אקורדים'; }
+    else if (type === 'septachords') { itemsList = SEPTACHORDS_LIST; titleName = 'ספטאקורדים'; }
+    else if (type === 'scales') { itemsList = SCALES_LIST; titleName = 'סולמות'; }
+
+    container.innerHTML = `
+      <div class="sub-group">
+        <div class="multi-select-container">
+          <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown('${type}_${i}')">${titleName} (הכל)</div>
+          <div class="multi-select-dropdown" id="${type}_${i}">
+            ${buildDropdownHTML(`${type}_${i}`, itemsList)}
           </div>
-          <div class="multi-select-container">
-            <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown('keys_${i}')">סימני התק</div>
-            <div class="multi-select-dropdown" id="keys_${i}">
-              ${buildDropdownHTML(`keys_${i}`, KEY_SIGNATURES, true)}
-            </div>
+        </div>
+        <div class="multi-select-container">
+          <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown('keys_${i}')">סימני התק</div>
+          <div class="multi-select-dropdown" id="keys_${i}">
+            ${buildDropdownHTML(`keys_${i}`, KEY_SIGNATURES, true)}
           </div>
-        </div>`;
-    } else if (type === 'chords') {
-      container.innerHTML = `
-        <div class="sub-group">
-          <div class="multi-select-container">
-            <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown('chords_${i}')">אקורדים (הכל)</div>
-            <div class="multi-select-dropdown" id="chords_${i}">
-              ${buildDropdownHTML(`chords_${i}`, CHORDS_LIST)}
-            </div>
-          </div>
-          <div class="multi-select-container">
-            <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown('keys_${i}')">סימני התק</div>
-            <div class="multi-select-dropdown" id="keys_${i}">
-              ${buildDropdownHTML(`keys_${i}`, KEY_SIGNATURES, true)}
-            </div>
-          </div>
-        </div>`;
-    } else if (type === 'scales') {
-      container.innerHTML = `
-        <div class="sub-group">
-          <div class="multi-select-container">
-            <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown('modes_${i}')">סולמות</div>
-            <div class="multi-select-dropdown" id="modes_${i}">
-              ${buildDropdownHTML(`modes_${i}`, SCALE_MODES)}
-            </div>
-          </div>
-          <div class="multi-select-container">
-            <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown('keys_${i}')">סימני התק</div>
-            <div class="multi-select-dropdown" id="keys_${i}">
-              ${buildDropdownHTML(`keys_${i}`, KEY_SIGNATURES, true)}
-            </div>
-          </div>
-        </div>`;
-    }
+        </div>
+      </div>`;
   }
 
   function toggleDropdown(id) { document.getElementById(id).classList.toggle('show'); }
@@ -306,8 +302,18 @@
     else btn.innerText = `נבחרו ${checkboxes.length}`;
   }
 
-  function getClefPlaceholderSVG(xOffset = 25) {
-    return `<rect x="${xOffset}" y="15" width="26" height="40" fill="none" stroke="#aaa" stroke-width="1" stroke-dasharray="2,2" rx="3"/>`;
+  function getClefSVG(clef, xOffset = 25) {
+    if (clef === 'fa') {
+      return `<g transform="translate(${xOffset + 2}, 19) scale(0.65)">
+        <path d="M 12 12 C 12 6, 22 6, 22 14 C 22 22, 10 26, 10 38" fill="none" stroke="#111" stroke-width="3.5"/>
+        <circle cx="11" cy="12" r="3.5" fill="#111"/>
+        <circle cx="27" cy="10" r="2.5" fill="#111"/>
+        <circle cx="27" cy="22" r="2.5" fill="#111"/>
+      </g>`;
+    }
+    return `<g transform="translate(${xOffset + 2}, 28) scale(0.125)">
+      <path d="M 14 185 C 35 185 54 167 54 140 C 54 110 30 90 4 90 C -25 90 -45 112 -45 145 C -45 185 -10 220 30 220 C 75 220 105 180 105 125 C 105 50 40 -15 15 -75 C 5 -100 15 -130 35 -130 C 45 -130 55 -115 50 -90 C 40 -40 0 50 -5 120 L -5 270 C -5 295 -25 315 -50 315 C -65 315 -80 300 -80 285 C -80 270 -65 255 -50 255 C -40 255 -30 265 -25 275" fill="none" stroke="#111" stroke-width="9.5" stroke-linecap="round"/>
+    </g>`;
   }
 
   function drawLedgerLines(x, y) {
@@ -317,76 +323,85 @@
     return svg;
   }
 
-  function drawSingleNote(x, y) {
-    const middleY = 35;
-    let svg = drawLedgerLines(x, y);
-    svg += `<ellipse cx="${x}" cy="${y}" rx="5" ry="4" fill="#111" transform="rotate(-20 ${x} ${y})"/>`;
-    
-    if (y > middleY) {
-      svg += `<line x1="${x+4.5}" y1="${y}" x2="${x+4.5}" y2="${y-28}" stroke="#111" stroke-width="1.5"/>`;
-    } else {
-      svg += `<line x1="${x-4.5}" y1="${y}" x2="${x-4.5}" y2="${y+28}" stroke="#111" stroke-width="1.5"/>`;
+  function getStepOffsets(type, item) {
+    if (type === 'intervals') {
+      const mapping = {
+        'פרימה זכה': 0, 'סקונדה קטנה': 1, 'סקונדה גדולה': 1,
+        'טרצה קטנה': 2, 'טרצה גדולה': 2, 'קוורטה זכה': 3,
+        'קוורטה מוגדלת': 3, 'קווינטה מוקטנת': 4, 'קווינטה זכה': 4,
+        'סקסטה קטנה': 5, 'סקסטה גדולה': 5, 'ספטימה קטנה': 6,
+        'ספטימה גדולה': 6, 'אוקטבה זכה': 7
+      };
+      return [0, mapping[item] !== undefined ? mapping[item] : 2];
+    } else if (type === 'chords') {
+      if (item.includes('היפוך ראשון')) return [0, 2, 5];
+      if (item.includes('היפוך שני')) return [0, 3, 5];
+      return [0, 2, 4];
+    } else if (type === 'septachords') {
+      if (item.includes('6/5')) return [0, 2, 4, 5];
+      if (item.includes('4/3')) return [0, 2, 3, 5];
+      if (item.includes('2'))   return [0, 1, 3, 5];
+      return [0, 2, 4, 6];
     }
-    return svg;
+    return [0];
   }
 
-  function drawStructure(x, type, skill, chordInversion = 0) {
-    const middleY = 35;
-
-    if (skill === 'write') {
-      const allowedY = [35, 39, 43, 47, 51, 55, 59];
-      let baseY = allowedY[Math.floor(Math.random() * allowedY.length)];
-      return drawSingleNote(x, baseY);
-    }
+  function drawStructure(x, type, item, clef, skill, startY, currentKey = '0') {
+    if (type === 'scales') return '';
 
     let svg = '';
-
-    if (type === 'intervals') {
-      const allowedBassY = [35, 39, 43, 47, 51, 55];
-      let y1 = allowedBassY[Math.floor(Math.random() * allowedBassY.length)];
-      let intervalStep = (Math.floor(Math.random() * 4) + 1) * 4;
-      let y2 = y1 - intervalStep;
-
-      svg += drawLedgerLines(x, y1) + drawLedgerLines(x, y2);
-      svg += `<ellipse cx="${x}" cy="${y1}" rx="5" ry="4" fill="#111" transform="rotate(-20 ${x} ${y1})"/>`;
-      svg += `<ellipse cx="${x}" cy="${y2}" rx="5" ry="4" fill="#111" transform="rotate(-20 ${x} ${y2})"/>`;
-
-      let avgY = (y1 + y2) / 2;
-      if (avgY <= middleY) {
-        svg += `<line x1="${x-4.5}" y1="${y2}" x2="${x-4.5}" y2="${y1+24}" stroke="#111" stroke-width="1.5"/>`;
-      } else {
-        svg += `<line x1="${x+4.5}" y1="${y1}" x2="${x+4.5}" y2="${y2-24}" stroke="#111" stroke-width="1.5"/>`;
-      }
-
-    } else if (type === 'chords') {
-      let step1 = (chordInversion === 1) ? 8 : (chordInversion === 2 ? 12 : 8);
-      let step2 = (chordInversion === 1) ? 12 : (chordInversion === 2 ? 8 : 8);
-
-      const allowedBassY = [35, 39, 43, 47, 51, 55];
-      let y1 = allowedBassY[Math.floor(Math.random() * allowedBassY.length)];
-      let y2 = y1 - step1;
-      let y3 = y2 - step2;
-
-      svg += drawLedgerLines(x, y1) + drawLedgerLines(x, y3);
-      svg += `<ellipse cx="${x}" cy="${y1}" rx="5" ry="4" fill="#111" transform="rotate(-20 ${x} ${y1})"/>`;
-      svg += `<ellipse cx="${x}" cy="${y2}" rx="5" ry="4" fill="#111" transform="rotate(-20 ${x} ${y2})"/>`;
-      svg += `<ellipse cx="${x}" cy="${y3}" rx="5" ry="4" fill="#111" transform="rotate(-20 ${x} ${y3})"/>`;
-
-      let avgY = y2;
-      if (avgY <= middleY) {
-        svg += `<line x1="${x-4.5}" y1="${y3}" x2="${x-4.5}" y2="${y1+24}" stroke="#111" stroke-width="1.5"/>`;
-      } else {
-        svg += `<line x1="${x+4.5}" y1="${y1}" x2="${x+4.5}" y2="${y3-24}" stroke="#111" stroke-width="1.5"/>`;
-      }
+    let baseStepY = 4;
+    let offsets = getStepOffsets(type, item);
+    
+    if (skill === 'write') {
+      offsets = [offsets[0]]; // במשימת כתיבה - מציגים רק את תו הבסיס
     }
+
+    let yPositions = offsets.map(off => startY - (off * baseStepY));
+    let minY = Math.min(...yPositions);
+    let maxY = Math.max(...yPositions);
+
+    // ציור סימני התק מוגדלים (+25%) על התווים עם היסט שמאלה למניעת חפיפה
+    if (currentKey && currentKey !== '0') {
+      const isSharp = currentKey.includes('d');
+      const count = parseInt(currentKey) || 1;
+      const symbol = isSharp ? '♯' : '♭';
+
+      yPositions.forEach((y, i) => {
+        if (i < count) {
+          // העליון (אינדקס גבוה יותר) זז שמאלה יותר כדי לא לעלות על התחתון
+          let shiftLeft = (yPositions.length - 1 - i) * 11;
+          let accX = x - 15 - shiftLeft;
+          svg += `<text x="${accX}" y="${y+6}" font-size="17" font-weight="bold" fill="#111">${symbol}</text>`;
+        }
+      });
+    }
+
+    yPositions.forEach((y, i) => {
+      let offsetX = 0;
+      if (i > 0 && Math.abs(yPositions[i] - yPositions[i-1]) === 4) {
+        offsetX = 9.5;
+      }
+
+      let noteX = x + offsetX;
+      svg += drawLedgerLines(noteX, y);
+      svg += `<ellipse cx="${noteX}" cy="${y}" rx="5.5" ry="4" fill="#111" transform="rotate(-20 ${noteX} ${y})"/>`;
+    });
+
+    if (yPositions.length > 1) {
+      svg += `<line x1="${x+5}" y1="${maxY}" x2="${x+5}" y2="${minY-26}" stroke="#111" stroke-width="1.5"/>`;
+    }
+
     return svg;
   }
 
-  function drawKeySignatureSVG(keyVal, clef, xStart = 60) {
+  function drawKeySignatureSVG(keyVal, clef, measureStartX) {
     if (!keyVal || keyVal === '0') return '';
     let svg = '';
     const isSharp = keyVal.includes('d');
     const count = parseInt(keyVal);
+
+    let xStart = measureStartX + 42; 
 
     const sharpY_sol = [19, 31, 15, 27, 39, 23, 35]; 
     const flatY_sol  = [35, 23, 39, 27, 43, 31, 47];
@@ -397,16 +412,17 @@
     const flatY  = (clef === 'fa') ? flatY_fa  : flatY_sol;
 
     for (let k = 0; k < count; k++) {
-      let x = xStart + (k * 7.5);
+      let x = xStart + (k * 10);
       let y = isSharp ? sharpY[k] : flatY[k];
       let symbol = isSharp ? '♯' : '♭';
-      svg += `<text x="${x}" y="${y+6}" font-size="17" font-weight="bold" fill="#111">${symbol}</text>`;
+      // סימני מפתח בסולמות הוגדלו גם הם ב-25%
+      svg += `<text x="${x}" y="${y+6}" font-size="18" font-weight="bold" fill="#111">${symbol}</text>`;
     }
     return svg;
   }
 
-  function drawStaffSVG(skill, type, clef, keysPool, keyVal2 = null) {
-    let svg = `<svg class="staff-svg" viewBox="0 0 750 85">`;
+  function drawStaffSVG(skill, type, clef, keysPool, items = []) {
+    let svg = `<svg class="staff-svg" viewBox="0 0 750 95">`;
     
     for (let l = 0; l < 5; l++) {
       let y = 19 + l * 8;
@@ -415,52 +431,44 @@
     svg += `<line x1="20" y1="19" x2="20" y2="51" stroke="#333" stroke-width="2"/>`;
     svg += `<line x1="730" y1="19" x2="730" y2="51" stroke="#333" stroke-width="2"/>`;
 
-    if (type === 'scales') {
-      let midX = 375;
-      svg += `<line x1="${midX-2}" y1="19" x2="${midX-2}" y2="51" stroke="#333" stroke-width="1.2"/>`;
-      svg += `<line x1="${midX+2}" y1="19" x2="${midX+2}" y2="51" stroke="#333" stroke-width="1.2"/>`;
-      
-      svg += getClefPlaceholderSVG(25);
-      let keyVal1 = (keysPool && keysPool.length > 0) ? keysPool[0] : '0';
-      if (skill === 'id' && keyVal1 && keyVal1 !== '0') {
-        svg += drawKeySignatureSVG(keyVal1, clef, 60);
-      }
+    let stepX = 142;
+    for (let i = 1; i < 5; i++) {
+      let bx = 20 + i * stepX;
+      svg += `<line x1="${bx-2}" y1="19" x2="${bx-2}" y2="51" stroke="#333" stroke-width="1.2"/>`;
+      svg += `<line x1="${bx+2}" y1="19" x2="${bx+2}" y2="51" stroke="#333" stroke-width="1.2"/>`;
+    }
 
-      svg += getClefPlaceholderSVG(385);
-      if (skill === 'id' && keyVal2 && keyVal2 !== '0') {
-        svg += drawKeySignatureSVG(keyVal2, clef, 420);
-      }
+    const minYAllowed = 11;
+    const maxYAllowed = 59;
+    const baseStepY = 4;
 
-    } else {
-      let stepX = 142;
-      for (let i = 1; i < 5; i++) {
-        let bx = 20 + i * stepX;
-        svg += `<line x1="${bx-2}" y1="19" x2="${bx-2}" y2="51" stroke="#333" stroke-width="1.2"/>`;
-        svg += `<line x1="${bx+2}" y1="19" x2="${bx+2}" y2="51" stroke="#333" stroke-width="1.2"/>`;
-      }
+    for (let i = 0; i < 5; i++) {
+      let measureStartX = 20 + i * stepX;
+      svg += getClefSVG(clef, measureStartX + 5);
 
-      for (let i = 0; i < 5; i++) {
-        let measureStartX = 20 + i * stepX;
-        
-        svg += getClefPlaceholderSVG(measureStartX + 5);
+      let currentKey = (keysPool && keysPool.length > 0) ? keysPool[Math.floor(Math.random() * keysPool.length)] : '0';
 
-        let currentKey = '0';
-        if (keysPool && keysPool.length > 0) {
-          currentKey = keysPool[Math.floor(Math.random() * keysPool.length)];
+      if (type === 'scales' && skill === 'write') {
+        // סולמות בכתיבה - חמשה ריקה
+      } else if (type === 'scales') {
+        svg += drawKeySignatureSVG(currentKey, clef, measureStartX);
+      } else {
+        let noteX = measureStartX + 85;
+
+        let item = items[i] || '';
+        let offsets = (skill === 'write') ? [0] : getStepOffsets(type, item);
+        let maxOffset = Math.max(...offsets);
+
+        let validBaseYs = [];
+        for (let y = minYAllowed + (maxOffset * baseStepY); y <= maxYAllowed; y += 4) {
+          validBaseYs.push(y);
         }
 
-        if (currentKey && currentKey !== '0') {
-          svg += drawKeySignatureSVG(currentKey, clef, measureStartX + 35);
-        }
+        let startY = validBaseYs.length > 0 
+          ? validBaseYs[Math.floor(Math.random() * validBaseYs.length)] 
+          : maxYAllowed;
 
-        let keyCount = parseInt(currentKey) || 0;
-        let noteX = measureStartX + 35 + (keyCount * 7.5) + 25;
-        if (noteX > measureStartX + stepX - 15) {
-          noteX = measureStartX + stepX - 15;
-        }
-
-        let chordInversion = Math.floor(Math.random() * 3);
-        svg += drawStructure(noteX, type, skill, chordInversion);
+        svg += drawStructure(noteX, type, item, clef, skill, startY, currentKey);
       }
     }
 
@@ -469,8 +477,9 @@
   }
 
   function generateSheet() {
-    const container = document.getElementById('stavesContainer');
-    container.innerHTML = '';
+    const studentContainer = document.getElementById('stavesContainer');
+    studentContainer.innerHTML = '';
+
     const rows = document.querySelectorAll('.row-control');
 
     rows.forEach((row, idx) => {
@@ -485,94 +494,58 @@
       let keysChecked = Array.from(document.querySelectorAll(`#keys_${id} input:checked`)).map(cb => cb.value);
       if (keysChecked.length === 0) keysChecked = KEY_SIGNATURES.map(k => k.val);
 
-      let keyVal2 = '';
-      let answersHTML = '';
+      let checkedBoxes = document.querySelectorAll(`#${type}_${id} input:checked`);
+      let pool = Array.from(checkedBoxes).map(cb => cb.value);
 
-      if (type === 'scales') {
-        let modesChecked = Array.from(document.querySelectorAll(`#modes_${id} input:checked`)).map(cb => cb.value);
-        if (modesChecked.length === 0) modesChecked = SCALE_MODES;
-
-        let mode1 = modesChecked[Math.floor(Math.random() * modesChecked.length)];
-        let root1 = ROOT_NOTES[Math.floor(Math.random() * ROOT_NOTES.length)];
-
-        let mode2 = modesChecked[Math.floor(Math.random() * modesChecked.length)];
-        let root2 = ROOT_NOTES[Math.floor(Math.random() * ROOT_NOTES.length)];
-        keyVal2 = keysChecked[Math.floor(Math.random() * keysChecked.length)];
-
-        if (skill === 'id') {
-          answersHTML = `
-            <div class="scale-answer-row">
-              <div class="scale-answer-cell">א. זהה/י את הסולם: ____________________</div>
-              <div class="scale-answer-cell">ב. זהה/י את הסולם: ____________________</div>
-            </div>`;
-        } else {
-          answersHTML = `
-            <div class="scale-answer-row">
-              <div class="scale-answer-cell">א. כתוב/י סולם <b>${root1} ${mode1}</b></div>
-              <div class="scale-answer-cell">ב. כתוב/י סולם <b>${root2} ${mode2}</b></div>
-            </div>`;
-        }
-
-        let clefName = (clef === 'fa') ? 'מפתח פה' : 'מפתח סול';
-        let skillLabel = (skill === 'id') ? 'זהה/י' : 'כתוב/י';
-
-        const staffDiv = document.createElement('div');
-        staffDiv.className = 'staff-system';
-        staffDiv.innerHTML = `
-          <div class="exercise-title">${idx + 1}. צייר/י ${clefName} ו${skillLabel} סולמות</div>
-          ${drawStaffSVG(skill, type, clef, keysChecked, keyVal2)}
-          ${answersHTML}
-        `;
-        container.appendChild(staffDiv);
-
-      } else {
-        let checkedBoxes = document.querySelectorAll(`#${type}_${id} input:checked`);
-        let pool = Array.from(checkedBoxes).map(cb => cb.value);
-        if (pool.length === 0) pool = (type === 'intervals') ? INTERVALS_LIST : CHORDS_LIST;
-
-        let selectedItems = getDiverseSelection(pool, 5);
-
-        if (skill === 'id') {
-          answersHTML = `
-            <div class="answer-row">
-              <div class="answer-cell">________</div>
-              <div class="answer-cell">________</div>
-              <div class="answer-cell">________</div>
-              <div class="answer-cell">________</div>
-              <div class="answer-cell">________</div>
-            </div>`;
-        } else {
-          answersHTML = `
-            <div class="answer-row">
-              <div class="answer-cell">${selectedItems[0]}</div>
-              <div class="answer-cell">${selectedItems[1]}</div>
-              <div class="answer-cell">${selectedItems[2]}</div>
-              <div class="answer-cell">${selectedItems[3]}</div>
-              <div class="answer-cell">${selectedItems[4]}</div>
-            </div>`;
-        }
-
-        let clefName = (clef === 'fa') ? 'מפתח פה' : 'מפתח סול';
-        let typeLabel = (type === 'intervals') ? 'מרווחים' : 'אקורדים משולשים';
-        let skillLabel = (skill === 'id') ? 'זהה/י' : 'כתוב/י';
-
-        const staffDiv = document.createElement('div');
-        staffDiv.className = 'staff-system';
-
-        staffDiv.innerHTML = `
-          <div class="exercise-title">${idx + 1}. צייר/י ${clefName} ו${skillLabel} ${typeLabel}</div>
-          ${drawStaffSVG(skill, type, clef, keysChecked)}
-          ${answersHTML}
-        `;
-
-        container.appendChild(staffDiv);
+      if (pool.length === 0) {
+        if (type === 'intervals') pool = INTERVALS_LIST;
+        else if (type === 'chords') pool = CHORDS_LIST;
+        else if (type === 'septachords') pool = SEPTACHORDS_LIST;
+        else if (type === 'scales') pool = SCALES_LIST;
       }
+
+      let selectedItems = getDiverseSelection(pool, 5);
+      let studentAnswersHTML = '';
+
+      if (skill === 'id') {
+        studentAnswersHTML = `
+          <div class="answer-row">
+            <div class="answer-cell">________</div>
+            <div class="answer-cell">________</div>
+            <div class="answer-cell">________</div>
+            <div class="answer-cell">________</div>
+            <div class="answer-cell">________</div>
+          </div>`;
+      } else {
+        studentAnswersHTML = `
+          <div class="answer-row">
+            <div class="answer-cell">${selectedItems[0]}</div>
+            <div class="answer-cell">${selectedItems[1]}</div>
+            <div class="answer-cell">${selectedItems[2]}</div>
+            <div class="answer-cell">${selectedItems[3]}</div>
+            <div class="answer-cell">${selectedItems[4]}</div>
+          </div>`;
+      }
+
+      let clefName = (clef === 'fa') ? 'מפתח פה' : 'מפתח סול';
+      let typeLabel = (type === 'intervals') ? 'מרווחים הרמוניים' : (type === 'chords' ? 'אקורדים משולשים' : (type === 'septachords' ? 'ספטאקורדים' : 'סולמות'));
+      let skillLabel = (skill === 'id') ? 'זהה/י' : 'כתוב/י';
+
+      const staffDiv = document.createElement('div');
+      staffDiv.className = 'staff-system';
+      staffDiv.innerHTML = `
+        <div class="exercise-title">${idx + 1}. הוראות: ${clefName} / ${skillLabel} ${typeLabel}</div>
+        ${drawStaffSVG(skill, type, clef, keysChecked, selectedItems)}
+        ${studentAnswersHTML}
+      `;
+      studentContainer.appendChild(staffDiv);
     });
   }
 
   async function downloadPDF() {
     const { jsPDF } = window.jspdf;
     const element = document.getElementById('worksheet-a4');
+    
     const canvas = await html2canvas(element, { scale: 2, useCORS: true });
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');
