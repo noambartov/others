@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>מחולל דפי תרגול - מעודכן</title>
+  <title>מחולל דפי תרגול - סולמות מותאמים</title>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
@@ -106,7 +106,7 @@
       margin-top: 4px; 
       direction: ltr; 
     }
-    .answer-cell { width: 18%; text-align: center; font-weight: bold; direction: rtl; }
+    .answer-cell { text-align: center; font-weight: bold; direction: rtl; }
     .solution-text { color: #8e44ad; font-size: 11px; font-weight: bold; }
     .read-text { color: #8e44ad; font-size: 10px; margin-bottom: 2px; font-weight: bold; }
   </style>
@@ -189,8 +189,8 @@ function getNoteDetails(absLine, acc, clef) {
   return { name: fullName, diatonicIdx, semitones, nameIndex };
 }
 
-function analyzeChord(notes) {
-  if (notes.length !== 3) return "";
+function analyzeChord(notes, fallbackName) {
+  if (notes.length !== 3) return fallbackName;
 
   let d1 = notes[1].diatonicIdx - notes[0].diatonicIdx;
   let d2 = notes[2].diatonicIdx - notes[1].diatonicIdx;
@@ -212,20 +212,21 @@ function analyzeChord(notes) {
     if (s1 === 3 && s2 === 5) chordType = "מז׳ור היפוך ראשון";
     else if (s1 === 4 && s2 === 5) chordType = "מינור היפוך ראשון";
     else if (s1 === 3 && s2 === 6) chordType = "מוקטן היפוך ראשון";
+    else if (s1 === 4 && s2 === 4) chordType = "מוגדל היפוך ראשון";
   }
   else if (d1 === 3 && d2 === 2) {
     rootNote = notes[1].name;
     if (s1 === 5 && s2 === 4) chordType = "מז׳ור היפוך שני";
     else if (s1 === 5 && s2 === 3) chordType = "מינור היפוך שני";
     else if (s1 === 6 && s2 === 3) chordType = "מוקטן היפוך שני";
+    else if (s1 === 4 && s2 === 4) chordType = "מוגדל היפוך שני";
   }
 
-  if (!chordType) {
-    rootNote = notes[0].name;
-    chordType = "אקורד בלתי מזוהה";
+  if (chordType) {
+    return `${rootNote} ${chordType}`;
   }
-
-  return `${rootNote} ${chordType}`;
+  
+  return `${notes[0].name} - ${fallbackName}`;
 }
 
 const DEFINED_STRUCTURES = {
@@ -247,34 +248,33 @@ const DEFINED_STRUCTURES = {
     { name: 'מינור היפוך ראשון', offsets: [0, 2, 5], accs: [0, 0, 0] },
     { name: 'מינור היפוך שני', offsets: [0, 3, 5], accs: [0, 0, -1] },
     { name: 'מוקטן יסודי', offsets: [0, 2, 4], accs: [0, -1, -1] },
-    { name: 'מוגדל יסודי', offsets: [0, 2, 4], accs: [0, 0, 1] }
+    { name: 'מוקטן היפוך ראשון', offsets: [0, 2, 5], accs: [0, -1, 0] },
+    { name: 'מוקטן היפוך שני', offsets: [0, 3, 5], accs: [0, 0, -1] },
+    { name: 'מוגדל יסודי', offsets: [0, 2, 4], accs: [0, 0, 1] },
+    { name: 'מוגדל היפוך ראשון', offsets: [0, 2, 5], accs: [0, 1, 0] },
+    { name: 'מוגדל היפוך שני', offsets: [0, 3, 5], accs: [0, 0, 0] }
   ],
   septachords: [
-    // דומיננטי 7
     { name: 'דומיננטי 7 (מצב יסודי)', offsets: [0, 2, 4, 6], accs: [0, 0, 0, -1] },
     { name: 'דומיננטי 7 (קווינטסקסטאקורד - היפוך ראשון)', offsets: [0, 2, 4, 5], accs: [0, 0, -1, 0] },
     { name: 'דומיננטי 7 (טרצקוורטאקורד - היפוך שני)', offsets: [0, 2, 3, 5], accs: [0, -1, 0, 0] },
     { name: 'דומיננטי 7 (סקונדאקורד - היפוך שלישי)', offsets: [0, 1, 3, 5], accs: [0, 1, 1, 1] },
 
-    // חצי מוקטן (m7b5)
     { name: 'חצי מוקטן (m7b5) (מצב יסודי)', offsets: [0, 2, 4, 6], accs: [0, -1, -1, -1] },
     { name: 'חצי מוקטן (m7b5) (קווינטסקסטאקורד - היפוך ראשון)', offsets: [0, 2, 4, 5], accs: [0, 0, 0, 1] },
     { name: 'חצי מוקטן (m7b5) (טרצקוורטאקורד - היפוך שני)', offsets: [0, 2, 3, 5], accs: [0, 0, 1, 1] },
     { name: 'חצי מוקטן (m7b5) (סקונדאקורד - היפוך שלישי)', offsets: [0, 1, 3, 5], accs: [0, 1, 1, 0] },
 
-    // מוקטן מלא (dim7)
     { name: 'מוקטן מלא (dim7) (מצב יסודי)', offsets: [0, 2, 4, 6], accs: [0, -1, -1, -2] },
     { name: 'מוקטן מלא (dim7) (קווינטסקסטאקורד - היפוך ראשון)', offsets: [0, 2, 4, 5], accs: [0, 0, -1, 1] },
     { name: 'מוקטן מלא (dim7) (טרצקוורטאקורד - היפוך שני)', offsets: [0, 2, 3, 5], accs: [0, -1, 1, 1] },
     { name: 'מוקטן מלא (dim7) (סקונדאקורד - היפוך שלישי)', offsets: [0, 1, 3, 5], accs: [0, 2, 2, 1] },
 
-    // מינור 7 (m7)
     { name: 'מינור 7 (מצב יסודי)', offsets: [0, 2, 4, 6], accs: [0, -1, 0, -1] },
     { name: 'מינור 7 (קווינטסקסטאקורד - היפוך ראשון)', offsets: [0, 2, 4, 5], accs: [0, 1, 0, 1] },
     { name: 'מינור 7 (טרצקוורטאקורד - היפוך שני)', offsets: [0, 2, 3, 5], accs: [0, -1, 0, 0] },
     { name: 'מינור 7 (סקונדאקורד - היפוך שלישי)', offsets: [0, 1, 3, 5], accs: [0, 1, 1, 0] },
 
-    // מז׳ור גדול 7 (Maj7)
     { name: 'מז׳ור גדול (Maj7) (מצב יסודי)', offsets: [0, 2, 4, 6], accs: [0, 0, 0, 0] },
     { name: 'מז׳ור גדול (Maj7) (קווינטסקסטאקורד - היפוך ראשון)', offsets: [0, 2, 4, 5], accs: [0, 0, 0, 1] },
     { name: 'מז׳ור גדול (Maj7) (טרצקוורטאקורד - היפוך שני)', offsets: [0, 2, 3, 5], accs: [0, 0, 1, 1] },
@@ -325,8 +325,8 @@ function addRow() {
     </select>
     <select id="type_${id}" onchange="onTypeChange(${id})">
       <option value="intervals">מרווחים</option>
-      <option value="chords">אקורדים משולשים</option>
-      <option value="septachords" selected>ספטאקורדים</option>
+      <option value="chords" selected>אקורדים משולשים</option>
+      <option value="septachords">ספטאקורדים</option>
       <option value="scales">סולמות</option>
     </select>
     <div id="sub_container_${id}"></div>
@@ -408,7 +408,8 @@ function renderNoteGraphic(x, y, acc, shiftNoteHead = false) {
 
   if (acc !== 0) {
     let symbol = accToSymbol(acc);
-    let xOffset = shiftNoteHead ? (x - 28) : (x - 18);
+    // הצבת סימן ההתק משמאל בצורה מרווחת וברורה (מוסט 14 פיקסלים משמאל לצליל)
+    let xOffset = shiftNoteHead ? (x - 24) : (x - 14);
     svg += `<text x="${xOffset}" y="${y + 6}" font-size="20" font-weight="bold" fill="#111">${symbol}</text>`;
   }
 
@@ -473,10 +474,13 @@ function generateSheet() {
     studentSVG += borders; answerSVG += borders;
 
     let exercises = [];
-    let usageCounts = {};
+    let usedInThisRow = new Set();
 
-    for (let i = 0; i < 5; i++) {
-      let measureX = 20 + i * 142;
+    let exerciseCount = (type === 'scales') ? 3 : 5;
+    let measureWidth = (710 - 20) / exerciseCount;
+
+    for (let i = 0; i < exerciseCount; i++) {
+      let measureX = 20 + i * measureWidth;
       studentSVG += getClefSVG(clef); answerSVG += getClefSVG(clef);
 
       if (i > 0) {
@@ -484,11 +488,11 @@ function generateSheet() {
         studentSVG += bLine; answerSVG += bLine;
       }
 
-      let available = pool.filter(p => (usageCounts[p.name] || 0) < 2);
+      let available = pool.filter(p => !usedInThisRow.has(p.name));
       if (available.length === 0) available = pool;
       
       let chosenStruct = available[Math.floor(Math.random() * available.length)];
-      usageCounts[chosenStruct.name] = (usageCounts[chosenStruct.name] || 0) + 1;
+      usedInThisRow.add(chosenStruct.name);
 
       let baseLine = Math.floor(Math.random() * 3) + 1;
 
@@ -516,7 +520,7 @@ function generateSheet() {
 
         let solutionText = "";
         if (type === 'chords') {
-          solutionText = analyzeChord(parsedNotes);
+          solutionText = analyzeChord(parsedNotes, chosenStruct.name);
         } else if (type === 'scales') {
           solutionText = `סולם ${parsedNotes[0].name} ${chosenStruct.name}`;
           readPitchesText = `${parsedNotes[0].name} - ${parsedNotes[7].name}`;
@@ -528,16 +532,17 @@ function generateSheet() {
 
         exercises.push({ solutionText, promptText, readPitchesText });
 
-        let noteX = measureX + 70;
+        let noteX = measureX + (type === 'scales' ? 55 : 70);
 
         if (skill === 'write') {
-          let startNoteX = (type === 'scales') ? (measureX + 30) : noteX;
+          let startNoteX = (type === 'scales') ? (measureX + 45) : noteX;
           let baseGraphic = renderNoteGraphic(startNoteX, 51 - baseLine * 4, chosenStruct.accs[0], false);
           studentSVG += baseGraphic;
 
           if (type === 'scales') {
             notesDrawn.forEach((n, nIdx) => {
-              let scaleX = measureX + 30 + (nIdx * 13);
+              // רווח מורחב בין הצלילים (26px) לקבלת מראה אוורירי וקריא
+              let scaleX = measureX + 45 + (nIdx * 26);
               answerSVG += renderNoteGraphic(scaleX, 51 - n.lineIndex * 4, n.acc, false);
             });
           } else {
@@ -550,7 +555,8 @@ function generateSheet() {
         } else {
           if (type === 'scales') {
             notesDrawn.forEach((n, nIdx) => {
-              let scaleX = measureX + 30 + (nIdx * 13);
+              // רווח מורחב בין הצלילים (26px) לקבלת מראה אוורירי וקריא
+              let scaleX = measureX + 45 + (nIdx * 26);
               let y = 51 - n.lineIndex * 4;
               let g = renderNoteGraphic(scaleX, y, n.acc, false);
               studentSVG += g; answerSVG += g;
@@ -570,9 +576,10 @@ function generateSheet() {
     studentSVG += `</svg>`;
     answerSVG += `</svg>`;
 
-    let studentAnsHTML = `<div class="answer-row">${exercises.map(e => `<div class="answer-cell">${e.promptText}</div>`).join('')}</div>`;
+    let cellWidth = (100 / exerciseCount).toFixed(2);
+    let studentAnsHTML = `<div class="answer-row">${exercises.map(e => `<div class="answer-cell" style="width: ${cellWidth}%;">${e.promptText}</div>`).join('')}</div>`;
     let answerAnsHTML = `<div class="answer-row">${exercises.map(e => `
-      <div class="answer-cell">
+      <div class="answer-cell" style="width: ${cellWidth}%;">
         <div class="read-text">${e.readPitchesText}</div>
         <div class="solution-text">${e.solutionText}</div>
       </div>
@@ -580,7 +587,7 @@ function generateSheet() {
 
     const staffDiv = document.createElement('div');
     staffDiv.className = 'staff-system';
-    staffDiv.innerHTML = `<div class="exercise-title">${fullInstructionTitle} (${clef === 'fa' ? 'מפתח פה' : 'מפתח סול'}):</div>${studentSVG}${studentAnsHTML}`;
+    staffDiv.innerHTML = `<div class="exercise-title">${fullInstructionTitle}:</div>${studentSVG}${studentAnsHTML}`;
     studentContainer.appendChild(staffDiv);
 
     const ansDiv = document.createElement('div');
@@ -598,15 +605,25 @@ function toggleAnswersPage() {
 async function downloadPDF() {
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF('p', 'mm', 'a4');
+  
   const canvas1 = await html2canvas(document.getElementById('worksheet-a4'), { scale: 2 });
   pdf.addImage(canvas1.toDataURL('image/png'), 'PNG', 0, 0, 210, 297);
 
   const ansSheet = document.getElementById('answersheet-a4');
-  if (ansSheet.style.display !== 'none') {
-    pdf.addPage();
-    const canvas2 = await html2canvas(ansSheet, { scale: 2 });
-    pdf.addImage(canvas2.toDataURL('image/png'), 'PNG', 0, 0, 210, 297);
+  const wasHidden = ansSheet.style.display === 'none';
+  
+  if (wasHidden) {
+    ansSheet.style.display = 'block';
   }
+  
+  pdf.addPage();
+  const canvas2 = await html2canvas(ansSheet, { scale: 2 });
+  pdf.addImage(canvas2.toDataURL('image/png'), 'PNG', 0, 0, 210, 297);
+  
+  if (wasHidden) {
+    ansSheet.style.display = 'none';
+  }
+
   pdf.save('music_practice.pdf');
 }
 
