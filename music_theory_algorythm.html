@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>מחשב מוזיקלי מקיף: מרווחים, סולמות, ואקורדים מרובעים</title>
+  <style>
+    :root {
+      --primary: #4a6fa5;
+      --bg: #f4f7f6;
+      --card: #ffffff;
+      --text: #333333;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+      direction: rtl;
+    }
+    .calculator-card {
+      background: var(--card);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 580px;
+    }
+    h2 {
+      text-align: center;
+      color: var(--primary);
+      margin-bottom: 15px;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      font-size: 14px;
+      font-weight: bold;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .note-selects {
+      display: flex;
+      gap: 10px;
+    }
+    select {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+    button.calc-btn {
+      width: 100%;
+      padding: 12px;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 18px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+      margin-top: 10px;
+    }
+    button.calc-btn:hover {
+      background-color: #3b5984;
+    }
+    .result-box {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #eef2f7;
+      border-right: 4px solid var(--primary);
+      border-radius: 4px;
+    }
+    .result-title {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    .result-value {
+      font-size: 20px;
+      font-weight: bold;
+      color: var(--primary);
+    }
+    .scale-section-title {
+      font-weight: bold;
+      color: #444;
+      margin-top: 10px;
+      margin-bottom: 5px;
+    }
+    .scale-notes-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .scale-note-badge {
+      background: #ffffff;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 15px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="calculator-card">
+  <h2>מערכת חישוב מוזיקלית מקיפה</h2>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('intervals', event)">מרווחים</button>
+    <button class="tab-btn" onclick="switchTab('scales', event)">סולמות</button>
+    <button class="tab-btn" onclick="switchTab('triads', event)">אקורדים משולשים</button>
+    <button class="tab-btn" onclick="switchTab('tetrads', event)">אקורדים מרובעים</button>
+  </div>
+
+  <!-- לשונית 1: מרווחים -->
+  <div id="intervals" class="tab-content active">
+    <div class="form-group">
+      <label>צליל ראשון (נקודת מוצא):</label>
+      <div class="note-selects">
+        <select id="note1Name">
+          <option value="0">דו (C)</option>
+          <option value="1" selected>רה (D)</option>
+          <option value="2">מי (E)</option>
+          <option value="3">פה (F)</option>
+          <option value="4">סול (G)</option>
+          <option value="5">לה (A)</option>
+          <option value="6">סי (B)</option>
+        </select>
+        <select id="note1Acc">
+          <option value="-2">במול כפול (bb)</option>
+          <option value="-1">במול (b)</option>
+          <option value="0">בקר (natural)</option>
+          <option value="1">דיאז (#)</option>
+          <option value="2" selected>דיאז כפול (x)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>צליל שני:</label>
+      <div class="note-selects">
+        <select id="note2Name">
+          <option value="0">דו (C)</option>
+          <option value="1">רה (D)</option>
+          <option value="2" selected>מי (E)</option>
+          <option value="3">פה (F)</option>
+          <option value="4">סול (G)</option>
+          <option value="5">לה (A)</option>
+          <option value="6">סי (B)</option>
+        </select>
+        <select id="note2Acc">
+          <option value="-2">במול כפול (bb)</option>
+          <option value="-1">במול (b)</option>
+          <option value="0">בקר (natural)</option>
+          <option value="1" selected>דיאז (#)</option>
+          <option value="2">דיאז כפול (x)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>כיוון המרווח:</label>
+      <select id="direction">
+        <option value="up">בעלייה (מהראשון לשני)</option>
+        <option value="down">בירידה (מהראשון לשני)</option>
+      </select>
+    </div>
+
+    <button class="calc-btn" onclick="calculateInterval()">חשב מרווח</button>
+
+    <div class="result-box" id="intervalResultBox" style="display:none;">
+      <div class="result-title">תוצאה:</div>
+      <div class="result-value" id="intervalName">-</div>
+      <div style="margin-top: 5px;" id="intervalTones">-</div>
+    </div>
+  </div>
+
+  <!-- לשונית 2: סולמות -->
+  <div id="scales" class="tab-content">
+    <div class="form-group">
+      <label>בחר טוניקה (צליל הבסיס):</label>
+      <div class="note-selects">
+        <select id="scaleRootName">
+          <option value="0">דו (C)</option>
+          <option value="1" selected>רה (D)</option>
+          <option value="2">מי (E)</option>
+          <option value="3">פה (F)</option>
+          <option value="4">סול (G)</option>
+          <option value="5">לה (A)</option>
+          <option value="6">סי (B)</option>
+        </select>
+        <select id="scaleRootAcc">
+          <option value="-2">במול כפול (bb)</option>
+          <option value="-1">במול (b)</option>
+          <option value="0" selected>בקר (natural)</option>
+          <option value="1">דיאז (#)</option>
+          <option value="2">דיאז כפול (x)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>סוג הסולם:</label>
+      <select id="scaleType">
+        <option value="major">מז'ורי</option>
+        <option value="minor_natural">מינורי טבעי</option>
+        <option value="minor_harmonic">מינורי הרמוני</option>
+        <option value="minor_melodic">מינורי מלודי</option>
+      </select>
+    </div>
+
+    <button class="calc-btn" onclick="calculateScale()">חשב סולם</button>
+
+    <div class="result-box" id="scaleResultBox" style="display:none;">
+      <div id="scaleNotesDisplay"></div>
+    </div>
+  </div>
+
+  <!-- לשונית 3: אקורדים משולשים -->
+  <div id="triads" class="tab-content">
+    <div class="form-group">
+      <label>בחר צליל יסוד (שורש האקורד):</label>
+      <div class="note-selects">
+        <select id="triadRootName">
+          <option value="0">דו (C)</option>
+          <option value="1">רה (D)</option>
+          <option value="2">מי (E)</option>
+          <option value="3" selected>פה (F)</option>
+          <option value="4">סול (G)</option>
+          <option value="5">לה (A)</option>
+          <option value="6">סי (B)</option>
+        </select>
+        <select id="triadRootAcc">
+          <option value="-2">במול כפול (bb)</option>
+          <option value="-1">במול (b)</option>
+          <option value="0" selected>בקר (natural)</option>
+          <option value="1">דיאז (#)</option>
+          <option value="2">דיאז כפול (x)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>סוג האקורד המשולש:</label>
+      <select id="triadType">
+        <option value="major">מז'ורי</option>
+        <option value="minor" selected>מינורי</option>
+        <option value="diminished">מוקטן</option>
+        <option value="augmented">מוגדל</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>מצב / היפוך האקורד:</label>
+      <select id="triadInversion">
+        <option value="0">מצב יסודי (שורש בבס)</option>
+        <option value="1" selected>היפוך ראשון - סקסטאקורד (טרצה בבס)</option>
+        <option value="2">היפוך שני - קוורטסקסטאקורד (קווינטה בבס)</option>
+      </select>
+    </div>
+
+    <button class="calc-btn" onclick="calculateTriad()">חשב אקורד משולש</button>
+
+    <div class="result-box" id="triadResultBox" style="display:none;">
+      <div class="result-title" id="triadResultTitle">צלילי האקורד:</div>
+      <div class="scale-notes-list" id="triadNotesContainer"></div>
+    </div>
+  </div>
+
+  <!-- לשונית 4: אקורדים מרובעים (ספט-אקורדים) -->
+  <div id="tetrads" class="tab-content">
+    <div class="form-group">
+      <label>בחר צליל יסוד (שורש האקורד):</label>
+      <div class="note-selects">
+        <select id="tetradRootName">
+          <option value="0">דו (C)</option>
+          <option value="1">רה (D)</option>
+          <option value="2">מי (E)</option>
+          <option value="3">פה (F)</option>
+          <option value="4" selected>סול (G)</option>
+          <option value="5">לה (A)</option>
+          <option value="6">סי (B)</option>
+        </select>
+        <select id="tetradRootAcc">
+          <option value="-2">במול כפול (bb)</option>
+          <option value="-1">במול (b)</option>
+          <option value="0" selected>בקר (natural)</option>
+          <option value="1">דיאז (#)</option>
+          <option value="2">דיאז כפול (x)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>סוג האקורד המרובע (ספט-אקורד):</label>
+      <select id="tetradType">
+        <option value="half_diminished">חצי מוקטן (טרצה קטנה, קווינטה מוקטנת, ספטימה קטנה)</option>
+        <option value="minor7">מינור (טרצה קטנה, קווינטה זכה, ספטימה קטנה)</option>
+        <option value="dominant7" selected>דומיננטי (טרצה גדולה, קווינטה זכה, ספטימה קטנה)</option>
+        <option value="major7">מז'ור גדול (טרצה גדולה, קווינטה זכה, ספטימה גדולה)</option>
+        <option value="augmented_major7">מוגדל גדול (טרצה גדולה, קווינטה מוגדלת, ספטימה גדולה)</option>
+        <option value="diminished7">מוקטן קטן (טרצה קטנה, קווינטה מוקטנת, ספטימה מוקטנת)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>מצב / היפוך האקורד:</label>
+      <select id="tetradInversion">
+        <option value="0">מצב יסודי (שורש בבס)</option>
+        <option value="1">היפוך ראשון - קווינטסקסטאקורד (טרצה בבס)</option>
+        <option value="2">היפוך שני - טרצקוורטאקורד (קווינטה בבס)</option>
+        <option value="3">היפוך שלישי - סקונדאקורד (ספטימה בבס)</option>
+      </select>
+    </div>
+
+    <button class="calc-btn" onclick="calculateTetrad()">חשב אקורד מרובע</button>
+
+    <div class="result-box" id="tetradResultBox" style="display:none;">
+      <div class="result-title" id="tetradResultTitle">צלילי האקורד:</div>
+      <div class="scale-notes-list" id="tetradNotesContainer"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const NOTE_NAMES_HE = ["דו", "רה", "מי", "פה", "סול", "לה", "סי"];
+const NOTE_BASE_PITCH = [0, 2, 4, 5, 7, 9, 11];
+const NUMBER_NAMES = ["פרימה", "סקונדה", "טרצה", "קוורטה", "קווינטה", "סקסטה", "ספטימה", "אוקטבה"];
+
+function switchTab(tabId, evt) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+  
+  evt.target.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+
+function accToString(acc) {
+  switch(acc) {
+    case 2: return " דיאז כפול";
+    case 1: return " דיאז";
+    case -1: return " במול";
+    case -2: return " במול כפול";
+    default: return "";
+  }
+}
+
+// === 1. חישוב מרווחים ===
+function calculateInterval() {
+  const n1 = parseInt(document.getElementById('note1Name').value);
+  const acc1 = parseInt(document.getElementById('note1Acc').value);
+  const n2 = parseInt(document.getElementById('note2Name').value);
+  const acc2 = parseInt(document.getElementById('note2Acc').value);
+  const dir = document.getElementById('direction').value;
+
+  let nameDist = (dir === 'up') ? (n2 - n1 + 7) % 7 + 1 : (n1 - n2 + 7) % 7 + 1;
+  if (nameDist === 1 && (n1 !== n2 || acc1 !== acc2)) {
+    if (dir === 'up' && (NOTE_BASE_PITCH[n2]+acc2 < NOTE_BASE_PITCH[n1]+acc1)) nameDist = 8;
+  }
+
+  let pitch1 = NOTE_BASE_PITCH[n1] + acc1;
+  let pitch2 = NOTE_BASE_PITCH[n2] + acc2;
+
+  let semitones = (dir === 'up') ? pitch2 - pitch1 : pitch1 - pitch2;
+  while (semitones < 0) semitones += 12;
+  if (nameDist === 8 && semitones < 6) semitones += 12;
+
+  const perfectOrMajorSemitones = {1:0, 2:2, 3:4, 4:5, 5:7, 6:9, 7:11, 8:12};
+  const isPerfectType = [1, 4, 5, 8].includes(nameDist);
+  const diff = semitones - perfectOrMajorSemitones[nameDist];
+
+  let quality = "";
+  if (isPerfectType) {
+    if (diff === 0) quality = "זכה";
+    else if (diff === 1) quality = "מוגדלת";
+    else if (diff === 2) quality = "מוגדלת כפולה";
+    else if (diff === -1) quality = "מוקטנת";
+    else if (diff === -2) quality = "מוקטנת כפולה";
+  } else {
+    if (diff === 0) quality = "גדולה";
+    else if (diff === -1) quality = "קטנה";
+    else if (diff === 1) quality = "מוגדלת";
+    else if (diff === 2) quality = "מוגדלת כפולה";
+    else if (diff === -2) quality = "מוקטנת";
+    else if (diff === -3) quality = "מוקטנת כפולה";
+  }
+
+  document.getElementById('intervalName').innerText = `${NUMBER_NAMES[nameDist - 1]} ${quality}`;
+  document.getElementById('intervalTones').innerText = `מרחק: ${semitones} חצאי טונים (${semitones / 2} טונים)`;
+  document.getElementById('intervalResultBox').style.display = 'block';
+}
+
+// === פונקציית עזר לבניית מערך צלילים לפי תבנית ===
+function buildScaleFromPattern(rootName, rootAcc, pattern) {
+  let scaleNotes = [];
+  for (let i = 0; i < pattern.length; i++) {
+    let currentNameIndex = (rootName + (i * 2)) % 7; 
+    if (pattern.length === 8) currentNameIndex = (rootName + i) % 7; 
+
+    let targetPitch = (NOTE_BASE_PITCH[rootName] + rootAcc + pattern[i]);
+    let basePitch = NOTE_BASE_PITCH[currentNameIndex];
+    while (basePitch < NOTE_BASE_PITCH[rootName]) basePitch += 12;
+    if (i === 7 && pattern.length === 8) basePitch = NOTE_BASE_PITCH[rootName] + 12;
+
+    let requiredAcc = targetPitch - basePitch;
+    let noteString = NOTE_NAMES_HE[currentNameIndex] + accToString(requiredAcc);
+    scaleNotes.push(noteString);
+  }
+  return scaleNotes;
+}
+
+// === 2. חישוב סולמות ===
+function calculateScale() {
+  const rootName = parseInt(document.getElementById('scaleRootName').value);
+  const rootAcc = parseInt(document.getElementById('scaleRootAcc').value);
+  const scaleType = document.getElementById('scaleType').value;
+
+  const patterns = {
+    major: [0, 2, 4, 5, 7, 9, 11, 12],
+    minor_natural: [0, 2, 3, 5, 7, 8, 10, 12],
+    minor_harmonic: [0, 2, 3, 5, 7, 8, 11, 12],
+    minor_melodic_up: [0, 2, 3, 5, 7, 9, 11, 12]
+  };
+
+  const displayContainer = document.getElementById('scaleNotesDisplay');
+  displayContainer.innerHTML = '';
+
+  if (scaleType === 'minor_melodic') {
+    const notesUp = buildScaleFromPattern(rootName, rootAcc, patterns.minor_melodic_up);
+    const notesDown = buildScaleFromPattern(rootName, rootAcc, patterns.minor_natural).reverse();
+
+    displayContainer.innerHTML = `
+      <div class="scale-section-title">בעלייה (דרגות 6 ו-7 מועלות):</div>
+      <div class="scale-notes-list">${notesUp.map(n => `<div class="scale-note-badge">${n}</div>`).join('')}</div>
+      <div class="scale-section-title">בירידה (כמו מינור טבעי):</div>
+      <div class="scale-notes-list">${notesDown.map(n => `<div class="scale-note-badge">${n}</div>`).join('')}</div>
+    `;
+  } else {
+    const notes = buildScaleFromPattern(rootName, rootAcc, patterns[scaleType]);
+    displayContainer.innerHTML = `
+      <div class="result-title">צלילי הסולם:</div>
+      <div class="scale-notes-list">${notes.map(n => `<div class="scale-note-badge">${n}</div>`).join('')}</div>
+    `;
+  }
+
+  document.getElementById('scaleResultBox').style.display = 'block';
+}
+
+// === 3. חישוב אקורדים משולשים ===
+function calculateTriad() {
+  const rootName = parseInt(document.getElementById('triadRootName').value);
+  const rootAcc = parseInt(document.getElementById('triadRootAcc').value);
+  const chordType = document.getElementById('triadType').value;
+  const inversion = parseInt(document.getElementById('triadInversion').value);
+
+  const chordPatterns = {
+    major: [0, 4, 7],
+    minor: [0, 3, 7],
+    diminished: [0, 3, 6],
+    augmented: [0, 4, 8]
+  };
+
+  const pattern = chordPatterns[chordType];
+  let chordNotes = buildScaleFromPattern(rootName, rootAcc, pattern);
+
+  if (inversion === 1) {
+    chordNotes = [chordNotes[1], chordNotes[2], chordNotes[0]];
+  } else if (inversion === 2) {
+    chordNotes = [chordNotes[2], chordNotes[0], chordNotes[1]];
+  }
+
+  const inversionTitles = [
+    "צלילי האקורד במצב יסודי (שורש - טרצה - קווינטה):",
+    "צלילי האקורד בהיפוך ראשון / סקסטאקורד (בס - אמצע - סופרן):",
+    "צלילי האקורד בהיפוך שני / קוורטסקסטאקורד (בס - אמצע - סופרן):"
+  ];
+
+  document.getElementById('triadResultTitle').innerText = inversionTitles[inversion];
+
+  const container = document.getElementById('triadNotesContainer');
+  container.innerHTML = '';
+  chordNotes.forEach(note => {
+    const badge = document.createElement('div');
+    badge.className = 'scale-note-badge';
+    badge.innerText = note;
+    container.appendChild(badge);
+  });
+
+  document.getElementById('triadResultBox').style.display = 'block';
+}
+
+// === 4. חישוב אקורדים מרובעים (ספט-אקורדים) ===
+function calculateTetrad() {
+  const rootName = parseInt(document.getElementById('tetradRootName').value);
+  const rootAcc = parseInt(document.getElementById('tetradRootAcc').value);
+  const chordType = document.getElementById('tetradType').value;
+  const inversion = parseInt(document.getElementById('tetradInversion').value);
+
+  // תבניות חצאי טונים [שורש, טרצה, קווינטה, ספטימה]
+  const chordPatterns = {
+    half_diminished: [0, 3, 6, 10],   // טרצה קטנה, קווינטה מוקטנת, ספטימה קטנה
+    minor7: [0, 3, 7, 10],            // טרצה קטנה, קווינטה זכה, ספטימה קטנה
+    dominant7: [0, 4, 7, 10],         // טרצה גדולה, קווינטה זכה, ספטימה קטנה
+    major7: [0, 4, 7, 11],            // טרצה גדולה, קווינטה זכה, ספטימה גדולה
+    augmented_major7: [0, 4, 8, 11],  // טרצה גדולה, קווינטה מוגדלת, ספטימה גדולה
+    diminished7: [0, 3, 6, 9]         // טרצה קטנה, קווינטה מוקטנת, ספטימה מוקטנת
+  };
+
+  const pattern = chordPatterns[chordType];
+  let chordNotes = buildScaleFromPattern(rootName, rootAcc, pattern);
+
+  // סידור ההיפוכים (4 צלילים)
+  if (inversion === 1) {
+    // היפוך 1 (קווינטסקסטאקורד): טרצה, קווינטה, ספטימה, שורש
+    chordNotes = [chordNotes[1], chordNotes[2], chordNotes[3], chordNotes[0]];
+  } else if (inversion === 2) {
+    // היפוך 2 (טרצקוורטאקורד): קווינטה, ספטימה, שורש, טרצה
+    chordNotes = [chordNotes[2], chordNotes[3], chordNotes[0], chordNotes[1]];
+  } else if (inversion === 3) {
+    // היפוך 3 (סקונדאקורד): ספטימה, שורש, טרצה, קווינטה
+    chordNotes = [chordNotes[3], chordNotes[0], chordNotes[1], chordNotes[2]];
+  }
+
+  const inversionTitles = [
+    "צלילי האקורד במצב יסודי (שורש - טרצה - קווינטה - ספטימה):",
+    "צלילי האקורד בהיפוך ראשון / קווינטסקסטאקורד (טרצה בבס):",
+    "צלילי האקורד בהיפוך שני / טרצקוורטאקורד (קווינטה בבס):",
+    "צלילי האקורד בהיפוך שלישי / סקונדאקורד (ספטימה בבס):"
+  ];
+
+  document.getElementById('tetradResultTitle').innerText = inversionTitles[inversion];
+
+  const container = document.getElementById('tetradNotesContainer');
+  container.innerHTML = '';
+  chordNotes.forEach(note => {
+    const badge = document.createElement('div');
+    badge.className = 'scale-note-badge';
+    badge.innerText = note;
+    container.appendChild(badge);
+  });
+
+  document.getElementById('tetradResultBox').style.display = 'block';
+}
+</script>
+
+</body>
+</html>
