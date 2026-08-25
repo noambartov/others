@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>מחולל דפי תרגול במוזיקה</title>
+  <title>מחולל דפי תרגול - מעודכן</title>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
@@ -26,7 +26,7 @@
 
     .app-container { max-width: 1100px; margin: 0 auto; }
     .app-header { text-align: center; margin-bottom: 20px; }
-    .app-header h1 { color: var(--primary); margin: 0 0 8px 0; font-size: 26px; }
+    .app-header h1 { color: var(--primary); margin: 0 0 8px 0; font-size: 24px; }
 
     .controls-panel {
       background: var(--card-bg);
@@ -70,18 +70,8 @@
     }
     .multi-select-dropdown.show { display: block; }
     .multi-select-dropdown label { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12.5px; cursor: pointer; }
+    .select-all-btn { font-size: 11.5px; color: var(--accent); font-weight: bold; cursor: pointer; margin-bottom: 6px; border-bottom: 1px dashed #ccc; padding-bottom: 4px; display: inline-block; }
 
-    .dropdown-actions {
-      display: flex; justify-content: space-between; padding-bottom: 6px; margin-bottom: 6px;
-      border-bottom: 1px solid var(--border-color);
-    }
-    .btn-toggle-all {
-      background: none; border: none; color: var(--accent); font-size: 11.5px;
-      font-weight: bold; cursor: pointer; padding: 0;
-    }
-    .btn-toggle-all:hover { text-decoration: underline; }
-
-    .sub-group { display: flex; gap: 8px; align-items: center; width: 100%; }
     .btn-remove { background: #e74c3c; color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-weight: bold; }
     .btn-add-row { background: #27ae60; color: white; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer; margin-top: 10px; display: inline-block; }
 
@@ -89,10 +79,11 @@
     .btn { padding: 10px 24px; font-size: 15px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     .btn-generate { background-color: var(--accent); color: white; }
     .btn-pdf { background-color: #2ecc71; color: white; }
+    .btn-answers { background-color: #9b59b6; color: white; }
 
-    .a4-page-container { display: flex; justify-content: center; margin-top: 20px; }
+    .a4-page-container { display: flex; flex-direction: column; align-items: center; gap: 30px; margin-top: 20px; }
 
-    #worksheet-a4 {
+    .worksheet-a4 {
       width: 210mm; min-height: 297mm; padding: 12mm 15mm;
       background: white; box-shadow: 0 5px 20px rgba(0,0,0,0.1); box-sizing: border-box; direction: rtl;
     }
@@ -102,18 +93,29 @@
     .field-line { border-bottom: 1px dashed #555; display: inline-block; width: 75px; }
 
     .staff-system { margin-bottom: 16px; page-break-inside: avoid; }
-    .exercise-title { font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #222; direction: rtl; }
+    .exercise-title { font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #222; direction: rtl; }
 
     .staff-svg { width: 100%; height: 95px; display: block; }
-    .answer-row { display: flex; justify-content: space-around; font-size: 9.5px; color: #333; margin-top: 2px; }
-    .answer-cell { width: 18%; text-align: center; }
+    
+    .answer-row { 
+      display: flex; 
+      flex-direction: row; 
+      justify-content: space-around; 
+      font-size: 9.5px; 
+      color: #333; 
+      margin-top: 4px; 
+      direction: ltr; 
+    }
+    .answer-cell { width: 18%; text-align: center; font-weight: bold; direction: rtl; }
+    .solution-text { color: #8e44ad; font-size: 11px; font-weight: bold; }
+    .read-text { color: #8e44ad; font-size: 10px; margin-bottom: 2px; font-weight: bold; }
   </style>
 </head>
 <body>
 
 <div class="app-container">
   <div class="app-header">
-    <h1>מחולל דפי תרגול בתורת המוזיקה</h1>
+    <h1>מחולל תרגילים בתורת המוזיקה</h1>
   </div>
 
   <div class="controls-panel">
@@ -123,446 +125,467 @@
 
   <div class="btn-group">
     <button class="btn btn-generate" onclick="generateSheet()">צור/רענן תרגילים</button>
+    <button class="btn btn-answers" onclick="toggleAnswersPage()">הצג/הסתר דף תשובות</button>
     <button class="btn btn-pdf" onclick="downloadPDF()">הורד קובץ PDF</button>
   </div>
 
   <div class="a4-page-container">
-    <div id="worksheet-a4">
+    <div id="worksheet-a4" class="worksheet-a4">
       <div class="sheet-header">
         <div class="sheet-title">תרגול תורת המוזיקה</div>
         <div class="sheet-fields">
           <div>שם: <span class="field-line"></span></div>
           <div>תאריך: <span class="field-line" style="width:50px;"></span></div>
-          <div>ציון: <span class="field-line" style="width:35px;"></span></div>
         </div>
       </div>
       <div id="stavesContainer"></div>
+    </div>
+
+    <div id="answersheet-a4" class="worksheet-a4" style="display: none;">
+      <div class="sheet-header">
+        <div class="sheet-title" style="color: #8e44ad;">דף תשובות ופתרונות מלאים</div>
+        <div class="sheet-fields">
+          <div>מורה/בודק: <span class="field-line"></span></div>
+        </div>
+      </div>
+      <div id="answersStavesContainer"></div>
     </div>
   </div>
 </div>
 
 <script>
-  let rowCounter = 0;
+const NOTE_NAMES_HE = ["דו", "רה", "מי", "פה", "סול", "לה", "סי"];
+const DIATONIC_SEMITONES = [0, 2, 4, 5, 7, 9, 11];
 
-  const CLEFS_LIST = [{ val: 'sol', label: 'מפתח סול' }, { val: 'fa', label: 'מפתח פה' }];
+function accToSymbol(acc) {
+  if (acc === 1) return "♯";
+  if (acc === -1) return "♭";
+  if (acc === 2) return "𝄪";
+  if (acc === -2) return "𝄫";
+  return "";
+}
+
+function accToString(acc) {
+  if (acc === 1) return "#";
+  if (acc === -1) return "b";
+  if (acc === 2) return "x";
+  if (acc === -2) return "bb";
+  return "";
+}
+
+function getNoteDetails(absLine, acc, clef) {
+  let baseIndex = (clef === 'sol') ? 2 : 4; 
+  let diatonicIdx = baseIndex + absLine;
   
-  const INTERVALS_LIST = [
-    'פרימה זכה', 'סקונדה קטנה', 'סקונדה גדולה', 'טרצה קטנה', 'טרצה גדולה', 
-    'קוורטה זכה', 'קוורטה מוגדלת', 'קווינטה מוקטנת', 'קווינטה זכה', 
-    'סקסטה קטנה', 'סקסטה גדולה', 'ספטימה קטנה', 'ספטימה גדולה', 'אוקטבה זכה'
-  ];
+  let nameIndex = diatonicIdx % 7;
+  while (nameIndex < 0) nameIndex += 7;
+  
+  let octave = Math.floor(diatonicIdx / 7);
+  let semitones = octave * 12 + DIATONIC_SEMITONES[nameIndex] + acc;
+  
+  let strAcc = accToString(acc);
+  let fullName = NOTE_NAMES_HE[nameIndex] + (strAcc ? " " + strAcc : "");
+  
+  return { name: fullName, diatonicIdx, semitones, nameIndex };
+}
 
-  const CHORDS_LIST = [
-    'מז׳ור יסודי', 'מז׳ור היפוך ראשון', 'מז׳ור היפוך שני',
-    'מינור יסודי', 'מינור היפוך ראשון', 'מינור היפוך שני',
-    'מוקטן יסודי', 'מוקטן היפוך ראשון', 'מוקטן היפוך שני',
-    'מוגדל יסודי', 'מוגדל היפוך ראשון', 'מוגדל היפוך שני'
-  ];
+function analyzeChord(notes) {
+  if (notes.length !== 3) return "";
 
-  const SEPTACHORDS_LIST = [
-    'דומיננטי יסודי (7)', 'דומיננטי 6/5', 'דומיננטי 4/3', 'דומיננטי 2',
-    'שבע גדול יסודי (Maj7)', 'שבע גדול 6/5', 'שבע גדול 4/3', 'שבע גדול 2',
-    'מינור שבע יסודי (m7)', 'מינור שבע 6/5', 'מינור שבע 4/3', 'מינור שבע 2',
-    'חצי מוקטן יסודי (m7b5)', 'חצי מוקטן 6/5', 'חצי מוקטן 4/3', 'חצי מוקטן 2'
-  ];
+  let d1 = notes[1].diatonicIdx - notes[0].diatonicIdx;
+  let d2 = notes[2].diatonicIdx - notes[1].diatonicIdx;
+  let s1 = notes[1].semitones - notes[0].semitones;
+  let s2 = notes[2].semitones - notes[1].semitones;
 
-  const SCALES_LIST = ['דו מז׳ור', 'לה מינור טבעי', 'לה מינור הרמוני', 'סול מז׳ור', 'רמינור'];
+  let rootNote = "";
+  let chordType = "";
 
-  const KEY_SIGNATURES = [
-    { val: '0', label: 'ללא סימני התק' },
-    { val: '1d', label: '1 דיאז' }, { val: '2d', label: '2 דיאזים' }, { val: '3d', label: '3 דיאזים' },
-    { val: '1b', label: '1 במול' }, { val: '2b', label: '2 במולים' }, { val: '3b', label: '3 במולים' }
-  ];
-
-  function shuffle(array) {
-    let arr = [...array];
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
+  if (d1 === 2 && d2 === 2) {
+    rootNote = notes[0].name;
+    if (s1 === 4 && s2 === 3) chordType = "מז׳ור יסודי";
+    else if (s1 === 3 && s2 === 4) chordType = "מינור יסודי";
+    else if (s1 === 3 && s2 === 3) chordType = "מוקטן יסודי";
+    else if (s1 === 4 && s2 === 4) chordType = "מוגדל יסודי";
+  }
+  else if (d1 === 2 && d2 === 3) {
+    rootNote = notes[2].name;
+    if (s1 === 3 && s2 === 5) chordType = "מז׳ור היפוך ראשון";
+    else if (s1 === 4 && s2 === 5) chordType = "מינור היפוך ראשון";
+    else if (s1 === 3 && s2 === 6) chordType = "מוקטן היפוך ראשון";
+  }
+  else if (d1 === 3 && d2 === 2) {
+    rootNote = notes[1].name;
+    if (s1 === 5 && s2 === 4) chordType = "מז׳ור היפוך שני";
+    else if (s1 === 5 && s2 === 3) chordType = "מינור היפוך שני";
+    else if (s1 === 6 && s2 === 3) chordType = "מוקטן היפוך שני";
   }
 
-  function getDiverseSelection(pool, count = 5) {
-    let shuffled = shuffle(pool);
-    let result = [];
-    for (let i = 0; i < count; i++) {
-      result.push(shuffled[i % shuffled.length]);
-    }
-    return shuffle(result);
+  if (!chordType) {
+    rootNote = notes[0].name;
+    chordType = "אקורד בלתי מזוהה";
   }
 
-  function buildDropdownHTML(dropdownId, items, labelProperty = null) {
-    const list = items.map(item => {
-      const val = labelProperty ? item.val : item;
-      const lbl = labelProperty ? item.label : item;
-      return `<label><input type="checkbox" value="${val}" checked onchange="updateBtnText('${dropdownId}', ${items.length})"> ${lbl}</label>`;
-    }).join('');
+  return `${rootNote} ${chordType}`;
+}
 
-    return `
-      <div class="dropdown-actions">
-        <button class="btn-toggle-all" onclick="selectAll('${dropdownId}', true, ${items.length})">בחר הכל</button>
-        <button class="btn-toggle-all" onclick="selectAll('${dropdownId}', false, ${items.length})">הסר הכל</button>
-      </div>
-      ${list}
-    `;
-  }
+const DEFINED_STRUCTURES = {
+  intervals: [
+    { name: 'סקונדה קטנה', offsets: [0, 1], accs: [0, -1] },
+    { name: 'סקונדה גדולה', offsets: [0, 1], accs: [0, 0] },
+    { name: 'טרצה קטנה', offsets: [0, 2], accs: [0, -1] },
+    { name: 'טרצה גדולה', offsets: [0, 2], accs: [0, 0] },
+    { name: 'קוורטה זכה', offsets: [0, 3], accs: [0, 0] },
+    { name: 'קוורטה מוגדלת', offsets: [0, 3], accs: [0, 1] },
+    { name: 'קווינטה מוקטנת', offsets: [0, 4], accs: [0, -1] },
+    { name: 'קווינטה זכה', offsets: [0, 4], accs: [0, 0] }
+  ],
+  chords: [
+    { name: 'מז׳ור יסודי', offsets: [0, 2, 4], accs: [0, 0, 0] },
+    { name: 'מז׳ור היפוך ראשון', offsets: [0, 2, 5], accs: [0, -1, 0] },
+    { name: 'מז׳ור היפוך שני', offsets: [0, 3, 5], accs: [0, 0, 0] },
+    { name: 'מינור יסודי', offsets: [0, 2, 4], accs: [0, -1, 0] },
+    { name: 'מינור היפוך ראשון', offsets: [0, 2, 5], accs: [0, 0, 0] },
+    { name: 'מינור היפוך שני', offsets: [0, 3, 5], accs: [0, 0, -1] },
+    { name: 'מוקטן יסודי', offsets: [0, 2, 4], accs: [0, -1, -1] },
+    { name: 'מוגדל יסודי', offsets: [0, 2, 4], accs: [0, 0, 1] }
+  ],
+  septachords: [
+    { name: 'דומיננטי 7 (יסודי)', offsets: [0, 2, 4, 6], accs: [0, 0, 0, -1] },
+    { name: 'דומיננטי 7 (היפוך ראשון)', offsets: [0, 2, 4, 5], accs: [0, 0, -1, 0] },
+    { name: 'דומיננטי 7 (היפוך שני)', offsets: [0, 2, 3, 5], accs: [0, -1, 0, 0] },
+    { name: 'חצי מוקטן יסודי (m7b5)', offsets: [0, 2, 4, 6], accs: [0, -1, -1, -1] }
+  ],
+  scales: [
+    { name: 'זיהוי לפי סימני היתק בלבד', isKeySigOnly: true, offsets: [], accs: [] },
+    { name: 'מז׳ור', offsets: [0, 1, 2, 3, 4, 5, 6, 7], accs: [0, 0, 0, 0, 0, 0, 0, 0] },
+    { name: 'מינור טבעי', offsets: [0, 1, 2, 3, 4, 5, 6, 7], accs: [0, 0, -1, 0, 0, -1, -1, 0] }
+  ]
+};
 
-  function addRow() {
-    rowCounter++;
-    const id = rowCounter;
-    const container = document.getElementById('rowsContainer');
-    const row = document.createElement('div');
-    row.className = 'row-control';
-    row.id = `row_${id}`;
+let rowCounter = 0;
+const CLEFS_LIST = [{ val: 'sol', label: 'מפתח סול' }, { val: 'fa', label: 'מפתח פה' }];
+const INTERVALS_LIST = DEFINED_STRUCTURES.intervals.map(s => s.name);
+const CHORDS_LIST = DEFINED_STRUCTURES.chords.map(s => s.name);
+const SEPTACHORDS_LIST = DEFINED_STRUCTURES.septachords.map(s => s.name);
+const SCALES_LIST = DEFINED_STRUCTURES.scales.map(s => s.name);
 
-    row.innerHTML = `
-      <div class="row-label">חמשה <span class="row-num"></span>:</div>
-      <div class="multi-select-container">
-        <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown('clefs_${id}')">מפתחות (הכל)</div>
-        <div class="multi-select-dropdown" id="clefs_${id}">
-          ${buildDropdownHTML(`clefs_${id}`, CLEFS_LIST, true)}
-        </div>
-      </div>
-      <select id="skill_${id}" onchange="onSkillChange(${id})">
-        <option value="id">זיהוי</option>
-        <option value="write">כתיבה</option>
-      </select>
-      <select id="type_${id}" onchange="onTypeChange(${id})">
-        <option value="intervals">מרווחים הרמוניים</option>
-        <option value="chords">אקורדים משולשים</option>
-        <option value="septachords">ספטאקורדים (מרובעים)</option>
-        <option value="scales">סולמות</option>
-      </select>
-      <div id="sub_container_${id}"></div>
-      <button class="btn-remove" onclick="removeRow(${id})">✕</button>
-    `;
-    container.appendChild(row);
-    onTypeChange(id);
-    updateRowNumbers();
-  }
-
-  function removeRow(id) {
-    const row = document.getElementById(`row_${id}`);
-    if (row) row.remove();
-    updateRowNumbers();
-  }
-
-  function updateRowNumbers() {
-    document.querySelectorAll('.row-control').forEach((r, idx) => {
-      r.querySelector('.row-num').innerText = idx + 1;
+window.addEventListener('click', function(e) {
+  if (!e.target.closest('.multi-select-container')) {
+    document.querySelectorAll('.multi-select-dropdown.show').forEach(el => {
+      el.classList.remove('show');
     });
   }
+});
 
-  function onSkillChange(i) { onTypeChange(i); }
+function addRow() {
+  rowCounter++;
+  const id = rowCounter;
+  const container = document.getElementById('rowsContainer');
+  const row = document.createElement('div');
+  row.className = 'row-control';
+  row.id = `row_${id}`;
 
-  function onTypeChange(i) {
-    const type = document.getElementById(`type_${i}`).value;
-    const container = document.getElementById(`sub_container_${i}`);
-    container.innerHTML = '';
+  row.innerHTML = `
+    <div class="row-label">חמשה <span class="row-num"></span>:</div>
+    <div class="multi-select-container">
+      <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, 'clefs_${id}')">מפתחות</div>
+      <div class="multi-select-dropdown" id="clefs_${id}">
+        <span class="select-all-btn" onclick="toggleAll('clefs_${id}')">סמן הכל / הסר הכל</span>
+        ${CLEFS_LIST.map(c => `<label><input type="checkbox" value="${c.val}" checked> ${c.label}</label>`).join('')}
+      </div>
+    </div>
+    <select id="skill_${id}">
+      <option value="id">זיהוי</option>
+      <option value="write">כתיבה</option>
+    </select>
+    <select id="type_${id}" onchange="onTypeChange(${id})">
+      <option value="intervals">מרווחים</option>
+      <option value="chords" selected>אקורדים משולשים</option>
+      <option value="septachords">ספטאקורדים</option>
+      <option value="scales">סולמות</option>
+    </select>
+    <div id="sub_container_${id}"></div>
+    <button class="btn-remove" onclick="removeRow(${id})">✕</button>
+  `;
+  container.appendChild(row);
+  onTypeChange(id);
+  updateRowNumbers();
+}
 
-    let itemsList = [];
-    let titleName = '';
+function removeRow(id) {
+  document.getElementById(`row_${id}`)?.remove();
+  updateRowNumbers();
+}
 
-    if (type === 'intervals') { itemsList = INTERVALS_LIST; titleName = 'מרווחים'; }
-    else if (type === 'chords') { itemsList = CHORDS_LIST; titleName = 'אקורדים'; }
-    else if (type === 'septachords') { itemsList = SEPTACHORDS_LIST; titleName = 'ספטאקורדים'; }
-    else if (type === 'scales') { itemsList = SCALES_LIST; titleName = 'סולמות'; }
+function updateRowNumbers() {
+  document.querySelectorAll('.row-control').forEach((r, idx) => {
+    r.querySelector('.row-num').innerText = idx + 1;
+  });
+}
 
-    container.innerHTML = `
-      <div class="sub-group">
-        <div class="multi-select-container">
-          <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown('${type}_${i}')">${titleName} (הכל)</div>
-          <div class="multi-select-dropdown" id="${type}_${i}">
-            ${buildDropdownHTML(`${type}_${i}`, itemsList)}
-          </div>
-        </div>
-        <div class="multi-select-container">
-          <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown('keys_${i}')">סימני התק</div>
-          <div class="multi-select-dropdown" id="keys_${i}">
-            ${buildDropdownHTML(`keys_${i}`, KEY_SIGNATURES, true)}
-          </div>
-        </div>
-      </div>`;
+function onTypeChange(i) {
+  const type = document.getElementById(`type_${i}`).value;
+  const container = document.getElementById(`sub_container_${i}`);
+  let itemsList = (type === 'intervals') ? INTERVALS_LIST : 
+                  (type === 'chords' ? CHORDS_LIST : 
+                  (type === 'septachords' ? SEPTACHORDS_LIST : SCALES_LIST));
+
+  container.innerHTML = `
+    <div class="multi-select-container">
+      <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, '${type}_${i}')">סינון תרגילים</div>
+      <div class="multi-select-dropdown" id="${type}_${i}">
+        <span class="select-all-btn" onclick="toggleAll('${type}_${i}')">סמן הכל / הסר הכל</span>
+        ${itemsList.map(item => `<label><input type="checkbox" value="${item}" checked> ${item}</label>`).join('')}
+      </div>
+    </div>`;
+}
+
+function toggleDropdown(e, id) {
+  e.stopPropagation();
+  const target = document.getElementById(id);
+  const wasShown = target.classList.contains('show');
+  
+  document.querySelectorAll('.multi-select-dropdown.show').forEach(el => {
+    el.classList.remove('show');
+  });
+
+  if (!wasShown) {
+    target.classList.add('show');
   }
+}
 
-  function toggleDropdown(id) { document.getElementById(id).classList.toggle('show'); }
+function toggleAll(dropdownId) {
+  const checkboxes = document.querySelectorAll(`#${dropdownId} input[type="checkbox"]`);
+  const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+  checkboxes.forEach(cb => cb.checked = !allChecked);
+}
 
-  function selectAll(id, state, total) {
-    const checkboxes = document.querySelectorAll(`#${id} input[type="checkbox"]`);
-    checkboxes.forEach(cb => cb.checked = state);
-    updateBtnText(id, total);
-  }
-
-  function updateBtnText(id, total) {
-    const checkboxes = document.querySelectorAll(`#${id} input[type="checkbox"]:checked`);
-    const btn = document.getElementById(id).previousElementSibling;
-    if (checkboxes.length === total) btn.innerText = 'בחר (הכל)';
-    else if (checkboxes.length === 0) btn.innerText = 'לא נבחר';
-    else btn.innerText = `נבחרו ${checkboxes.length}`;
-  }
-
-  function getClefSVG(clef, xOffset = 25) {
-    if (clef === 'fa') {
-      return `<g transform="translate(${xOffset + 2}, 19) scale(0.65)">
-        <path d="M 12 12 C 12 6, 22 6, 22 14 C 22 22, 10 26, 10 38" fill="none" stroke="#111" stroke-width="3.5"/>
-        <circle cx="11" cy="12" r="3.5" fill="#111"/>
-        <circle cx="27" cy="10" r="2.5" fill="#111"/>
-        <circle cx="27" cy="22" r="2.5" fill="#111"/>
-      </g>`;
-    }
-    return `<g transform="translate(${xOffset + 2}, 28) scale(0.125)">
-      <path d="M 14 185 C 35 185 54 167 54 140 C 54 110 30 90 4 90 C -25 90 -45 112 -45 145 C -45 185 -10 220 30 220 C 75 220 105 180 105 125 C 105 50 40 -15 15 -75 C 5 -100 15 -130 35 -130 C 45 -130 55 -115 50 -90 C 40 -40 0 50 -5 120 L -5 270 C -5 295 -25 315 -50 315 C -65 315 -80 300 -80 285 C -80 270 -65 255 -50 255 C -40 255 -30 265 -25 275" fill="none" stroke="#111" stroke-width="9.5" stroke-linecap="round"/>
+function getClefSVG(clef) {
+  if (clef === 'fa') {
+    return `<g transform="translate(25, 19) scale(0.65)">
+      <path d="M 12 12 C 12 6, 22 6, 22 14 C 22 22, 10 26, 10 38" fill="none" stroke="#111" stroke-width="3.5"/>
+      <circle cx="11" cy="12" r="3.5" fill="#111"/>
+      <circle cx="27" cy="10" r="2.5" fill="#111"/>
+      <circle cx="27" cy="22" r="2.5" fill="#111"/>
     </g>`;
   }
+  return `<g transform="translate(25, 28) scale(0.125)">
+    <path d="M 14 185 C 35 185 54 167 54 140 C 54 110 30 90 4 90 C -25 90 -45 112 -45 145 C -45 185 -10 220 30 220 C 75 220 105 180 105 125 C 105 50 40 -15 15 -75 C 5 -100 15 -130 35 -130 C 45 -130 55 -115 50 -90 C 40 -40 0 50 -5 120 L -5 270 C -5 295 -25 315 -50 315 C -65 315 -80 300 -80 285 C -80 270 -65 255 -50 255 C -40 255 -30 265 -25 275" fill="none" stroke="#111" stroke-width="9.5"/>
+  </g>`;
+}
 
-  function drawLedgerLines(x, y) {
-    let svg = '';
-    if (y <= 11) { for (let ly = 19; ly >= y; ly -= 8) svg += `<line x1="${x-9}" y1="${ly}" x2="${x+9}" y2="${ly}" stroke="#111" stroke-width="1.2"/>`; }
-    if (y >= 59) { for (let ly = 51; ly <= y; ly += 8) svg += `<line x1="${x-9}" y1="${ly}" x2="${x+9}" y2="${ly}" stroke="#111" stroke-width="1.2"/>`; }
-    return svg;
+function renderNoteGraphic(x, y, acc, shiftNoteHead = false) {
+  let svg = '';
+  let noteX = shiftNoteHead ? (x + 11) : x;
+
+  if (y <= 11) { for (let ly = 19; ly >= y; ly -= 8) svg += `<line x1="${noteX-9}" y1="${ly}" x2="${noteX+9}" y2="${ly}" stroke="#111" stroke-width="1.2"/>`; }
+  if (y >= 59) { for (let ly = 51; ly <= y; ly += 8) svg += `<line x1="${noteX-9}" y1="${ly}" x2="${noteX+9}" y2="${ly}" stroke="#111" stroke-width="1.2"/>`; }
+
+  if (acc !== 0) {
+    let symbol = accToSymbol(acc);
+    let xOffset = shiftNoteHead ? (x - 28) : (x - 18);
+    svg += `<text x="${xOffset}" y="${y + 6}" font-size="20" font-weight="bold" fill="#111">${symbol}</text>`;
   }
 
-  function getStepOffsets(type, item) {
-    if (type === 'intervals') {
-      const mapping = {
-        'פרימה זכה': 0, 'סקונדה קטנה': 1, 'סקונדה גדולה': 1,
-        'טרצה קטנה': 2, 'טרצה גדולה': 2, 'קוורטה זכה': 3,
-        'קוורטה מוגדלת': 3, 'קווינטה מוקטנת': 4, 'קווינטה זכה': 4,
-        'סקסטה קטנה': 5, 'סקסטה גדולה': 5, 'ספטימה קטנה': 6,
-        'ספטימה גדולה': 6, 'אוקטבה זכה': 7
-      };
-      return [0, mapping[item] !== undefined ? mapping[item] : 2];
-    } else if (type === 'chords') {
-      if (item.includes('היפוך ראשון')) return [0, 2, 5];
-      if (item.includes('היפוך שני')) return [0, 3, 5];
-      return [0, 2, 4];
-    } else if (type === 'septachords') {
-      if (item.includes('6/5')) return [0, 2, 4, 5];
-      if (item.includes('4/3')) return [0, 2, 3, 5];
-      if (item.includes('2'))   return [0, 1, 3, 5];
-      return [0, 2, 4, 6];
-    }
-    return [0];
+  svg += `<ellipse cx="${noteX}" cy="${y}" rx="5.5" ry="4" fill="#111" transform="rotate(-20 ${noteX} ${y})"/>`;
+  return svg;
+}
+
+function renderKeySignature(startX, clef, accType, count) {
+  let svg = '';
+  let sharpsSol = [8, 5, 9, 6, 3, 7, 4];
+  let flatsSol = [4, 7, 3, 6, 2, 5, 1];
+  let sharpsFa = [6, 3, 7, 4, 1, 5, 2];
+  let flatsFa = [2, 5, 1, 4, 0, 3, -1];
+
+  let lineOffsets = (accType === 1) ? (clef === 'sol' ? sharpsSol : sharpsFa) : (clef === 'sol' ? flatsSol : flatsFa);
+
+  for (let i = 0; i < count; i++) {
+    let lineIdx = lineOffsets[i];
+    let y = 51 - lineIdx * 4;
+    let x = startX + (i * 11);
+    let symbol = (accType === 1) ? '♯' : '♭';
+    svg += `<text x="${x}" y="${y + 6}" font-size="20" font-weight="bold" fill="#111">${symbol}</text>`;
   }
+  return svg;
+}
 
-  function drawStructure(x, type, item, clef, skill, startY, currentKey = '0') {
-    if (type === 'scales') return '';
+function generateSheet() {
+  const studentContainer = document.getElementById('stavesContainer');
+  const answersContainer = document.getElementById('answersStavesContainer');
+  studentContainer.innerHTML = ''; answersContainer.innerHTML = '';
 
-    let svg = '';
-    let baseStepY = 4;
-    let offsets = getStepOffsets(type, item);
+  const rows = document.querySelectorAll('.row-control');
+
+  rows.forEach((row, idx) => {
+    const id = row.id.split('_')[1];
+    const type = document.getElementById(`type_${id}`).value;
+    const skill = document.getElementById(`skill_${id}`).value;
+
+    let clefsChecked = Array.from(document.querySelectorAll(`#clefs_${id} input:checked`)).map(cb => cb.value);
+    let clef = clefsChecked.length > 0 ? clefsChecked[Math.floor(Math.random() * clefsChecked.length)] : 'sol';
+
+    let selectedTypes = Array.from(document.querySelectorAll(`#${type}_${id} input:checked`)).map(cb => cb.value);
+    let pool = DEFINED_STRUCTURES[type].filter(s => selectedTypes.includes(s.name));
+    if (pool.length === 0) pool = DEFINED_STRUCTURES[type];
+
+    let categoryName = (type === 'intervals') ? 'המרווחים' : 
+                       (type === 'chords' ? 'האקורדים' : 
+                       (type === 'septachords' ? 'הספטאקורדים' : 'הסולמות'));
     
-    if (skill === 'write') {
-      offsets = [offsets[0]]; // במשימת כתיבה - מציגים רק את תו הבסיס
-    }
+    let instructionPrefix = (skill === 'id') ? 'זהה/י את' : 'כתוב/י את';
+    let fullInstructionTitle = `${idx + 1}. ${instructionPrefix} ${categoryName} הבאים:`;
 
-    let yPositions = offsets.map(off => startY - (off * baseStepY));
-    let minY = Math.min(...yPositions);
-    let maxY = Math.max(...yPositions);
+    let studentSVG = `<svg class="staff-svg" viewBox="0 0 750 95">`;
+    let answerSVG = `<svg class="staff-svg" viewBox="0 0 750 95">`;
 
-    // ציור סימני התק מוגדלים (+25%) על התווים עם היסט שמאלה למניעת חפיפה
-    if (currentKey && currentKey !== '0') {
-      const isSharp = currentKey.includes('d');
-      const count = parseInt(currentKey) || 1;
-      const symbol = isSharp ? '♯' : '♭';
-
-      yPositions.forEach((y, i) => {
-        if (i < count) {
-          // העליון (אינדקס גבוה יותר) זז שמאלה יותר כדי לא לעלות על התחתון
-          let shiftLeft = (yPositions.length - 1 - i) * 11;
-          let accX = x - 15 - shiftLeft;
-          svg += `<text x="${accX}" y="${y+6}" font-size="17" font-weight="bold" fill="#111">${symbol}</text>`;
-        }
-      });
-    }
-
-    yPositions.forEach((y, i) => {
-      let offsetX = 0;
-      if (i > 0 && Math.abs(yPositions[i] - yPositions[i-1]) === 4) {
-        offsetX = 9.5;
-      }
-
-      let noteX = x + offsetX;
-      svg += drawLedgerLines(noteX, y);
-      svg += `<ellipse cx="${noteX}" cy="${y}" rx="5.5" ry="4" fill="#111" transform="rotate(-20 ${noteX} ${y})"/>`;
-    });
-
-    if (yPositions.length > 1) {
-      svg += `<line x1="${x+5}" y1="${maxY}" x2="${x+5}" y2="${minY-26}" stroke="#111" stroke-width="1.5"/>`;
-    }
-
-    return svg;
-  }
-
-  function drawKeySignatureSVG(keyVal, clef, measureStartX) {
-    if (!keyVal || keyVal === '0') return '';
-    let svg = '';
-    const isSharp = keyVal.includes('d');
-    const count = parseInt(keyVal);
-
-    let xStart = measureStartX + 42; 
-
-    const sharpY_sol = [19, 31, 15, 27, 39, 23, 35]; 
-    const flatY_sol  = [35, 23, 39, 27, 43, 31, 47];
-    const sharpY_fa  = [27, 39, 23, 35, 47, 31, 43];
-    const flatY_fa   = [43, 31, 47, 35, 51, 39, 55];
-
-    const sharpY = (clef === 'fa') ? sharpY_fa : sharpY_sol;
-    const flatY  = (clef === 'fa') ? flatY_fa  : flatY_sol;
-
-    for (let k = 0; k < count; k++) {
-      let x = xStart + (k * 10);
-      let y = isSharp ? sharpY[k] : flatY[k];
-      let symbol = isSharp ? '♯' : '♭';
-      // סימני מפתח בסולמות הוגדלו גם הם ב-25%
-      svg += `<text x="${x}" y="${y+6}" font-size="18" font-weight="bold" fill="#111">${symbol}</text>`;
-    }
-    return svg;
-  }
-
-  function drawStaffSVG(skill, type, clef, keysPool, items = []) {
-    let svg = `<svg class="staff-svg" viewBox="0 0 750 95">`;
-    
     for (let l = 0; l < 5; l++) {
-      let y = 19 + l * 8;
-      svg += `<line x1="20" y1="${y}" x2="730" y2="${y}" stroke="#333" stroke-width="1"/>`;
+      let lineY = 51 - l * 8;
+      let lineHTML = `<line x1="20" y1="${lineY}" x2="730" y2="${lineY}" stroke="#333" stroke-width="1"/>`;
+      studentSVG += lineHTML; answerSVG += lineHTML;
     }
-    svg += `<line x1="20" y1="19" x2="20" y2="51" stroke="#333" stroke-width="2"/>`;
-    svg += `<line x1="730" y1="19" x2="730" y2="51" stroke="#333" stroke-width="2"/>`;
+    let borders = `<line x1="20" y1="19" x2="20" y2="51" stroke="#333" stroke-width="2"/><line x1="730" y1="19" x2="730" y2="51" stroke="#333" stroke-width="2"/>`;
+    studentSVG += borders; answerSVG += borders;
 
-    let stepX = 142;
-    for (let i = 1; i < 5; i++) {
-      let bx = 20 + i * stepX;
-      svg += `<line x1="${bx-2}" y1="19" x2="${bx-2}" y2="51" stroke="#333" stroke-width="1.2"/>`;
-      svg += `<line x1="${bx+2}" y1="19" x2="${bx+2}" y2="51" stroke="#333" stroke-width="1.2"/>`;
-    }
-
-    const minYAllowed = 11;
-    const maxYAllowed = 59;
-    const baseStepY = 4;
+    let exercises = [];
+    let usageCounts = {};
 
     for (let i = 0; i < 5; i++) {
-      let measureStartX = 20 + i * stepX;
-      svg += getClefSVG(clef, measureStartX + 5);
+      let measureX = 20 + i * 142;
+      studentSVG += getClefSVG(clef); answerSVG += getClefSVG(clef);
 
-      let currentKey = (keysPool && keysPool.length > 0) ? keysPool[Math.floor(Math.random() * keysPool.length)] : '0';
+      if (i > 0) {
+        let bLine = `<line x1="${measureX}" y1="19" x2="${measureX}" y2="51" stroke="#333" stroke-width="1.2"/>`;
+        studentSVG += bLine; answerSVG += bLine;
+      }
 
-      if (type === 'scales' && skill === 'write') {
-        // סולמות בכתיבה - חמשה ריקה
-      } else if (type === 'scales') {
-        svg += drawKeySignatureSVG(currentKey, clef, measureStartX);
+      let available = pool.filter(p => (usageCounts[p.name] || 0) < 2);
+      if (available.length === 0) available = pool;
+      
+      let chosenStruct = available[Math.floor(Math.random() * available.length)];
+      usageCounts[chosenStruct.name] = (usageCounts[chosenStruct.name] || 0) + 1;
+
+      let baseLine = Math.floor(Math.random() * 3) + 1;
+
+      if (chosenStruct.isKeySigOnly) {
+        let accType = Math.random() > 0.5 ? 1 : -1;
+        let count = Math.floor(Math.random() * 5) + 1;
+        
+        let sigGraphic = renderKeySignature(measureX + 45, clef, accType, count);
+        studentSVG += sigGraphic; answerSVG += sigGraphic;
+
+        let keyNamesSharp = ["סול מז׳ור", "רה מז׳ור", "לה מז׳ור", "מי מז׳ור", "סי מז׳ור"];
+        let keyNamesFlat = ["פה מז׳ור", "סי♭ מז׳ור", "מי♭ מז׳ור", "לה♭ מז׳ור", "רה♭ מז׳ור"];
+        let keySolution = (accType === 1) ? keyNamesSharp[count - 1] : keyNamesFlat[count - 1];
+
+        exercises.push({ solutionText: keySolution, promptText: '________', readPitchesText: `${count} ${accType === 1 ? 'דיאזים' : 'במולים'}` });
+
       } else {
-        let noteX = measureStartX + 85;
+        let notesDrawn = chosenStruct.offsets.map((off, oIdx) => ({
+          lineIndex: baseLine + off,
+          acc: chosenStruct.accs[oIdx]
+        }));
 
-        let item = items[i] || '';
-        let offsets = (skill === 'write') ? [0] : getStepOffsets(type, item);
-        let maxOffset = Math.max(...offsets);
+        let parsedNotes = notesDrawn.map(n => getNoteDetails(n.lineIndex, n.acc, clef));
+        let readPitchesText = parsedNotes.map(n => n.name).join('-');
 
-        let validBaseYs = [];
-        for (let y = minYAllowed + (maxOffset * baseStepY); y <= maxYAllowed; y += 4) {
-          validBaseYs.push(y);
+        let solutionText = "";
+        if (type === 'chords') {
+          solutionText = analyzeChord(parsedNotes);
+        } else if (type === 'scales') {
+          solutionText = `סולם ${parsedNotes[0].name} ${chosenStruct.name}`;
+          readPitchesText = `${parsedNotes[0].name} - ${parsedNotes[7].name}`;
+        } else {
+          solutionText = `${parsedNotes[0].name} - ${chosenStruct.name}`;
         }
 
-        let startY = validBaseYs.length > 0 
-          ? validBaseYs[Math.floor(Math.random() * validBaseYs.length)] 
-          : maxYAllowed;
+        let promptText = (skill === 'write') ? `${chosenStruct.name}` : '________';
 
-        svg += drawStructure(noteX, type, item, clef, skill, startY, currentKey);
+        exercises.push({ solutionText, promptText, readPitchesText });
+
+        let noteX = measureX + 70;
+
+        if (skill === 'write') {
+          let startNoteX = (type === 'scales') ? (measureX + 30) : noteX;
+          let baseGraphic = renderNoteGraphic(startNoteX, 51 - baseLine * 4, chosenStruct.accs[0], false);
+          studentSVG += baseGraphic;
+
+          if (type === 'scales') {
+            notesDrawn.forEach((n, nIdx) => {
+              let scaleX = measureX + 30 + (nIdx * 13);
+              answerSVG += renderNoteGraphic(scaleX, 51 - n.lineIndex * 4, n.acc, false);
+            });
+          } else {
+            notesDrawn.forEach((n, nIdx) => {
+              let y = 51 - n.lineIndex * 4;
+              let isSecond = (nIdx > 0 && Math.abs(n.lineIndex - notesDrawn[nIdx - 1].lineIndex) === 1);
+              answerSVG += renderNoteGraphic(noteX, y, n.acc, isSecond);
+            });
+          }
+        } else {
+          if (type === 'scales') {
+            notesDrawn.forEach((n, nIdx) => {
+              let scaleX = measureX + 30 + (nIdx * 13);
+              let y = 51 - n.lineIndex * 4;
+              let g = renderNoteGraphic(scaleX, y, n.acc, false);
+              studentSVG += g; answerSVG += g;
+            });
+          } else {
+            notesDrawn.forEach((n, nIdx) => {
+              let y = 51 - n.lineIndex * 4;
+              let isSecond = (nIdx > 0 && Math.abs(n.lineIndex - notesDrawn[nIdx - 1].lineIndex) === 1);
+              let g = renderNoteGraphic(noteX, y, n.acc, isSecond);
+              studentSVG += g; answerSVG += g;
+            });
+          }
+        }
       }
     }
 
-    svg += `</svg>`;
-    return svg;
+    studentSVG += `</svg>`;
+    answerSVG += `</svg>`;
+
+    let studentAnsHTML = `<div class="answer-row">${exercises.map(e => `<div class="answer-cell">${e.promptText}</div>`).join('')}</div>`;
+    let answerAnsHTML = `<div class="answer-row">${exercises.map(e => `
+      <div class="answer-cell">
+        <div class="read-text">${e.readPitchesText}</div>
+        <div class="solution-text">${e.solutionText}</div>
+      </div>
+    `).join('')}</div>`;
+
+    const staffDiv = document.createElement('div');
+    staffDiv.className = 'staff-system';
+    staffDiv.innerHTML = `<div class="exercise-title">${fullInstructionTitle} (${clef === 'fa' ? 'מפתח פה' : 'מפתח סול'}):</div>${studentSVG}${studentAnsHTML}`;
+    studentContainer.appendChild(staffDiv);
+
+    const ansDiv = document.createElement('div');
+    ansDiv.className = 'staff-system';
+    ansDiv.innerHTML = `<div class="exercise-title">${fullInstructionTitle} - פתרון מלא:</div>${answerSVG}${answerAnsHTML}`;
+    answersContainer.appendChild(ansDiv);
+  });
+}
+
+function toggleAnswersPage() {
+  const ansSheet = document.getElementById('answersheet-a4');
+  ansSheet.style.display = (ansSheet.style.display === 'none') ? 'block' : 'none';
+}
+
+async function downloadPDF() {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const canvas1 = await html2canvas(document.getElementById('worksheet-a4'), { scale: 2 });
+  pdf.addImage(canvas1.toDataURL('image/png'), 'PNG', 0, 0, 210, 297);
+
+  const ansSheet = document.getElementById('answersheet-a4');
+  if (ansSheet.style.display !== 'none') {
+    pdf.addPage();
+    const canvas2 = await html2canvas(ansSheet, { scale: 2 });
+    pdf.addImage(canvas2.toDataURL('image/png'), 'PNG', 0, 0, 210, 297);
   }
+  pdf.save('music_practice.pdf');
+}
 
-  function generateSheet() {
-    const studentContainer = document.getElementById('stavesContainer');
-    studentContainer.innerHTML = '';
-
-    const rows = document.querySelectorAll('.row-control');
-
-    rows.forEach((row, idx) => {
-      const id = row.id.split('_')[1];
-      const type = document.getElementById(`type_${id}`).value;
-      const skill = document.getElementById(`skill_${id}`).value;
-
-      let clefsChecked = Array.from(document.querySelectorAll(`#clefs_${id} input:checked`)).map(cb => cb.value);
-      if (clefsChecked.length === 0) clefsChecked = ['sol'];
-      let clef = clefsChecked[Math.floor(Math.random() * clefsChecked.length)];
-
-      let keysChecked = Array.from(document.querySelectorAll(`#keys_${id} input:checked`)).map(cb => cb.value);
-      if (keysChecked.length === 0) keysChecked = KEY_SIGNATURES.map(k => k.val);
-
-      let checkedBoxes = document.querySelectorAll(`#${type}_${id} input:checked`);
-      let pool = Array.from(checkedBoxes).map(cb => cb.value);
-
-      if (pool.length === 0) {
-        if (type === 'intervals') pool = INTERVALS_LIST;
-        else if (type === 'chords') pool = CHORDS_LIST;
-        else if (type === 'septachords') pool = SEPTACHORDS_LIST;
-        else if (type === 'scales') pool = SCALES_LIST;
-      }
-
-      let selectedItems = getDiverseSelection(pool, 5);
-      let studentAnswersHTML = '';
-
-      if (skill === 'id') {
-        studentAnswersHTML = `
-          <div class="answer-row">
-            <div class="answer-cell">________</div>
-            <div class="answer-cell">________</div>
-            <div class="answer-cell">________</div>
-            <div class="answer-cell">________</div>
-            <div class="answer-cell">________</div>
-          </div>`;
-      } else {
-        studentAnswersHTML = `
-          <div class="answer-row">
-            <div class="answer-cell">${selectedItems[0]}</div>
-            <div class="answer-cell">${selectedItems[1]}</div>
-            <div class="answer-cell">${selectedItems[2]}</div>
-            <div class="answer-cell">${selectedItems[3]}</div>
-            <div class="answer-cell">${selectedItems[4]}</div>
-          </div>`;
-      }
-
-      let clefName = (clef === 'fa') ? 'מפתח פה' : 'מפתח סול';
-      let typeLabel = (type === 'intervals') ? 'מרווחים הרמוניים' : (type === 'chords' ? 'אקורדים משולשים' : (type === 'septachords' ? 'ספטאקורדים' : 'סולמות'));
-      let skillLabel = (skill === 'id') ? 'זהה/י' : 'כתוב/י';
-
-      const staffDiv = document.createElement('div');
-      staffDiv.className = 'staff-system';
-      staffDiv.innerHTML = `
-        <div class="exercise-title">${idx + 1}. הוראות: ${clefName} / ${skillLabel} ${typeLabel}</div>
-        ${drawStaffSVG(skill, type, clef, keysChecked, selectedItems)}
-        ${studentAnswersHTML}
-      `;
-      studentContainer.appendChild(staffDiv);
-    });
-  }
-
-  async function downloadPDF() {
-    const { jsPDF } = window.jspdf;
-    const element = document.getElementById('worksheet-a4');
-    
-    const canvas = await html2canvas(element, { scale: 2, useCORS: true });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
-    pdf.save('music_theory_worksheet.pdf');
-  }
-
-  window.onclick = function(event) {
-    if (!event.target.matches('.multi-select-btn') && !event.target.closest('.multi-select-dropdown')) {
-      document.querySelectorAll('.multi-select-dropdown').forEach(d => d.classList.remove('show'));
-    }
-  }
-
-  window.onload = () => {
-    addRow();
-    generateSheet();
-  };
+window.onload = () => { addRow(); generateSheet(); };
 </script>
 
 </body>
