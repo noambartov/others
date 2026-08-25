@@ -64,7 +64,7 @@
     }
     .multi-select-dropdown {
       display: none; position: absolute; top: calc(100% + 4px); right: 0;
-      width: 270px; background: #fff; border: 1px solid var(--border-color);
+      width: 280px; background: #fff; border: 1px solid var(--border-color);
       border-radius: 8px; max-height: 250px; overflow-y: auto; z-index: 1000;
       box-shadow: 0 10px 25px rgba(0,0,0,0.15); padding: 8px 12px;
     }
@@ -250,10 +250,35 @@ const DEFINED_STRUCTURES = {
     { name: 'מוגדל יסודי', offsets: [0, 2, 4], accs: [0, 0, 1] }
   ],
   septachords: [
-    { name: 'דומיננטי 7 (יסודי)', offsets: [0, 2, 4, 6], accs: [0, 0, 0, -1] },
-    { name: 'דומיננטי 7 (היפוך ראשון)', offsets: [0, 2, 4, 5], accs: [0, 0, -1, 0] },
-    { name: 'דומיננטי 7 (היפוך שני)', offsets: [0, 2, 3, 5], accs: [0, -1, 0, 0] },
-    { name: 'חצי מוקטן יסודי (m7b5)', offsets: [0, 2, 4, 6], accs: [0, -1, -1, -1] }
+    // דומיננטי 7
+    { name: 'דומיננטי 7 (מצב יסודי)', offsets: [0, 2, 4, 6], accs: [0, 0, 0, -1] },
+    { name: 'דומיננטי 7 (קווינטסקסטאקורד - היפוך ראשון)', offsets: [0, 2, 4, 5], accs: [0, 0, -1, 0] },
+    { name: 'דומיננטי 7 (טרצקוורטאקורד - היפוך שני)', offsets: [0, 2, 3, 5], accs: [0, -1, 0, 0] },
+    { name: 'דומיננטי 7 (סקונדאקורד - היפוך שלישי)', offsets: [0, 1, 3, 5], accs: [0, 1, 1, 1] },
+
+    // חצי מוקטן (m7b5)
+    { name: 'חצי מוקטן (m7b5) (מצב יסודי)', offsets: [0, 2, 4, 6], accs: [0, -1, -1, -1] },
+    { name: 'חצי מוקטן (m7b5) (קווינטסקסטאקורד - היפוך ראשון)', offsets: [0, 2, 4, 5], accs: [0, 0, 0, 1] },
+    { name: 'חצי מוקטן (m7b5) (טרצקוורטאקורד - היפוך שני)', offsets: [0, 2, 3, 5], accs: [0, 0, 1, 1] },
+    { name: 'חצי מוקטן (m7b5) (סקונדאקורד - היפוך שלישי)', offsets: [0, 1, 3, 5], accs: [0, 1, 1, 0] },
+
+    // מוקטן מלא (dim7)
+    { name: 'מוקטן מלא (dim7) (מצב יסודי)', offsets: [0, 2, 4, 6], accs: [0, -1, -1, -2] },
+    { name: 'מוקטן מלא (dim7) (קווינטסקסטאקורד - היפוך ראשון)', offsets: [0, 2, 4, 5], accs: [0, 0, -1, 1] },
+    { name: 'מוקטן מלא (dim7) (טרצקוורטאקורד - היפוך שני)', offsets: [0, 2, 3, 5], accs: [0, -1, 1, 1] },
+    { name: 'מוקטן מלא (dim7) (סקונדאקורד - היפוך שלישי)', offsets: [0, 1, 3, 5], accs: [0, 2, 2, 1] },
+
+    // מינור 7 (m7)
+    { name: 'מינור 7 (מצב יסודי)', offsets: [0, 2, 4, 6], accs: [0, -1, 0, -1] },
+    { name: 'מינור 7 (קווינטסקסטאקורד - היפוך ראשון)', offsets: [0, 2, 4, 5], accs: [0, 1, 0, 1] },
+    { name: 'מינור 7 (טרצקוורטאקורד - היפוך שני)', offsets: [0, 2, 3, 5], accs: [0, -1, 0, 0] },
+    { name: 'מינור 7 (סקונדאקורד - היפוך שלישי)', offsets: [0, 1, 3, 5], accs: [0, 1, 1, 0] },
+
+    // מז׳ור גדול 7 (Maj7)
+    { name: 'מז׳ור גדול (Maj7) (מצב יסודי)', offsets: [0, 2, 4, 6], accs: [0, 0, 0, 0] },
+    { name: 'מז׳ור גדול (Maj7) (קווינטסקסטאקורד - היפוך ראשון)', offsets: [0, 2, 4, 5], accs: [0, 0, 0, 1] },
+    { name: 'מז׳ור גדול (Maj7) (טרצקוורטאקורד - היפוך שני)', offsets: [0, 2, 3, 5], accs: [0, 0, 1, 1] },
+    { name: 'מז׳ור גדול (Maj7) (סקונדאקורד - היפוך שלישי)', offsets: [0, 1, 3, 5], accs: [0, 1, 1, 1] }
   ],
   scales: [
     { name: 'זיהוי לפי סימני היתק בלבד', isKeySigOnly: true, offsets: [], accs: [] },
@@ -300,8 +325,8 @@ function addRow() {
     </select>
     <select id="type_${id}" onchange="onTypeChange(${id})">
       <option value="intervals">מרווחים</option>
-      <option value="chords" selected>אקורדים משולשים</option>
-      <option value="septachords">ספטאקורדים</option>
+      <option value="chords">אקורדים משולשים</option>
+      <option value="septachords" selected>ספטאקורדים</option>
       <option value="scales">סולמות</option>
     </select>
     <div id="sub_container_${id}"></div>
@@ -430,8 +455,8 @@ function generateSheet() {
     if (pool.length === 0) pool = DEFINED_STRUCTURES[type];
 
     let categoryName = (type === 'intervals') ? 'המרווחים' : 
-                       (type === 'chords' ? 'האקורדים' : 
-                       (type === 'septachords' ? 'הספטאקורדים' : 'הסולמות'));
+                       (type === 'chords' ? 'האקורדים המשולשים' : 
+                       (type === 'septachords' ? 'הספטאקורדים (מרובעים)' : 'הסולמות'));
     
     let instructionPrefix = (skill === 'id') ? 'זהה/י את' : 'כתוב/י את';
     let fullInstructionTitle = `${idx + 1}. ${instructionPrefix} ${categoryName} הבאים:`;
