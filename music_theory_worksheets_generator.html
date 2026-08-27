@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>מחולל דפי תרגול - סולמות מותאמים</title>
+  <title>מחולל דפי תרגול - תורת המוזיקה (מתוקן מודולרית)</title>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
@@ -107,8 +107,8 @@
       direction: ltr; 
     }
     .answer-cell { text-align: center; font-weight: bold; direction: rtl; }
-    .solution-text { color: #8e44ad; font-size: 11px; font-weight: bold; }
-    .read-text { color: #8e44ad; font-size: 10px; margin-bottom: 2px; font-weight: bold; }
+    .solution-text { color: #8e44ad; font-size: 10.5px; font-weight: bold; line-height: 1.2; }
+    .read-text { color: #8e44ad; font-size: 9.5px; margin-bottom: 2px; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -166,8 +166,8 @@ function accToSymbol(acc) {
 }
 
 function accToString(acc) {
-  if (acc === 1) return "#";
-  if (acc === -1) return "b";
+  if (acc === 1) return "♯";
+  if (acc === -1) return "♭";
   if (acc === 2) return "x";
   if (acc === -2) return "bb";
   return "";
@@ -184,108 +184,152 @@ function getNoteDetails(absLine, acc, clef) {
   let semitones = octave * 12 + DIATONIC_SEMITONES[nameIndex] + acc;
   
   let strAcc = accToString(acc);
-  let fullName = NOTE_NAMES_HE[nameIndex] + (strAcc ? " " + strAcc : "");
+  let fullName = NOTE_NAMES_HE[nameIndex] + (strAcc ? strAcc : "");
   
-  return { name: fullName, diatonicIdx, semitones, nameIndex };
+  return { name: fullName, diatonicIdx, semitones, nameIndex, acc, absLine };
 }
 
-function analyzeChord(notes, fallbackName) {
-  if (notes.length !== 3) return fallbackName;
-
-  let d1 = notes[1].diatonicIdx - notes[0].diatonicIdx;
-  let d2 = notes[2].diatonicIdx - notes[1].diatonicIdx;
-  let s1 = notes[1].semitones - notes[0].semitones;
-  let s2 = notes[2].semitones - notes[1].semitones;
-
-  let rootNote = "";
-  let chordType = "";
-
-  if (d1 === 2 && d2 === 2) {
-    rootNote = notes[0].name;
-    if (s1 === 4 && s2 === 3) chordType = "מז׳ור יסודי";
-    else if (s1 === 3 && s2 === 4) chordType = "מינור יסודי";
-    else if (s1 === 3 && s2 === 3) chordType = "מוקטן יסודי";
-    else if (s1 === 4 && s2 === 4) chordType = "מוגדל יסודי";
-  }
-  else if (d1 === 2 && d2 === 3) {
-    rootNote = notes[2].name;
-    if (s1 === 3 && s2 === 5) chordType = "מז׳ור היפוך ראשון";
-    else if (s1 === 4 && s2 === 5) chordType = "מינור היפוך ראשון";
-    else if (s1 === 3 && s2 === 6) chordType = "מוקטן היפוך ראשון";
-    else if (s1 === 4 && s2 === 4) chordType = "מוגדל היפוך ראשון";
-  }
-  else if (d1 === 3 && d2 === 2) {
-    rootNote = notes[1].name;
-    if (s1 === 5 && s2 === 4) chordType = "מז׳ור היפוך שני";
-    else if (s1 === 5 && s2 === 3) chordType = "מינור היפוך שני";
-    else if (s1 === 6 && s2 === 3) chordType = "מוקטן היפוך שני";
-    else if (s1 === 4 && s2 === 4) chordType = "מוגדל היפוך שני";
-  }
-
-  if (chordType) {
-    return `${rootNote} ${chordType}`;
-  }
-  
-  return `${notes[0].name} - ${fallbackName}`;
-}
-
-const DEFINED_STRUCTURES = {
+const BASE_STRUCTURES = {
   intervals: [
-    { name: 'סקונדה קטנה', offsets: [0, 1], accs: [0, -1] },
-    { name: 'סקונדה גדולה', offsets: [0, 1], accs: [0, 0] },
-    { name: 'טרצה קטנה', offsets: [0, 2], accs: [0, -1] },
-    { name: 'טרצה גדולה', offsets: [0, 2], accs: [0, 0] },
-    { name: 'קוורטה זכה', offsets: [0, 3], accs: [0, 0] },
-    { name: 'קוורטה מוגדלת', offsets: [0, 3], accs: [0, 1] },
-    { name: 'קווינטה מוקטנת', offsets: [0, 4], accs: [0, -1] },
-    { name: 'קווינטה זכה', offsets: [0, 4], accs: [0, 0] }
+    { name: 'סקונדה קטנה', stepOffsets: [0, 1], semitones: [0, 1] },
+    { name: 'סקונדה גדולה', stepOffsets: [0, 1], semitones: [0, 2] },
+    { name: 'טרצה קטנה', stepOffsets: [0, 2], semitones: [0, 3] },
+    { name: 'טרצה גדולה', stepOffsets: [0, 2], semitones: [0, 4] },
+    { name: 'קוורטה זכה', stepOffsets: [0, 3], semitones: [0, 5] },
+    { name: 'קוורטה מוגדלת', stepOffsets: [0, 3], semitones: [0, 6] },
+    { name: 'קווינטה מוקטנת', stepOffsets: [0, 4], semitones: [0, 6] },
+    { name: 'קווינטה זכה', stepOffsets: [0, 4], semitones: [0, 7] }
   ],
   chords: [
-    { name: 'מז׳ור יסודי', offsets: [0, 2, 4], accs: [0, 0, 0] },
-    { name: 'מז׳ור היפוך ראשון', offsets: [0, 2, 5], accs: [0, -1, 0] },
-    { name: 'מז׳ור היפוך שני', offsets: [0, 3, 5], accs: [0, 0, 0] },
-    { name: 'מינור יסודי', offsets: [0, 2, 4], accs: [0, -1, 0] },
-    { name: 'מינור היפוך ראשון', offsets: [0, 2, 5], accs: [0, 0, 0] },
-    { name: 'מינור היפוך שני', offsets: [0, 3, 5], accs: [0, 0, -1] },
-    { name: 'מוקטן יסודי', offsets: [0, 2, 4], accs: [0, -1, -1] },
-    { name: 'מוקטן היפוך ראשון', offsets: [0, 2, 5], accs: [0, -1, 0] },
-    { name: 'מוקטן היפוך שני', offsets: [0, 3, 5], accs: [0, 0, -1] },
-    { name: 'מוגדל יסודי', offsets: [0, 2, 4], accs: [0, 0, 1] },
-    { name: 'מוגדל היפוך ראשון', offsets: [0, 2, 5], accs: [0, 1, 0] },
-    { name: 'מוגדל היפוך שני', offsets: [0, 3, 5], accs: [0, 0, 0] }
+    { baseName: 'מז׳ור', stepOffsets: [0, 2, 4], semitones: [0, 4, 7] },
+    { baseName: 'מינור', stepOffsets: [0, 2, 4], semitones: [0, 3, 7] },
+    { baseName: 'מוגדל', stepOffsets: [0, 2, 4], semitones: [0, 4, 8] },
+    { baseName: 'מוקטן', stepOffsets: [0, 2, 4], semitones: [0, 3, 6] }
   ],
   septachords: [
-    { name: 'דומיננטי 7 (מצב יסודי)', offsets: [0, 2, 4, 6], accs: [0, 0, 0, -1] },
-    { name: 'דומיננטי 7 (קווינטסקסטאקורד - היפוך ראשון)', offsets: [0, 2, 4, 5], accs: [0, 0, -1, 0] },
-    { name: 'דומיננטי 7 (טרצקוורטאקורד - היפוך שני)', offsets: [0, 2, 3, 5], accs: [0, -1, 0, 0] },
-    { name: 'דומיננטי 7 (סקונדאקורד - היפוך שלישי)', offsets: [0, 1, 3, 5], accs: [0, 1, 1, 1] },
-
-    { name: 'חצי מוקטן (m7b5) (מצב יסודי)', offsets: [0, 2, 4, 6], accs: [0, -1, -1, -1] },
-    { name: 'חצי מוקטן (m7b5) (קווינטסקסטאקורד - היפוך ראשון)', offsets: [0, 2, 4, 5], accs: [0, 0, 0, 1] },
-    { name: 'חצי מוקטן (m7b5) (טרצקוורטאקורד - היפוך שני)', offsets: [0, 2, 3, 5], accs: [0, 0, 1, 1] },
-    { name: 'חצי מוקטן (m7b5) (סקונדאקורד - היפוך שלישי)', offsets: [0, 1, 3, 5], accs: [0, 1, 1, 0] },
-
-    { name: 'מוקטן מלא (dim7) (מצב יסודי)', offsets: [0, 2, 4, 6], accs: [0, -1, -1, -2] },
-    { name: 'מוקטן מלא (dim7) (קווינטסקסטאקורד - היפוך ראשון)', offsets: [0, 2, 4, 5], accs: [0, 0, -1, 1] },
-    { name: 'מוקטן מלא (dim7) (טרצקוורטאקורד - היפוך שני)', offsets: [0, 2, 3, 5], accs: [0, -1, 1, 1] },
-    { name: 'מוקטן מלא (dim7) (סקונדאקורד - היפוך שלישי)', offsets: [0, 1, 3, 5], accs: [0, 2, 2, 1] },
-
-    { name: 'מינור 7 (מצב יסודי)', offsets: [0, 2, 4, 6], accs: [0, -1, 0, -1] },
-    { name: 'מינור 7 (קווינטסקסטאקורד - היפוך ראשון)', offsets: [0, 2, 4, 5], accs: [0, 1, 0, 1] },
-    { name: 'מינור 7 (טרצקוורטאקורד - היפוך שני)', offsets: [0, 2, 3, 5], accs: [0, -1, 0, 0] },
-    { name: 'מינור 7 (סקונדאקורד - היפוך שלישי)', offsets: [0, 1, 3, 5], accs: [0, 1, 1, 0] },
-
-    { name: 'מז׳ור גדול (Maj7) (מצב יסודי)', offsets: [0, 2, 4, 6], accs: [0, 0, 0, 0] },
-    { name: 'מז׳ור גדול (Maj7) (קווינטסקסטאקורד - היפוך ראשון)', offsets: [0, 2, 4, 5], accs: [0, 0, 0, 1] },
-    { name: 'מז׳ור גדול (Maj7) (טרצקוורטאקורד - היפוך שני)', offsets: [0, 2, 3, 5], accs: [0, 0, 1, 1] },
-    { name: 'מז׳ור גדול (Maj7) (סקונדאקורד - היפוך שלישי)', offsets: [0, 1, 3, 5], accs: [0, 1, 1, 1] }
+    { baseName: 'מוגדל גדול', stepOffsets: [0, 2, 4, 6], semitones: [0, 4, 8, 11] },
+    { baseName: 'מז׳ור גדול', stepOffsets: [0, 2, 4, 6], semitones: [0, 4, 7, 11] },
+    { baseName: 'מז׳ור דומיננטי', stepOffsets: [0, 2, 4, 6], semitones: [0, 4, 7, 10] },
+    { baseName: 'מינור 7', stepOffsets: [0, 2, 4, 6], semitones: [0, 3, 7, 10] },
+    { baseName: 'חצי מוקטן', stepOffsets: [0, 2, 4, 6], semitones: [0, 3, 6, 10] },
+    { baseName: 'מוקטן', stepOffsets: [0, 2, 4, 6], semitones: [0, 3, 6, 9] }
   ],
   scales: [
-    { name: 'זיהוי לפי סימני היתק בלבד', isKeySigOnly: true, offsets: [], accs: [] },
-    { name: 'מז׳ור', offsets: [0, 1, 2, 3, 4, 5, 6, 7], accs: [0, 0, 0, 0, 0, 0, 0, 0] },
-    { name: 'מינור טבעי', offsets: [0, 1, 2, 3, 4, 5, 6, 7], accs: [0, 0, -1, 0, 0, -1, -1, 0] }
+    { name: 'מז׳ור', type: 'full', stepOffsets: [0, 1, 2, 3, 4, 5, 6, 7], semitones: [0, 2, 4, 5, 7, 9, 11, 12] },
+    { name: 'מינור טבעי', type: 'full', stepOffsets: [0, 1, 2, 3, 4, 5, 6, 7], semitones: [0, 2, 3, 5, 7, 8, 10, 12] },
+    { name: 'לפי סימני היתק בלבד', type: 'key_signature' }
   ]
 };
+
+const INVERSION_NAMES_TRIADS = ['יסודי', 'היפוך ראשון', 'היפוך שני'];
+const INVERSION_NAMES_SEPTS  = ['יסודי', 'היפוך ראשון', 'היפוך שני', 'היפוך שלישי'];
+
+function generateAllStructures() {
+  let chords = [];
+  BASE_STRUCTURES.chords.forEach(c => {
+    for (let inv = 0; inv < 3; inv++) {
+      chords.push({
+        name: `${c.baseName} ${INVERSION_NAMES_TRIADS[inv]}`,
+        baseStruct: c,
+        inversion: inv,
+        isSept: false
+      });
+    }
+  });
+
+  let septachords = [];
+  BASE_STRUCTURES.septachords.forEach(s => {
+    for (let inv = 0; inv < 4; inv++) {
+      septachords.push({
+        name: `${s.baseName} ${INVERSION_NAMES_SEPTS[inv]}`,
+        baseStruct: s,
+        inversion: inv,
+        isSept: true
+      });
+    }
+  });
+
+  return {
+    intervals: BASE_STRUCTURES.intervals,
+    chords: chords,
+    septachords: septachords,
+    scales: BASE_STRUCTURES.scales
+  };
+}
+
+const DEFINED_STRUCTURES = generateAllStructures();
+
+const KEY_SIGNATURES = [
+  { name: 'דו מז׳ור / לה מינור', accCount: 0, accType: 0 },
+  { name: 'סול מז׳ור / מי מינור', accCount: 1, accType: 1 },
+  { name: 'רה מז׳ור / סי מינור', accCount: 2, accType: 1 },
+  { name: 'לה מז׳ור / פה# מינור', accCount: 3, accType: 1 },
+  { name: 'פה מז׳ור / רה מינור', accCount: 1, accType: -1 },
+  { name: 'סיb מז׳ור / סול מינור', accCount: 2, accType: -1 },
+  { name: 'מיb מז׳ור / דו מינור', accCount: 3, accType: -1 }
+];
+
+function buildChordNotes(rootLine, rootAcc, chordItem, clef) {
+  let baseStruct = chordItem.baseStruct;
+  let inv = chordItem.inversion;
+  let rootDetails = getNoteDetails(rootLine, rootAcc, clef);
+  
+  let rawNotes = [];
+  for (let i = 0; i < baseStruct.stepOffsets.length; i++) {
+    let targetLine = rootLine + baseStruct.stepOffsets[i];
+    let targetDiatonicIdx = ((clef === 'sol' ? 2 : 4) + targetLine);
+    let nameIdx = targetDiatonicIdx % 7;
+    while (nameIdx < 0) nameIdx += 7;
+    
+    let targetOctave = Math.floor(targetDiatonicIdx / 7);
+    let naturalSemitones = targetOctave * 12 + DIATONIC_SEMITONES[nameIdx];
+    let requiredSemitones = rootDetails.semitones + baseStruct.semitones[i];
+    
+    let requiredAcc = requiredSemitones - naturalSemitones;
+    rawNotes.push(getNoteDetails(targetLine, requiredAcc, clef));
+  }
+
+  let rotated = [];
+  let numNotes = rawNotes.length;
+  for (let i = 0; i < numNotes; i++) {
+    let origIdx = (i + inv) % numNotes;
+    let noteObj = Object.assign({}, rawNotes[origIdx]);
+    
+    if (origIdx < inv) {
+      noteObj.diatonicIdx += 7;
+      noteObj.semitones += 12;
+      let lineShift = noteObj.diatonicIdx - ((clef === 'sol' ? 2 : 4));
+      noteObj = getNoteDetails(lineShift, noteObj.acc, clef);
+    }
+    rotated.push(noteObj);
+  }
+
+  return { rootName: rootDetails.name, notes: rotated };
+}
+
+function buildNotesForStructure(baseLine, baseAcc, struct, clef) {
+  if (struct.baseStruct) {
+    return buildChordNotes(baseLine, baseAcc, struct, clef);
+  }
+
+  let notes = [];
+  let baseDetails = getNoteDetails(baseLine, baseAcc, clef);
+  
+  for (let i = 0; i < struct.stepOffsets.length; i++) {
+    let targetLine = baseLine + struct.stepOffsets[i];
+    let targetDiatonicIdx = ((clef === 'sol' ? 2 : 4) + targetLine);
+    let nameIdx = targetDiatonicIdx % 7;
+    while (nameIdx < 0) nameIdx += 7;
+    
+    let targetOctave = Math.floor(targetDiatonicIdx / 7);
+    let naturalSemitones = targetOctave * 12 + DIATONIC_SEMITONES[nameIdx];
+    let requiredSemitones = baseDetails.semitones + struct.semitones[i];
+    
+    let requiredAcc = requiredSemitones - naturalSemitones;
+    notes.push(getNoteDetails(targetLine, requiredAcc, clef));
+  }
+  return { rootName: baseDetails.name, notes: notes };
+}
 
 let rowCounter = 0;
 const CLEFS_LIST = [{ val: 'sol', label: 'מפתח סול' }, { val: 'fa', label: 'מפתח פה' }];
@@ -324,8 +368,8 @@ function addRow() {
       <option value="write">כתיבה</option>
     </select>
     <select id="type_${id}" onchange="onTypeChange(${id})">
-      <option value="intervals">מרווחים</option>
-      <option value="chords" selected>אקורדים משולשים</option>
+      <option value="intervals" selected>מרווחים</option>
+      <option value="chords">אקורדים משולשים</option>
       <option value="septachords">ספטאקורדים</option>
       <option value="scales">סולמות</option>
     </select>
@@ -408,32 +452,22 @@ function renderNoteGraphic(x, y, acc, shiftNoteHead = false) {
 
   if (acc !== 0) {
     let symbol = accToSymbol(acc);
-    // הצבת סימן ההתק משמאל בצורה מרווחת וברורה (מוסט 14 פיקסלים משמאל לצליל)
     let xOffset = shiftNoteHead ? (x - 24) : (x - 14);
-    svg += `<text x="${xOffset}" y="${y + 6}" font-size="20" font-weight="bold" fill="#111">${symbol}</text>`;
+    svg += `<text x="${xOffset}" y="${y}" font-size="19" font-weight="bold" fill="#111" dominant-baseline="central" text-anchor="middle">${symbol}</text>`;
   }
 
   svg += `<ellipse cx="${noteX}" cy="${y}" rx="5.5" ry="4" fill="#111" transform="rotate(-20 ${noteX} ${y})"/>`;
   return svg;
 }
 
-function renderKeySignature(startX, clef, accType, count) {
-  let svg = '';
-  let sharpsSol = [8, 5, 9, 6, 3, 7, 4];
-  let flatsSol = [4, 7, 3, 6, 2, 5, 1];
-  let sharpsFa = [6, 3, 7, 4, 1, 5, 2];
-  let flatsFa = [2, 5, 1, 4, 0, 3, -1];
-
-  let lineOffsets = (accType === 1) ? (clef === 'sol' ? sharpsSol : sharpsFa) : (clef === 'sol' ? flatsSol : flatsFa);
-
-  for (let i = 0; i < count; i++) {
-    let lineIdx = lineOffsets[i];
-    let y = 51 - lineIdx * 4;
-    let x = startX + (i * 11);
-    let symbol = (accType === 1) ? '♯' : '♭';
-    svg += `<text x="${x}" y="${y + 6}" font-size="20" font-weight="bold" fill="#111">${symbol}</text>`;
-  }
-  return svg;
+function renderKeyAccidental(measureX, idx, accType, clef) {
+  let lineOffsetsSol = [6, 3, 0, 4, 1, 5, 2];
+  let lineOffsetsFa = [4, 1, 5, 2, 6, 3, 0];
+  let lineIdx = (clef === 'sol') ? lineOffsetsSol[idx] : lineOffsetsFa[idx];
+  let y = 51 - lineIdx * 4;
+  let x = measureX + 50 + (idx * 12);
+  let symbol = accToSymbol(accType);
+  return `<text x="${x}" y="${y}" font-size="18" font-weight="bold" fill="#111" dominant-baseline="central" text-anchor="middle">${symbol}</text>`;
 }
 
 function generateSheet() {
@@ -457,7 +491,7 @@ function generateSheet() {
 
     let categoryName = (type === 'intervals') ? 'המרווחים' : 
                        (type === 'chords' ? 'האקורדים המשולשים' : 
-                       (type === 'septachords' ? 'הספטאקורדים (מרובעים)' : 'הסולמות'));
+                       (type === 'septachords' ? 'הספטאקורדים' : 'הסולמות'));
     
     let instructionPrefix = (skill === 'id') ? 'זהה/י את' : 'כתוב/י את';
     let fullInstructionTitle = `${idx + 1}. ${instructionPrefix} ${categoryName} הבאים:`;
@@ -470,12 +504,11 @@ function generateSheet() {
       let lineHTML = `<line x1="20" y1="${lineY}" x2="730" y2="${lineY}" stroke="#333" stroke-width="1"/>`;
       studentSVG += lineHTML; answerSVG += lineHTML;
     }
-    let borders = `<line x1="20" y1="19" x2="20" y2="51" stroke="#333" stroke-width="2"/><line x1="730" y1="19" x2="730" y2="51" stroke="#333" stroke-width="2"/>`;
+    let borders = `<line x1="20" y1="19" x2="20" y2="51" stroke="#333" stroke-width="2"/><line x1="730" y1="19" x2="730" y2="51" stroke="#333" stroke-width="3"/>`;
     studentSVG += borders; answerSVG += borders;
 
     let exercises = [];
     let usedInThisRow = new Set();
-
     let exerciseCount = (type === 'scales') ? 3 : 5;
     let measureWidth = (710 - 20) / exerciseCount;
 
@@ -484,91 +517,80 @@ function generateSheet() {
       studentSVG += getClefSVG(clef); answerSVG += getClefSVG(clef);
 
       if (i > 0) {
-        let bLine = `<line x1="${measureX}" y1="19" x2="${measureX}" y2="51" stroke="#333" stroke-width="1.2"/>`;
-        studentSVG += bLine; answerSVG += bLine;
+        let doubleBarLine = `
+          <line x1="${measureX - 4}" y1="19" x2="${measureX - 4}" y2="51" stroke="#333" stroke-width="1"/>
+          <line x1="${measureX}" y1="19" x2="${measureX}" y2="51" stroke="#333" stroke-width="3"/>
+        `;
+        studentSVG += doubleBarLine; answerSVG += doubleBarLine;
       }
 
       let available = pool.filter(p => !usedInThisRow.has(p.name));
       if (available.length === 0) available = pool;
-      
       let chosenStruct = available[Math.floor(Math.random() * available.length)];
       usedInThisRow.add(chosenStruct.name);
 
-      let baseLine = Math.floor(Math.random() * 3) + 1;
-
-      if (chosenStruct.isKeySigOnly) {
-        let accType = Math.random() > 0.5 ? 1 : -1;
-        let count = Math.floor(Math.random() * 5) + 1;
-        
-        let sigGraphic = renderKeySignature(measureX + 45, clef, accType, count);
-        studentSVG += sigGraphic; answerSVG += sigGraphic;
-
-        let keyNamesSharp = ["סול מז׳ור", "רה מז׳ור", "לה מז׳ור", "מי מז׳ור", "סי מז׳ור"];
-        let keyNamesFlat = ["פה מז׳ור", "סי♭ מז׳ור", "מי♭ מז׳ור", "לה♭ מז׳ור", "רה♭ מז׳ור"];
-        let keySolution = (accType === 1) ? keyNamesSharp[count - 1] : keyNamesFlat[count - 1];
-
-        exercises.push({ solutionText: keySolution, promptText: '________', readPitchesText: `${count} ${accType === 1 ? 'דיאזים' : 'במולים'}` });
-
-      } else {
-        let notesDrawn = chosenStruct.offsets.map((off, oIdx) => ({
-          lineIndex: baseLine + off,
-          acc: chosenStruct.accs[oIdx]
-        }));
-
-        let parsedNotes = notesDrawn.map(n => getNoteDetails(n.lineIndex, n.acc, clef));
-        let readPitchesText = parsedNotes.map(n => n.name).join('-');
-
-        let solutionText = "";
-        if (type === 'chords') {
-          solutionText = analyzeChord(parsedNotes, chosenStruct.name);
-        } else if (type === 'scales') {
-          solutionText = `סולם ${parsedNotes[0].name} ${chosenStruct.name}`;
-          readPitchesText = `${parsedNotes[0].name} - ${parsedNotes[7].name}`;
-        } else {
-          solutionText = `${parsedNotes[0].name} - ${chosenStruct.name}`;
+      if (chosenStruct.type === 'key_signature') {
+        let keySig = KEY_SIGNATURES[Math.floor(Math.random() * KEY_SIGNATURES.length)];
+        for (let k = 0; k < keySig.accCount; k++) {
+          let accSvg = renderKeyAccidental(measureX, k, keySig.accType, clef);
+          studentSVG += accSvg; answerSVG += accSvg;
         }
 
-        let promptText = (skill === 'write') ? `${chosenStruct.name}` : '________';
+        let solutionText = keySig.name;
+        let promptText = (skill === 'write') ? keySig.name : '________';
+        exercises.push({ solutionText, promptText, readPitchesText: 'סימני מפתח' });
+      } else {
+        let chordData = null;
+        let attempts = 0;
+        
+        // הגבלת גובה כדי שלא יחרגו מעל/מתחת לחמשה (מקסימום קו עזר אחד)
+        while (attempts < 100) {
+          let baseLine = Math.floor(Math.random() * 4) - 1; // הגרלת טווח נמוך ובטוח (-1 עד 2)
+          let baseAcc = (Math.random() < 0.2) ? (Math.random() < 0.5 ? -1 : 1) : 0; 
+          chordData = buildNotesForStructure(baseLine, baseAcc, chosenStruct, clef);
+          
+          let maxAbsLine = Math.max(...chordData.notes.map(n => n.absLine));
+          let minAbsLine = Math.min(...chordData.notes.map(n => n.absLine));
+          
+          // הגבלה: מקסימום קו עזר אחד למעלה (absLine <= 5) ואחד למטה (absLine >= -2)
+          if (maxAbsLine <= 5 && minAbsLine >= -2 && chordData.notes.every(n => Math.abs(n.acc) <= 1)) {
+            break;
+          }
+          attempts++;
+        }
 
+        let parsedNotes = chordData.notes;
+        let rootNoteName = chordData.rootName;
+        let readPitchesText = parsedNotes.map(n => n.name).join('-');
+
+        let solutionText = (type === 'scales') ? `סולם ${parsedNotes[0].name} ${chosenStruct.name}` :
+                           (type === 'intervals') ? `${chosenStruct.name}` :
+                           `${rootNoteName} ${chosenStruct.name}`;
+
+        let promptText = (skill === 'write') ? `${chosenStruct.name}` : '________';
         exercises.push({ solutionText, promptText, readPitchesText });
 
         let noteX = measureX + (type === 'scales' ? 55 : 70);
 
         if (skill === 'write') {
           let startNoteX = (type === 'scales') ? (measureX + 45) : noteX;
-          let baseGraphic = renderNoteGraphic(startNoteX, 51 - baseLine * 4, chosenStruct.accs[0], false);
+          let baseGraphic = renderNoteGraphic(startNoteX, 51 - (parsedNotes[0].diatonicIdx - (clef === 'sol' ? 2 : 4)) * 4, parsedNotes[0].acc, false);
           studentSVG += baseGraphic;
 
-          if (type === 'scales') {
-            notesDrawn.forEach((n, nIdx) => {
-              // רווח מורחב בין הצלילים (26px) לקבלת מראה אוורירי וקריא
-              let scaleX = measureX + 45 + (nIdx * 26);
-              answerSVG += renderNoteGraphic(scaleX, 51 - n.lineIndex * 4, n.acc, false);
-            });
-          } else {
-            notesDrawn.forEach((n, nIdx) => {
-              let y = 51 - n.lineIndex * 4;
-              let isSecond = (nIdx > 0 && Math.abs(n.lineIndex - notesDrawn[nIdx - 1].lineIndex) === 1);
-              answerSVG += renderNoteGraphic(noteX, y, n.acc, isSecond);
-            });
-          }
+          parsedNotes.forEach((n, nIdx) => {
+            let y = 51 - (n.diatonicIdx - (clef === 'sol' ? 2 : 4)) * 4;
+            let scaleX = measureX + 45 + (nIdx * 26);
+            let isSecond = (nIdx > 0 && Math.abs(n.diatonicIdx - parsedNotes[nIdx - 1].diatonicIdx) === 1);
+            answerSVG += renderNoteGraphic(type === 'scales' ? scaleX : noteX, y, n.acc, (type !== 'scales' && isSecond));
+          });
         } else {
-          if (type === 'scales') {
-            notesDrawn.forEach((n, nIdx) => {
-              // רווח מורחב בין הצלילים (26px) לקבלת מראה אוורירי וקריא
-              let scaleX = measureX + 45 + (nIdx * 26);
-              let y = 51 - n.lineIndex * 4;
-              let g = renderNoteGraphic(scaleX, y, n.acc, false);
-              studentSVG += g; answerSVG += g;
-            });
-          } else {
-            notesDrawn.forEach((n, nIdx) => {
-              let y = 51 - n.lineIndex * 4;
-              let isSecond = (nIdx > 0 && Math.abs(n.lineIndex - notesDrawn[nIdx - 1].lineIndex) === 1);
-              let g = renderNoteGraphic(noteX, y, n.acc, isSecond);
-              studentSVG += g; answerSVG += g;
-            });
-          }
+          parsedNotes.forEach((n, nIdx) => {
+            let y = 51 - (n.diatonicIdx - (clef === 'sol' ? 2 : 4)) * 4;
+            let scaleX = measureX + 45 + (nIdx * 26);
+            let isSecond = (nIdx > 0 && Math.abs(n.diatonicIdx - parsedNotes[nIdx - 1].diatonicIdx) === 1);
+            let g = renderNoteGraphic(type === 'scales' ? scaleX : noteX, y, n.acc, (type !== 'scales' && isSecond));
+            studentSVG += g; answerSVG += g;
+          });
         }
       }
     }
