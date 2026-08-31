@@ -37,15 +37,36 @@
     }
 
     .row-control {
-      display: grid;
-      grid-template-columns: 75px 130px 95px 160px 1fr 35px;
+      display: flex;
       align-items: center;
       gap: 10px;
-      padding: 10px 0;
+      padding: 10px;
       border-bottom: 1px solid var(--border-color);
+      background: #fff;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      transition: background 0.2s, border 0.2s;
     }
-    .row-control:last-child { border-bottom: none; }
-    .row-label { font-weight: 700; color: var(--primary); font-size: 13.5px; }
+    .row-control.dragging {
+      opacity: 0.4;
+      background: #ebf8ff;
+    }
+    .row-control.drag-over {
+      border-top: 2px solid var(--accent);
+    }
+
+    .drag-handle {
+      cursor: grab;
+      font-size: 18px;
+      color: #a0aec0;
+      padding: 0 4px;
+      user-select: none;
+    }
+    .drag-handle:active {
+      cursor: grabbing;
+    }
+
+    .row-label { font-weight: 700; color: var(--primary); font-size: 13.5px; white-space: nowrap; min-width: 65px; }
 
     select, .custom-select-btn {
       padding: 8px 10px;
@@ -57,14 +78,14 @@
       outline: none;
     }
 
-    .multi-select-container { position: relative; width: 100%; }
+    .multi-select-container { position: relative; }
     .multi-select-btn {
-      width: 100%; text-align: right; cursor: pointer;
+      text-align: right; cursor: pointer;
       box-sizing: border-box; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .multi-select-dropdown {
       display: none; position: absolute; top: calc(100% + 4px); right: 0;
-      width: 280px; background: #fff; border: 1px solid var(--border-color);
+      width: 240px; background: #fff; border: 1px solid var(--border-color);
       border-radius: 8px; max-height: 250px; overflow-y: auto; z-index: 1000;
       box-shadow: 0 10px 25px rgba(0,0,0,0.15); padding: 8px 12px;
     }
@@ -72,7 +93,20 @@
     .multi-select-dropdown label { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12.5px; cursor: pointer; }
     .select-all-btn { font-size: 11.5px; color: var(--accent); font-weight: bold; cursor: pointer; margin-bottom: 6px; border-bottom: 1px dashed #ccc; padding-bottom: 4px; display: inline-block; }
 
-    .btn-remove { background: #e74c3c; color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-weight: bold; }
+    .scale-controls-wrapper { display: flex; gap: 8px; align-items: center; }
+
+    .btn-remove { 
+      background: #e74c3c; 
+      color: white; 
+      border: none; 
+      border-radius: 6px; 
+      padding: 6px 12px; 
+      cursor: pointer; 
+      font-weight: bold; 
+      margin-right: auto;
+      width: auto;
+      flex-shrink: 0;
+    }
     .btn-add-row { background: #27ae60; color: white; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer; margin-top: 10px; display: inline-block; }
 
     .btn-group { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
@@ -84,13 +118,24 @@
     .a4-page-container { display: flex; flex-direction: column; align-items: center; gap: 30px; margin-top: 20px; }
 
     .worksheet-a4 {
-      width: 210mm; min-height: 297mm; padding: 12mm 15mm;
+      width: 210mm; min-height: 297mm; padding: 12mm 15mm 15mm 15mm;
       background: white; box-shadow: 0 5px 20px rgba(0,0,0,0.1); box-sizing: border-box; direction: rtl;
+      display: flex; flex-direction: column; justify-content: space-between;
     }
     .sheet-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #222; padding-bottom: 6px; margin-bottom: 14px; }
     .sheet-title { font-size: 18px; font-weight: bold; color: #111; }
     .sheet-fields { display: flex; gap: 20px; font-size: 11px; }
     .field-line { border-bottom: 1px dashed #555; display: inline-block; width: 75px; }
+
+    .sheet-footer {
+      font-size: 10px;
+      color: #666;
+      text-align: center;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 8px;
+      margin-top: auto;
+      direction: rtl;
+    }
 
     .staff-system { margin-bottom: 16px; page-break-inside: avoid; }
     .exercise-title { font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #222; direction: rtl; }
@@ -100,7 +145,7 @@
     .answer-row { 
       display: flex; 
       flex-direction: row; 
-      justify-content: space-around; 
+      justify-style: space-around; 
       font-size: 9.5px; 
       color: #333; 
       margin-top: 4px; 
@@ -131,24 +176,34 @@
 
   <div class="a4-page-container">
     <div id="worksheet-a4" class="worksheet-a4">
-      <div class="sheet-header">
-        <div class="sheet-title">תרגול תורת המוזיקה</div>
-        <div class="sheet-fields">
-          <div>שם: <span class="field-line"></span></div>
-          <div>תאריך: <span class="field-line" style="width:50px;"></span></div>
+      <div>
+        <div class="sheet-header">
+          <div class="sheet-title">תרגול תורת המוזיקה</div>
+          <div class="sheet-fields">
+            <div>שם: <span class="field-line"></span></div>
+            <div>תאריך: <span class="field-line" style="width:50px;"></span></div>
+          </div>
         </div>
+        <div id="stavesContainer"></div>
       </div>
-      <div id="stavesContainer"></div>
+      <div class="sheet-footer">
+        © נוצר על ידי נעם ברטוב noambt@gmail.com
+      </div>
     </div>
 
     <div id="answersheet-a4" class="worksheet-a4" style="display: none;">
-      <div class="sheet-header">
-        <div class="sheet-title" style="color: #8e44ad;">דף תשובות ופתרונות מלאים</div>
-        <div class="sheet-fields">
-          <div>מורה/בודק: <span class="field-line"></span></div>
+      <div>
+        <div class="sheet-header">
+          <div class="sheet-title" style="color: #8e44ad;">דף תשובות ופתרונות מלאים</div>
+          <div class="sheet-fields">
+            <div>מורה/בודק: <span class="field-line"></span></div>
+          </div>
         </div>
+        <div id="answersStavesContainer"></div>
       </div>
-      <div id="answersStavesContainer"></div>
+      <div class="sheet-footer">
+        © נוצר על ידי נעם ברטוב noambt@gmail.com
+      </div>
     </div>
   </div>
 </div>
@@ -216,8 +271,10 @@ const BASE_STRUCTURES = {
     { baseName: 'מוקטן', stepOffsets: [0, 2, 4, 6], semitones: [0, 3, 6, 9] }
   ],
   scales: [
-    { name: 'מז׳ור', type: 'full', stepOffsets: [0, 1, 2, 3, 4, 5, 6, 7], semitones: [0, 2, 4, 5, 7, 9, 11, 12] },
-    { name: 'מינור טבעי', type: 'full', stepOffsets: [0, 1, 2, 3, 4, 5, 6, 7], semitones: [0, 2, 3, 5, 7, 8, 10, 12] },
+    { name: 'מז׳ור', type: 'full', stepOffsets: [0, 1, 2, 3, 4, 5, 6], semitones: [0, 2, 4, 5, 7, 9, 11] },
+    { name: 'מינור טבעי', type: 'full', stepOffsets: [0, 1, 2, 3, 4, 5, 6], semitones: [0, 2, 3, 5, 7, 8, 10] },
+    { name: 'מינור הרמוני', type: 'full', stepOffsets: [0, 1, 2, 3, 4, 5, 6], semitones: [0, 2, 3, 5, 7, 8, 11] },
+    { name: 'מינור מלודי', type: 'full', stepOffsets: [0, 1, 2, 3, 4, 5, 6], semitones: [0, 2, 3, 5, 7, 9, 11] },
     { name: 'לפי סימני היתק בלבד', type: 'key_signature' }
   ]
 };
@@ -260,34 +317,56 @@ function generateAllStructures() {
 
 const DEFINED_STRUCTURES = generateAllStructures();
 
-// 13 הסולמות המוגדרים בלבד
 const ALLOWED_13_SCALES = [
-  { type: 'מז׳ור', name: 'דו', line: 0, acc: 0 },
-  { type: 'מז׳ור', name: 'סול', line: 4, acc: 0 },
-  { type: 'מז׳ור', name: 'רה', line: 1, acc: 0 },
-  { type: 'מז׳ור', name: 'לה', line: -2, acc: 0 },
-  { type: 'מז׳ור', name: 'מי', line: 2, acc: 0 },
-  { type: 'מז׳ור', name: 'סי', line: -1, acc: 0 },
-  { type: 'מז׳ור', name: 'פה♯', line: 3, acc: 1 },
-  { type: 'מז׳ור', name: 'פה', line: 3, acc: 0 },
-  { type: 'מז׳ור', name: 'סי♭', line: -1, acc: -1 },
-  { type: 'מז׳ור', name: 'מי♭', line: 2, acc: -1 },
-  { type: 'מז׳ור', name: 'לה♭', line: -2, acc: -1 },
-  { type: 'מז׳ור', name: 'רה♭', line: 1, acc: -1 },
-  { type: 'מז׳ור', name: 'סול♭', line: 4, acc: -1 },
-  { type: 'מינור טבעי', name: 'לה', line: -2, acc: 0 },
-  { type: 'מינור טבעי', name: 'מי', line: 2, acc: 0 },
-  { type: 'מינור טבעי', name: 'סי', line: -1, acc: 0 },
-  { type: 'מינור טבעי', name: 'פה♯', line: 3, acc: 1 },
-  { type: 'מינור טבעי', name: 'דו♯', line: 0, acc: 1 },
-  { type: 'מינור טבעי', name: 'סול♯', line: 4, acc: 1 },
-  { type: 'מינור טבעי', name: 'רה♯', line: 1, acc: 1 },
-  { type: 'מינור טבעי', name: 'רה', line: 1, acc: 0 },
-  { type: 'מינור טבעי', name: 'סול', line: 4, acc: 0 },
-  { type: 'מינור טבעי', name: 'דו', line: 0, acc: 0 },
-  { type: 'מינור טבעי', name: 'פה', line: 3, acc: 0 },
-  { type: 'מינור טבעי', name: 'סי♭', line: -1, acc: -1 },
-  { type: 'מינור טבעי', name: 'מי♭', line: 2, acc: -1 }
+  { type: 'מז׳ור', name: 'דו', line: 0, acc: 0, accCount: 0 },
+  { type: 'מז׳ור', name: 'סול', line: 4, acc: 0, accCount: 1 },
+  { type: 'מז׳ור', name: 'רה', line: 1, acc: 0, accCount: 2 },
+  { type: 'מז׳ור', name: 'לה', line: -2, acc: 0, accCount: 3 },
+  { type: 'מז׳ור', name: 'מי', line: 2, acc: 0, accCount: 4 },
+  { type: 'מז׳ור', name: 'סי', line: -1, acc: 0, accCount: 5 },
+  { type: 'מז׳ור', name: 'פה♯', line: 3, acc: 1, accCount: 6 },
+  { type: 'מז׳ור', name: 'פה', line: 3, acc: 0, accCount: 1 },
+  { type: 'מז׳ור', name: 'סי♭', line: -1, acc: -1, accCount: 2 },
+  { type: 'מז׳ור', name: 'מי♭', line: 2, acc: -1, accCount: 3 },
+  { type: 'מז׳ור', name: 'לה♭', line: -2, acc: -1, accCount: 4 },
+  { type: 'מז׳ור', name: 'רה♭', line: 1, acc: -1, accCount: 5 },
+  { type: 'מז׳ור', name: 'סול♭', line: 4, acc: -1, accCount: 6 },
+  { type: 'מינור טבעי', name: 'לה', line: -2, acc: 0, accCount: 0 },
+  { type: 'מינור טבעי', name: 'מי', line: 2, acc: 0, accCount: 1 },
+  { type: 'מינור טבעי', name: 'סי', line: -1, acc: 0, accCount: 2 },
+  { type: 'מינור טבעי', name: 'פה♯', line: 3, acc: 1, accCount: 3 },
+  { type: 'מינור טבעי', name: 'דו♯', line: 0, acc: 1, accCount: 4 },
+  { type: 'מינור טבעי', name: 'סול♯', line: 4, acc: 1, accCount: 5 },
+  { type: 'מינור טבעי', name: 'רה', line: 1, acc: 0, accCount: 1 },
+  { type: 'מינור טבעי', name: 'סול', line: 4, acc: 0, accCount: 2 },
+  { type: 'מינור טבעי', name: 'דו', line: 0, acc: 0, accCount: 3 },
+  { type: 'מינור טבעי', name: 'פה', line: 3, acc: 0, accCount: 4 },
+  { type: 'מינור טבעי', name: 'סי♭', line: -1, acc: -1, accCount: 5 },
+  { type: 'מינור טבעי', name: 'מי♭', line: 2, acc: -1, accCount: 6 },
+  { type: 'מינור הרמוני', name: 'לה', line: -2, acc: 0, accCount: 0 },
+  { type: 'מינור הרמוני', name: 'מי', line: 2, acc: 0, accCount: 1 },
+  { type: 'מינור הרמוני', name: 'סי', line: -1, acc: 0, accCount: 2 },
+  { type: 'מינור הרמוני', name: 'פה♯', line: 3, acc: 1, accCount: 3 },
+  { type: 'מינור הרמוני', name: 'דו♯', line: 0, acc: 1, accCount: 4 },
+  { type: 'מינור הרמוני', name: 'סול♯', line: 4, acc: 1, accCount: 5 },
+  { type: 'מינור הרמוני', name: 'רה', line: 1, acc: 0, accCount: 1 },
+  { type: 'מינור הרמוני', name: 'סול', line: 4, acc: 0, accCount: 2 },
+  { type: 'מינור הרמוני', name: 'דו', line: 0, acc: 0, accCount: 3 },
+  { type: 'מינור הרמוני', name: 'פה', line: 3, acc: 0, accCount: 4 },
+  { type: 'מינור הרמוני', name: 'סי♭', line: -1, acc: -1, accCount: 5 },
+  { type: 'מינור הרמוני', name: 'מי♭', line: 2, acc: -1, accCount: 6 },
+  { type: 'מינור מלודי', name: 'לה', line: -2, acc: 0, accCount: 0 },
+  { type: 'מינור מלודי', name: 'מי', line: 2, acc: 0, accCount: 1 },
+  { type: 'מינור מלודי', name: 'סי', line: -1, acc: 0, accCount: 2 },
+  { type: 'מינור מלודי', name: 'פה♯', line: 3, acc: 1, accCount: 3 },
+  { type: 'מינור מלודי', name: 'דו♯', line: 0, acc: 1, accCount: 4 },
+  { type: 'מינור מלודי', name: 'סול♯', line: 4, acc: 1, accCount: 5 },
+  { type: 'מינור מלודי', name: 'רה', line: 1, acc: 0, accCount: 1 },
+  { type: 'מינור מלודי', name: 'סול', line: 4, acc: 0, accCount: 2 },
+  { type: 'מינור מלודי', name: 'דו', line: 0, acc: 0, accCount: 3 },
+  { type: 'מינור מלודי', name: 'פה', line: 3, acc: 0, accCount: 4 },
+  { type: 'מינור מלודי', name: 'סי♭', line: -1, acc: -1, accCount: 5 },
+  { type: 'מינור מלודי', name: 'מי♭', line: 2, acc: -1, accCount: 6 }
 ];
 
 const KEY_SIGNATURES = [
@@ -306,53 +385,70 @@ const KEY_SIGNATURES = [
   { name: 'סולb מז׳ור / מיb מינור', accCount: 6, accType: -1 }
 ];
 
-function buildChordNotes(rootLine, rootAcc, chordItem, clef) {
+function buildChordNotes(givenLine, givenAcc, chordItem, clef, givenVoice = 'bass') {
   let baseStruct = chordItem.baseStruct;
   let inv = chordItem.inversion;
-  let rootDetails = getNoteDetails(rootLine, rootAcc, clef);
-  
-  let rawNotes = [];
-  for (let i = 0; i < baseStruct.stepOffsets.length; i++) {
-    let targetLine = rootLine + baseStruct.stepOffsets[i];
+  let numNotes = baseStruct.stepOffsets.length;
+
+  let targetOffsetIdx = (givenVoice === 'soprano') ? (numNotes - 1) : 0;
+  let rotatedOffsets = [];
+  let rotatedSemitones = [];
+
+  for (let i = 0; i < numNotes; i++) {
+    let origIdx = (i + inv) % numNotes;
+    let stepOff = baseStruct.stepOffsets[origIdx];
+    let semiOff = baseStruct.semitones[origIdx];
+    if (origIdx < inv) {
+      stepOff += 7;
+      semiOff += 12;
+    }
+    rotatedOffsets.push(stepOff);
+    rotatedSemitones.push(semiOff);
+  }
+
+  let givenStepOffset = rotatedOffsets[targetOffsetIdx];
+  let givenSemiOffset = rotatedSemitones[targetOffsetIdx];
+
+  let rootLine = givenLine - givenStepOffset;
+  let givenDetails = getNoteDetails(givenLine, givenAcc, clef);
+  let rootSemitones = givenDetails.semitones - givenSemiOffset;
+
+  let notes = [];
+  for (let i = 0; i < numNotes; i++) {
+    let targetLine = rootLine + rotatedOffsets[i];
     let targetDiatonicIdx = ((clef === 'sol' ? 2 : 4) + targetLine);
     let nameIdx = targetDiatonicIdx % 7;
     while (nameIdx < 0) nameIdx += 7;
     
     let targetOctave = Math.floor(targetDiatonicIdx / 7);
     let naturalSemitones = targetOctave * 12 + DIATONIC_SEMITONES[nameIdx];
-    let requiredSemitones = rootDetails.semitones + baseStruct.semitones[i];
+    let requiredSemitones = rootSemitones + rotatedSemitones[i];
     
     let requiredAcc = requiredSemitones - naturalSemitones;
-    rawNotes.push(getNoteDetails(targetLine, requiredAcc, clef));
+    notes.push(getNoteDetails(targetLine, requiredAcc, clef));
   }
 
-  let rotated = [];
-  let numNotes = rawNotes.length;
-  for (let i = 0; i < numNotes; i++) {
-    let origIdx = (i + inv) % numNotes;
-    let noteObj = Object.assign({}, rawNotes[origIdx]);
-    
-    if (origIdx < inv) {
-      noteObj.diatonicIdx += 7;
-      noteObj.semitones += 12;
-      let lineShift = noteObj.diatonicIdx - ((clef === 'sol' ? 2 : 4));
-      noteObj = getNoteDetails(lineShift, noteObj.acc, clef);
-    }
-    rotated.push(noteObj);
-  }
-
-  return { rootName: rootDetails.name, notes: rotated };
+  let rootDetails = getNoteDetails(rootLine, notes[0].acc - (notes[0].semitones - rootSemitones), clef);
+  return { rootName: rootDetails.name, notes: notes };
 }
 
-function buildNotesForStructure(baseLine, baseAcc, struct, clef) {
+function buildNotesForStructure(givenLine, givenAcc, struct, clef, givenVoice = 'bass') {
   if (struct.baseStruct) {
-    return buildChordNotes(baseLine, baseAcc, struct, clef);
+    return buildChordNotes(givenLine, givenAcc, struct, clef, givenVoice);
   }
 
+  let numNotes = struct.stepOffsets.length;
+  let targetOffsetIdx = (givenVoice === 'soprano' && numNotes > 1) ? (numNotes - 1) : 0;
+
+  let givenStepOffset = struct.stepOffsets[targetOffsetIdx];
+  let givenSemiOffset = struct.semitones[targetOffsetIdx];
+
+  let baseLine = givenLine - givenStepOffset;
+  let givenDetails = getNoteDetails(givenLine, givenAcc, clef);
+  let baseSemitones = givenDetails.semitones - givenSemiOffset;
+
   let notes = [];
-  let baseDetails = getNoteDetails(baseLine, baseAcc, clef);
-  
-  for (let i = 0; i < struct.stepOffsets.length; i++) {
+  for (let i = 0; i < numNotes; i++) {
     let targetLine = baseLine + struct.stepOffsets[i];
     let targetDiatonicIdx = ((clef === 'sol' ? 2 : 4) + targetLine);
     let nameIdx = targetDiatonicIdx % 7;
@@ -360,20 +456,22 @@ function buildNotesForStructure(baseLine, baseAcc, struct, clef) {
     
     let targetOctave = Math.floor(targetDiatonicIdx / 7);
     let naturalSemitones = targetOctave * 12 + DIATONIC_SEMITONES[nameIdx];
-    let requiredSemitones = baseDetails.semitones + struct.semitones[i];
+    let requiredSemitones = baseSemitones + struct.semitones[i];
     
     let requiredAcc = requiredSemitones - naturalSemitones;
     notes.push(getNoteDetails(targetLine, requiredAcc, clef));
   }
+  let baseDetails = getNoteDetails(baseLine, notes[0].acc, clef);
   return { rootName: baseDetails.name, notes: notes };
 }
 
 let rowCounter = 0;
+let draggedRow = null;
+
 const CLEFS_LIST = [{ val: 'sol', label: 'מפתח סול' }, { val: 'fa', label: 'מפתח פה' }];
 const INTERVALS_LIST = DEFINED_STRUCTURES.intervals.map(s => s.name);
 const CHORDS_LIST = DEFINED_STRUCTURES.chords.map(s => s.name);
 const SEPTACHORDS_LIST = DEFINED_STRUCTURES.septachords.map(s => s.name);
-const SCALES_LIST = DEFINED_STRUCTURES.scales.map(s => s.name);
 
 window.addEventListener('click', function(e) {
   if (!e.target.closest('.multi-select-container')) {
@@ -390,8 +488,10 @@ function addRow() {
   const row = document.createElement('div');
   row.className = 'row-control';
   row.id = `row_${id}`;
+  row.draggable = true;
 
   row.innerHTML = `
+    <div class="drag-handle" title="לחץ וגרור לשרירות סדר החמשות">⋮⋮</div>
     <div class="row-label">חמשה <span class="row-num"></span>:</div>
     <div class="multi-select-container">
       <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, 'clefs_${id}')">מפתחות</div>
@@ -400,21 +500,69 @@ function addRow() {
         ${CLEFS_LIST.map(c => `<label><input type="checkbox" value="${c.val}" checked> ${c.label}</label>`).join('')}
       </div>
     </div>
-    <select id="skill_${id}">
+    <select id="skill_${id}" onchange="onSkillOrTypeChange(${id})">
       <option value="id">זיהוי</option>
       <option value="write">כתיבה</option>
     </select>
-    <select id="type_${id}" onchange="onTypeChange(${id})">
+    <select id="type_${id}" onchange="onSkillOrTypeChange(${id})">
       <option value="intervals" selected>מרווחים</option>
       <option value="chords">אקורדים משולשים</option>
       <option value="septachords">ספטאקורדים</option>
       <option value="scales">סולמות</option>
     </select>
+    <select id="given_voice_${id}" title="צליל נתון לבנייה" style="display:none;">
+      <option value="bass" selected>צליל בס</option>
+      <option value="soprano">צליל סופרן</option>
+    </select>
     <div id="sub_container_${id}"></div>
     <button class="btn-remove" onclick="removeRow(${id})">✕</button>
   `;
+
+  row.addEventListener('dragstart', (e) => {
+    draggedRow = row;
+    row.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+
+  row.addEventListener('dragend', () => {
+    draggedRow = null;
+    row.classList.remove('dragging');
+    document.querySelectorAll('.row-control').forEach(r => r.classList.remove('drag-over'));
+    updateRowNumbers();
+  });
+
+  row.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (row !== draggedRow) {
+      row.classList.add('drag-over');
+    }
+  });
+
+  row.addEventListener('dragleave', () => {
+    row.classList.remove('drag-over');
+  });
+
+  row.addEventListener('drop', (e) => {
+    e.preventDefault();
+    row.classList.remove('drag-over');
+    if (draggedRow && draggedRow !== row) {
+      const container = document.getElementById('rowsContainer');
+      const rows = Array.from(container.children);
+      const draggedIdx = rows.indexOf(draggedRow);
+      const targetIdx = rows.indexOf(row);
+
+      if (draggedIdx < targetIdx) {
+        container.insertBefore(draggedRow, row.nextSibling);
+      } else {
+        container.insertBefore(draggedRow, row);
+      }
+      updateRowNumbers();
+    }
+  });
+
   container.appendChild(row);
-  onTypeChange(id);
+  onSkillOrTypeChange(id);
   updateRowNumbers();
 }
 
@@ -429,21 +577,56 @@ function updateRowNumbers() {
   });
 }
 
-function onTypeChange(i) {
+function onSkillOrTypeChange(i) {
   const type = document.getElementById(`type_${i}`).value;
+  const skill = document.getElementById(`skill_${i}`).value;
+  const voiceSelect = document.getElementById(`given_voice_${i}`);
   const container = document.getElementById(`sub_container_${i}`);
-  let itemsList = (type === 'intervals') ? INTERVALS_LIST : 
-                  (type === 'chords' ? CHORDS_LIST : 
-                  (type === 'septachords' ? SEPTACHORDS_LIST : SCALES_LIST));
 
-  container.innerHTML = `
-    <div class="multi-select-container">
-      <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, '${type}_${i}')">סינון תרגילים</div>
-      <div class="multi-select-dropdown" id="${type}_${i}">
-        <span class="select-all-btn" onclick="toggleAll('${type}_${i}')">סמן הכל / הסר הכל</span>
-        ${itemsList.map(item => `<label><input type="checkbox" value="${item}" checked> ${item}</label>`).join('')}
-      </div>
-    </div>`;
+  if (skill === 'write' && (type === 'chords' || type === 'septachords' || type === 'intervals')) {
+    voiceSelect.style.display = 'inline-block';
+  } else {
+    voiceSelect.style.display = 'none';
+  }
+  
+  if (type === 'scales') {
+    let scalesList = DEFINED_STRUCTURES.scales.map(s => s.name);
+    if (skill === 'id') {
+      scalesList = scalesList.filter(s => s !== 'מינור הרמוני' && s !== 'מינור מלודי');
+    }
+
+    container.innerHTML = `
+      <div class="scale-controls-wrapper">
+        <div class="multi-select-container">
+          <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, '${type}_${i}')">סינון תרגילים</div>
+          <div class="multi-select-dropdown" id="${type}_${i}">
+            <span class="select-all-btn" onclick="toggleAll('${type}_${i}')">סמן הכל / הסר הכל</span>
+            ${scalesList.map(item => `<label><input type="checkbox" value="${item}" checked> ${item}</label>`).join('')}
+          </div>
+        </div>
+        <select id="max_acc_${i}" title="מקסימום סימני היתק בסולם">
+          <option value="6" selected>עד 6 היתקים</option>
+          <option value="0">0 היתקים</option>
+          <option value="1">עד 1 היתק</option>
+          <option value="2">עד 2 היתקים</option>
+          <option value="3">עד 3 היתקים</option>
+          <option value="4">עד 4 היתקים</option>
+          <option value="5">עד 5 היתקים</option>
+        </select>
+      </div>`;
+  } else {
+    let itemsList = (type === 'intervals') ? INTERVALS_LIST : 
+                    (type === 'chords' ? CHORDS_LIST : SEPTACHORDS_LIST);
+
+    container.innerHTML = `
+      <div class="multi-select-container">
+        <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, '${type}_${i}')">סינון תרגילים</div>
+        <div class="multi-select-dropdown" id="${type}_${i}">
+          <span class="select-all-btn" onclick="toggleAll('${type}_${i}')">סמן הכל / הסר הכל</span>
+          ${itemsList.map(item => `<label><input type="checkbox" value="${item}" checked> ${item}</label>`).join('')}
+        </div>
+      </div>`;
+  }
 }
 
 function toggleDropdown(e, id) {
@@ -502,7 +685,7 @@ function renderNoteGraphic(x, y, acc, shiftNoteHead = false, accShiftLeft = fals
 
 function renderKeyAccidental(measureX, idx, accType, clef) {
   const sharpsSol = [8, 5, 9, 6, 3, 7, 4]; 
-  const sharpsFa  = [6, 3, 7, 4, 1, 5, 2]; 
+  const sharpsFa  = [6, 3, 7, 4, 8, 5, 2]; 
 
   const flatsSol  = [4, 7, 3, 6, 2, 5, 1]; 
   const flatsFa   = [2, 5, 1, 4, 0, 3, -1]; 
@@ -532,6 +715,7 @@ function generateSheet() {
     const id = row.id.split('_')[1];
     const type = document.getElementById(`type_${id}`).value;
     const skill = document.getElementById(`skill_${id}`).value;
+    const givenVoice = document.getElementById(`given_voice_${id}`)?.value || 'bass';
 
     let clefsChecked = Array.from(document.querySelectorAll(`#clefs_${id} input:checked`)).map(cb => cb.value);
     let clef = clefsChecked.length > 0 ? clefsChecked[Math.floor(Math.random() * clefsChecked.length)] : 'sol';
@@ -545,7 +729,8 @@ function generateSheet() {
                        (type === 'septachords' ? 'הספטאקורדים' : 'הסולמות'));
     
     let instructionPrefix = (skill === 'id') ? 'זהה/י את' : 'כתוב/י את';
-    let fullInstructionTitle = `${idx + 1}. ${instructionPrefix} ${categoryName} הבאים:`;
+    let voiceNoteStr = (skill === 'write' && (type === 'chords' || type === 'septachords' || type === 'intervals')) ? ` (מצליל ה${givenVoice === 'bass' ? 'בס' : 'סופרן'})` : '';
+    let fullInstructionTitle = `${idx + 1}. ${instructionPrefix} ${categoryName}${voiceNoteStr} הבאים`;
 
     let studentSVG = `<svg class="staff-svg" viewBox="0 0 750 95">`;
     let answerSVG = `<svg class="staff-svg" viewBox="0 0 750 95">`;
@@ -578,11 +763,15 @@ function generateSheet() {
       let available = pool.filter(p => !usedInThisRow.has(p.name));
       if (available.length === 0) available = pool;
       let chosenStruct = available[Math.floor(Math.random() * available.length)];
-      usedInThisRow.add(chosenStruct.name);
 
       if (chosenStruct.type === 'key_signature') {
-        let availableKeySigs = KEY_SIGNATURES.filter(k => !usedInThisRow.has(k.name));
+        let maxAccLimit = parseInt(document.getElementById(`max_acc_${id}`)?.value || '6', 10);
+        let availableKeySigs = KEY_SIGNATURES.filter(k => k.accCount <= maxAccLimit && !usedInThisRow.has(k.name));
+        if (availableKeySigs.length === 0) {
+          availableKeySigs = KEY_SIGNATURES.filter(k => k.accCount <= maxAccLimit);
+        }
         if (availableKeySigs.length === 0) availableKeySigs = KEY_SIGNATURES;
+        
         let keySig = availableKeySigs[Math.floor(Math.random() * availableKeySigs.length)];
         usedInThisRow.add(keySig.name);
 
@@ -599,24 +788,44 @@ function generateSheet() {
         let baseLine, baseAcc;
 
         if (type === 'scales') {
-          // בחירה נעולה ובלעדית מתוך 13 הסולמות המורשים
-          let filteredAllowed = ALLOWED_13_SCALES.filter(s => s.type === chosenStruct.name);
-          let chosenScaleDef = filteredAllowed[Math.floor(Math.random() * filteredAllowed.length)];
+          let maxAccLimit = parseInt(document.getElementById(`max_acc_${id}`)?.value || '6', 10);
+          let filteredAllowed = ALLOWED_13_SCALES.filter(s => s.type === chosenStruct.name && s.accCount <= maxAccLimit && !usedInThisRow.has(`${s.name}_${s.type}`));
+          if (filteredAllowed.length === 0) {
+            filteredAllowed = ALLOWED_13_SCALES.filter(s => s.type === chosenStruct.name && s.accCount <= maxAccLimit);
+          }
+          if (filteredAllowed.length === 0) {
+            filteredAllowed = ALLOWED_13_SCALES.filter(s => s.type === chosenStruct.name);
+          }
           
+          let chosenScaleDef = filteredAllowed[Math.floor(Math.random() * filteredAllowed.length)];
+          usedInThisRow.add(`${chosenScaleDef.name}_${chosenScaleDef.type}`);
+
           baseLine = chosenScaleDef.line;
           baseAcc = chosenScaleDef.acc;
           chordData = buildNotesForStructure(baseLine, baseAcc, chosenStruct, clef);
         } else {
+          usedInThisRow.add(chosenStruct.name);
           let attempts = 0;
-          while (attempts < 100) {
-            baseLine = Math.floor(Math.random() * 4) - 1;
+          while (attempts < 500) {
+            if (skill === 'write' && (type === 'chords' || type === 'septachords' || type === 'intervals')) {
+              if (givenVoice === 'bass') {
+                baseLine = Math.floor(Math.random() * 3) - 2; 
+              } else {
+                baseLine = Math.floor(Math.random() * 4) + 3; // 3, 4, 5, 6
+              }
+            } else {
+              baseLine = Math.floor(Math.random() * 5) - 1; 
+            }
+
             baseAcc = (Math.random() < 0.2) ? (Math.random() < 0.5 ? -1 : 1) : 0; 
-            chordData = buildNotesForStructure(baseLine, baseAcc, chosenStruct, clef);
+            chordData = buildNotesForStructure(baseLine, baseAcc, chosenStruct, clef, (type === 'chords' || type === 'septachords' || type === 'intervals') ? givenVoice : 'bass');
             
             let maxAbsLine = Math.max(...chordData.notes.map(n => n.absLine));
             let minAbsLine = Math.min(...chordData.notes.map(n => n.absLine));
             
-            if (maxAbsLine <= 5 && minAbsLine >= -2 && chordData.notes.every(n => Math.abs(n.acc) <= 1)) {
+            let isSopranoValid = (skill === 'write' && givenVoice === 'soprano') ? (maxAbsLine >= 3) : true;
+
+            if (isSopranoValid && maxAbsLine <= 6 && minAbsLine >= -3 && chordData.notes.every(n => Math.abs(n.acc) <= 1)) {
               break;
             }
             attempts++;
@@ -637,13 +846,20 @@ function generateSheet() {
         let noteX = measureX + (type === 'scales' ? 55 : 70);
 
         if (skill === 'write') {
-          let startNoteX = (type === 'scales') ? (measureX + 45) : noteX;
-          let baseGraphic = renderNoteGraphic(startNoteX, 51 - (parsedNotes[0].diatonicIdx - (clef === 'sol' ? 2 : 4)) * 4, parsedNotes[0].acc, false);
-          studentSVG += baseGraphic;
+          let givenNoteIdx = (givenVoice === 'soprano' && (type === 'chords' || type === 'septachords' || type === 'intervals')) ? (parsedNotes.length - 1) : 0;
+          let givenNote = parsedNotes[givenNoteIdx];
+
+          if (type === 'scales') {
+            let baseGraphic = renderNoteGraphic(measureX + 45, 51 - (parsedNotes[0].diatonicIdx - (clef === 'sol' ? 2 : 4)) * 4, parsedNotes[0].acc, false);
+            studentSVG += baseGraphic;
+          } else {
+            let g = renderNoteGraphic(noteX, 51 - (givenNote.diatonicIdx - (clef === 'sol' ? 2 : 4)) * 4, givenNote.acc, false);
+            studentSVG += g;
+          }
 
           parsedNotes.forEach((n, nIdx) => {
             let y = 51 - (n.diatonicIdx - (clef === 'sol' ? 2 : 4)) * 4;
-            let scaleX = measureX + 45 + (nIdx * 26);
+            let scaleX = measureX + 45 + (nIdx * 23);
             let isSecond = (nIdx > 0 && Math.abs(n.diatonicIdx - parsedNotes[nIdx - 1].diatonicIdx) === 1);
             let isAccShift = (type !== 'scales' && nIdx > 0 && n.acc !== 0 && parsedNotes[nIdx - 1].acc !== 0 && Math.abs(n.diatonicIdx - parsedNotes[nIdx - 1].diatonicIdx) <= 2);
             answerSVG += renderNoteGraphic(type === 'scales' ? scaleX : noteX, y, n.acc, (type !== 'scales' && isSecond), isAccShift);
@@ -651,7 +867,7 @@ function generateSheet() {
         } else {
           parsedNotes.forEach((n, nIdx) => {
             let y = 51 - (n.diatonicIdx - (clef === 'sol' ? 2 : 4)) * 4;
-            let scaleX = measureX + 45 + (nIdx * 26);
+            let scaleX = measureX + 45 + (nIdx * 23);
             let isSecond = (nIdx > 0 && Math.abs(n.diatonicIdx - parsedNotes[nIdx - 1].diatonicIdx) === 1);
             let isAccShift = (type !== 'scales' && nIdx > 0 && n.acc !== 0 && parsedNotes[nIdx - 1].acc !== 0 && Math.abs(n.diatonicIdx - parsedNotes[nIdx - 1].diatonicIdx) <= 2);
             let g = renderNoteGraphic(type === 'scales' ? scaleX : noteX, y, n.acc, (type !== 'scales' && isSecond), isAccShift);
@@ -687,7 +903,7 @@ function generateSheet() {
 
 function toggleAnswersPage() {
   const ansSheet = document.getElementById('answersheet-a4');
-  ansSheet.style.display = (ansSheet.style.display === 'none') ? 'block' : 'none';
+  ansSheet.style.display = (ansSheet.style.display === 'none') ? 'flex' : 'none';
 }
 
 async function downloadPDF() {
@@ -701,7 +917,7 @@ async function downloadPDF() {
   const wasHidden = ansSheet.style.display === 'none';
   
   if (wasHidden) {
-    ansSheet.style.display = 'block';
+    ansSheet.style.display = 'flex';
   }
   
   pdf.addPage();
