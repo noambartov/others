@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>תרגול תורת המוזיקה - מרווחים, אקורדים, היפוכים וסולמות</title>
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --primary: #ea580c;
+      --primary-hover: #c2410c;
+      --secondary: #d97706;
+      --text-dark: #431407;
+      --text-muted: #78350f;
+      --success: #16a34a;
+      --error: #dc2626;
+      --border: #fed7aa;
+    }
+
+    /* פלטות צבעים מורחבות */
+    body.theme-warm {
+      --bg-gradient: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --primary: #ea580c;
+      --primary-hover: #c2410c;
+      --secondary: #d97706;
+      --text-dark: #431407;
+      --text-muted: #78350f;
+      --border: #fed7aa;
+    }
+
+    body.theme-vivid {
+      --bg-gradient: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --secondary: #7c3aed;
+      --text-dark: #1e1b4b;
+      --text-muted: #4338ca;
+      --border: #c7d2fe;
+    }
+
+    body.theme-emerald {
+      --bg-gradient: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --primary: #059669;
+      --primary-hover: #047857;
+      --secondary: #0d9488;
+      --text-dark: #064e3b;
+      --text-muted: #047857;
+      --border: #a7f3d0;
+    }
+
+    body.theme-rose {
+      --bg-gradient: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --primary: #e11d48;
+      --primary-hover: #be123c;
+      --secondary: #db2777;
+      --text-dark: #4c0519;
+      --text-muted: #9f1239;
+      --border: #fecdd3;
+    }
+
+    body.theme-dark {
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      --card-bg: rgba(30, 41, 59, 0.95);
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --secondary: #818cf8;
+      --text-dark: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+    }
+
+    body.theme-sunset {
+      --bg-gradient: linear-gradient(135deg, #fff1f2 0%, #ffedd5 100%);
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --primary: #f43f5e;
+      --primary-hover: #e11d48;
+      --secondary: #f97316;
+      --text-dark: #4c0519;
+      --text-muted: #9f1239;
+      --border: #fecdd3;
+    }
+
+    body.theme-cyberpunk {
+      --bg-gradient: linear-gradient(135deg, #042f2e 0%, #111827 100%);
+      --card-bg: rgba(17, 24, 39, 0.95);
+      --primary: #14b8a6;
+      --primary-hover: #0d9488;
+      --secondary: #f43f5e;
+      --text-dark: #f0fdfa;
+      --text-muted: #99f6e4;
+      --border: #134e4a;
+    }
+
+    * { box-sizing: border-box; touch-action: manipulation; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-gradient);
+      min-height: 100vh;
+      margin: 0;
+      padding: 16px 12px;
+      color: var(--text-dark);
+      direction: rtl;
+      transition: background 0.4s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .container { max-width: 920px; margin: 0 auto; }
+    
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 800;
+      font-size: 1.6rem;
+      letter-spacing: -0.5px;
+    }
+
+    .theme-selector {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--card-bg);
+      padding: 6px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      width: 100%;
+      max-width: 280px;
+    }
+    .theme-selector label { font-size: 12px; font-weight: 700; color: var(--text-dark); white-space: nowrap; }
+    .theme-selector select { padding: 6px; font-size: 12px; border-radius: 8px; border: 1px solid var(--border); width: 100%; background: white; color: #111; }
+
+    .start-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .start-btn {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      border: none;
+      padding: 16px 40px;
+      font-size: 20px;
+      font-weight: 700;
+      border-radius: 9999px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease;
+      margin-top: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      margin-bottom: 16px;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .control-group { display: flex; flex-direction: column; gap: 4px; }
+    label { font-weight: 700; font-size: 12px; color: var(--text-dark); }
+    select, button { 
+      padding: 10px; 
+      border-radius: 10px; 
+      border: 1px solid var(--border); 
+      font-size: 13px; 
+      background: white; 
+      color: #111; 
+      -webkit-appearance: none;
+    }
+
+    .checkbox-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .checkbox-header button {
+      padding: 2px 6px;
+      font-size: 10px;
+      cursor: pointer;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .checkbox-list {
+      max-height: 120px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.7);
+    }
+    .checkbox-list label { display: flex; align-items: center; gap: 6px; font-weight: 500; font-size: 12px; cursor: pointer; padding: 4px 0; color: #111; }
+    .checkbox-list input[type="checkbox"] { accent-color: var(--primary); width: 16px; height: 16px; }
+
+    .btn-main {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      border: none;
+      padding: 14px 20px;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 12px;
+      cursor: pointer;
+      width: 100%;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    .practice-area { text-align: center; display: none; }
+    
+    .action-bar {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .play-btn {
+      background: linear-gradient(135deg, var(--secondary), var(--primary));
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 9999px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+
+    .help-btn {
+      background: #ffffff;
+      color: #d97706;
+      border: 2px solid #f59e0b;
+      padding: 10px 18px;
+      border-radius: 9999px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .staff-container { 
+      background: white; 
+      border-radius: 14px; 
+      padding: 10px 4px; 
+      border: 1px solid var(--border); 
+      margin: 10px 0 16px 0; 
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.02);
+    }
+    .staff-svg { width: 100%; min-width: 320px; max-width: 680px; height: 120px; }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .opt-btn {
+      background: #ffffff;
+      border: 2px solid var(--border);
+      padding: 12px 8px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      color: #111;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .opt-btn.correct { background: var(--success) !important; color: white !important; border-color: var(--success) !important; }
+    .opt-btn.wrong { background: var(--error) !important; color: white !important; border-color: var(--error) !important; }
+    .opt-btn.revealed { background: #f59e0b !important; color: white !important; border-color: #d97706 !important; }
+
+    .feedback { font-size: 17px; font-weight: 700; margin-top: 14px; min-height: 24px; }
+    .feedback.success { color: var(--success); }
+    .feedback.error { color: var(--error); }
+    .feedback.info { color: #d97706; }
+
+    .stats { font-size: 13px; color: var(--text-muted); margin-top: 10px; font-weight: 600; }
+  </style>
+</head>
+<body class="theme-warm">
+
+<div class="start-overlay" id="startOverlay">
+  <h1>תרגול תורת המוזיקה</h1>
+  <p>לחץ להתחלת התרגול והפעלת הסאונד</p>
+  <button class="start-btn" onclick="initAudio()">
+    <span>▶</span> להתחלה
+  </button>
+</div>
+
+<div class="container">
+  <div class="header-bar">
+    <h1>תרגול תורת המוזיקה</h1>
+    <div class="theme-selector">
+      <label for="themeSelect">🎨 ערכת נושא:</label>
+      <select id="themeSelect" onchange="changeTheme(this.value)">
+        <option value="theme-warm">חמה (Warm Amber)</option>
+        <option value="theme-vivid">אינדיגו (Modern Indigo)</option>
+        <option value="theme-emerald">אמרלד (Emerald)</option>
+        <option value="theme-rose">רוז גולד (Rose Gold)</option>
+        <option value="theme-dark">מצב לילה (Midnight Dark)</option>
+        <option value="theme-sunset">שקיעה (Sunset Orange)</option>
+        <option value="theme-cyberpunk">סייבר (Cyberpunk Teal)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="controls-grid">
+      <div class="control-group">
+        <label>סוג התרגיל:</label>
+        <select id="exType" onchange="onExerciseTypeChange()">
+          <option value="intervals">מרווחים</option>
+          <option value="chords">אקורדים משולשים</option>
+          <option value="septachords">ספטאקורדים</option>
+          <option value="scales">סולמות</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>כלי נגינה:</label>
+        <select id="instrumentSelect">
+          <option value="marimba">🪵 מרימבה</option>
+          <option value="piano">🎹 פסנתר</option>
+          <option value="flute">🪈 חליל</option>
+          <option value="synth">🎛️ סינתאיזטור</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>מפתח:</label>
+        <select id="clefSelect">
+          <option value="sol">מפתח סול</option>
+          <option value="fa">מפתח פה</option>
+          <option value="rand">אקראי</option>
+        </select>
+      </div>
+
+      <div class="control-group" id="playModeGroup">
+        <label>אופן הנגינה:</label>
+        <select id="playMode">
+          <option value="harmonic">הרמוני (יחד)</option>
+          <option value="ascending">מלודי (עולה)</option>
+          <option value="descending">מלודי (יורד)</option>
+          <option value="random">אקראי</option>
+        </select>
+      </div>
+
+      <div class="control-group" id="inversionsGroup" style="display: none;">
+        <div class="checkbox-header">
+          <label>היפוכים:</label>
+          <div>
+            <button onclick="selectAllInversions(true)">הכל</button>
+            <button onclick="selectAllInversions(false)">נקה</button>
+          </div>
+        </div>
+        <div class="checkbox-list" id="inversionsCheckboxes"></div>
+      </div>
+
+      <div class="control-group">
+        <div class="checkbox-header">
+          <label id="optionsListLabel">סינון סוגים:</label>
+          <div>
+            <button onclick="selectAllOptions(true)">הכל</button>
+            <button onclick="selectAllOptions(false)">נקה</button>
+          </div>
+        </div>
+        <div class="checkbox-list" id="optionsCheckboxes"></div>
+      </div>
+    </div>
+
+    <button class="btn-main" onclick="startPractice()">צור תרגיל חדש ➔</button>
+  </div>
+
+  <div class="card practice-area" id="practiceArea">
+    <div class="action-bar">
+      <button class="play-btn" id="playAudioBtn" onclick="playCurrentExercise()">🎵 השמע תרגיל</button>
+      <button class="help-btn" onclick="revealAnswer()">💡 עזור לי</button>
+    </div>
+    
+    <div class="staff-container">
+      <svg id="staffSvg" class="staff-svg" viewBox="0 0 450 95"></svg>
+    </div>
+
+    <div class="options-grid" id="optionsButtons"></div>
+
+    <div class="feedback" id="feedback"></div>
+    <div class="stats" id="stats">רצף תשובות נכונות: <span id="streak">0</span></div>
+  </div>
+</div>
+
+<script>
+// --- נתונים מוזיקליים ---
+const BASE_STRUCTURES = {
+  intervals: [
+    { name: 'פרימה זכה', stepOffsets: [0, 0], semitones: [0, 0] },
+    { name: 'סקונדה קטנה', stepOffsets: [0, 1], semitones: [0, 1] },
+    { name: 'סקונדה גדולה', stepOffsets: [0, 1], semitones: [0, 2] },
+    { name: 'טרצה קטנה', stepOffsets: [0, 2], semitones: [0, 3] },
+    { name: 'טרצה גדולה', stepOffsets: [0, 2], semitones: [0, 4] },
+    { name: 'קוורטה זכה', stepOffsets: [0, 3], semitones: [0, 5] },
+    { name: 'קוורטה מוגדלת / קווינטה מוקטנת', stepOffsets: [0, 3], semitones: [0, 6] },
+    { name: 'קווינטה זכה', stepOffsets: [0, 4], semitones: [0, 7] },
+    { name: 'סקסטה קטנה', stepOffsets: [0, 5], semitones: [0, 8] },
+    { name: 'סקסטה גדולה', stepOffsets: [0, 5], semitones: [0, 9] },
+    { name: 'ספטימה קטנה', stepOffsets: [0, 6], semitones: [0, 10] },
+    { name: 'ספטימה גדולה', stepOffsets: [0, 6], semitones: [0, 11] },
+    { name: 'אוקטבה זכה', stepOffsets: [0, 7], semitones: [0, 12] }
+  ],
+  chords: [
+    { name: 'מז׳ור', stepOffsets: [0, 2, 4], semitones: [0, 4, 7] },
+    { name: 'מינור', stepOffsets: [0, 2, 4], semitones: [0, 3, 7] },
+    { name: 'מוגדל', stepOffsets: [0, 2, 4], semitones: [0, 4, 8] },
+    { name: 'מוקטן', stepOffsets: [0, 2, 4], semitones: [0, 3, 6] }
+  ],
+  septachords: [
+    { name: 'מז׳ור גדול', stepOffsets: [0, 2, 4, 6], semitones: [0, 4, 7, 11] },
+    { name: 'מז׳ור דומיננטי', stepOffsets: [0, 2, 4, 6], semitones: [0, 4, 7, 10] },
+    { name: 'מינור 7', stepOffsets: [0, 2, 4, 6], semitones: [0, 3, 7, 10] },
+    { name: 'חצי מוקטן', stepOffsets: [0, 2, 4, 6], semitones: [0, 3, 6, 10] },
+    { name: 'מוקטן', stepOffsets: [0, 2, 4, 6], semitones: [0, 3, 6, 9] }
+  ],
+  scales: [
+    { name: 'מז׳ור', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,4,5,7,9,11,12] },
+    { name: 'מינור טבעי', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,3,5,7,8,10,12] },
+    { name: 'מינור הרמוני', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,3,5,7,8,11,12] },
+    { name: 'מינור מלודי', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,3,5,7,9,11,12] }
+  ]
+};
+
+const INVERSIONS_DATA = {
+  chords: [
+    { id: 0, name: 'מצב יסודי' },
+    { id: 1, name: 'היפוך ראשון (סקסטאקורד)' },
+    { id: 2, name: 'היפוך שני (קוורטסקסטאקורד)' }
+  ],
+  septachords: [
+    { id: 0, name: 'מצב יסודי' },
+    { id: 1, name: 'היפוך ראשון (קווינטסקסטאקורד)' },
+    { id: 2, name: 'היפוך שני (טרצקוורטאקורד)' },
+    { id: 3, name: 'היפוך שלישי (ספטאקורד/שניות)' }
+  ]
+};
+
+const DIATONIC_SEMITONES = [0, 2, 4, 5, 7, 9, 11];
+
+let exerciseHistory = []; 
+const MAX_HISTORY = 10;
+let audioCtx = null;
+
+function getAudioContext() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+function midiToFreq(midi) {
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+// --- מחולל צלילים משודרג לכלי נגינה שונים ---
+function playInstrumentNote(freq, startTime, duration = 1.2) {
+  const ctx = getAudioContext();
+  const inst = document.getElementById('instrumentSelect').value;
+
+  if (inst === 'marimba') {
+    const partials = [
+      { ratio: 1.0, gain: 1.0, decay: duration },
+      { ratio: 3.9, gain: 0.4, decay: duration * 0.2 },
+      { ratio: 9.8, gain: 0.15, decay: duration * 0.08 }
+    ];
+    partials.forEach(p => {
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq * p.ratio, startTime);
+      gainNode.gain.setValueAtTime(0, startTime);
+      gainNode.gain.linearRampToValueAtTime(p.gain * 0.35, startTime + 0.005);
+      gainNode.gain.exponentialRampToValueAtTime(0.00001, startTime + p.decay);
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + p.decay);
+    });
+  } 
+  else if (inst === 'piano') {
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    
+    osc1.type = 'triangle';
+    osc2.type = 'sine';
+    osc1.frequency.setValueAtTime(freq, startTime);
+    osc2.frequency.setValueAtTime(freq * 2, startTime);
+    
+    gainNode.gain.setValueAtTime(0, startTime);
+    gainNode.gain.linearRampToValueAtTime(0.4, startTime + 0.02);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration * 1.5);
+
+    osc1.connect(gainNode);
+    osc2.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    osc1.start(startTime);
+    osc2.start(startTime);
+    osc1.stop(startTime + duration * 1.5);
+    osc2.stop(startTime + duration * 1.5);
+  }
+  else if (inst === 'flute') {
+    const osc = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, startTime);
+    
+    // ויברטו עדין
+    const vibrato = ctx.createOscillator();
+    const vibratoGain = ctx.createGain();
+    vibrato.frequency.value = 5;
+    vibratoGain.gain.value = freq * 0.01;
+    vibrato.connect(osc.frequency);
+    vibrato.start(startTime);
+    vibrato.stop(startTime + duration);
+
+    gainNode.gain.setValueAtTime(0, startTime);
+    gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.08);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+    osc.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+  }
+  else if (inst === 'synth') {
+    const osc = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(freq, startTime);
+    
+    gainNode.gain.setValueAtTime(0, startTime);
+    gainNode.gain.linearRampToValueAtTime(0.25, startTime + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+    osc.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+  }
+}
+
+let currentExercise = null;
+let streak = 0;
+let isAnswered = false;
+
+function changeTheme(themeClass) {
+  document.body.className = themeClass;
+}
+
+function initAudio() {
+  getAudioContext();
+  document.getElementById('startOverlay').style.display = 'none';
+  startPractice();
+}
+
+function onExerciseTypeChange() {
+  const type = document.getElementById('exType').value;
+  const invGroup = document.getElementById('inversionsGroup');
+  const playGroup = document.getElementById('playModeGroup');
+
+  if (type === 'scales') {
+    playGroup.style.display = 'none';
+  } else {
+    playGroup.style.display = 'flex';
+  }
+
+  if (type === 'chords' || type === 'septachords') {
+    invGroup.style.display = 'flex';
+    updateInversionsList(type);
+  } else {
+    invGroup.style.display = 'none';
+  }
+
+  updateOptionsList();
+  exerciseHistory = [];
+}
+
+function updateInversionsList(type) {
+  const container = document.getElementById('inversionsCheckboxes');
+  container.innerHTML = '';
+  INVERSIONS_DATA[type].forEach(inv => {
+    const lbl = document.createElement('label');
+    lbl.innerHTML = `<input type="checkbox" value="${inv.id}" checked> ${inv.name}`;
+    container.appendChild(lbl);
+  });
+}
+
+function updateOptionsList() {
+  const type = document.getElementById('exType').value;
+  const container = document.getElementById('optionsCheckboxes');
+  container.innerHTML = '';
+  
+  BASE_STRUCTURES[type].forEach(item => {
+    const lbl = document.createElement('label');
+    lbl.innerHTML = `<input type="checkbox" value="${item.name}" checked> ${item.name}`;
+    container.appendChild(lbl);
+  });
+}
+
+function selectAllOptions(status) {
+  document.querySelectorAll('#optionsCheckboxes input[type="checkbox"]').forEach(cb => cb.checked = status);
+}
+
+function selectAllInversions(status) {
+  document.querySelectorAll('#inversionsCheckboxes input[type="checkbox"]').forEach(cb => cb.checked = status);
+}
+
+function getNoteDetails(absLine, acc, clef) {
+  let baseIndex = (clef === 'sol') ? 2 : 4; 
+  let diatonicIdx = baseIndex + absLine;
+  let nameIndex = (diatonicIdx % 7 + 7) % 7;
+  let octave = Math.floor(diatonicIdx / 7) + (clef === 'sol' ? 4 : 2);
+  let midiNum = (octave + 1) * 12 + DIATONIC_SEMITONES[nameIndex] + acc;
+
+  return { absLine, acc, diatonicIdx, midiNum };
+}
+
+function buildNotes(baseLine, baseAcc, struct, clef, inversionShift = 0) {
+  let baseDetails = getNoteDetails(baseLine, baseAcc, clef);
+  let rawNotes = [];
+  
+  struct.stepOffsets.forEach((step, idx) => {
+    let line = baseLine + step;
+    let diatonicIdx = ((clef === 'sol' ? 2 : 4) + line);
+    let nameIdx = (diatonicIdx % 7 + 7) % 7;
+    let octave = Math.floor(diatonicIdx / 7) + (clef === 'sol' ? 4 : 2);
+    
+    let targetSemitones = struct.semitones[idx];
+    let naturalSemitones = DIATONIC_SEMITONES[nameIdx] + (octave * 12);
+    let rootNatural = DIATONIC_SEMITONES[(baseDetails.diatonicIdx % 7 + 7) % 7] + (Math.floor(baseDetails.diatonicIdx / 7) + (clef === 'sol' ? 4 : 2)) * 12 + baseAcc;
+    
+    let requiredAcc = (rootNatural + targetSemitones) - naturalSemitones;
+    rawNotes.push({ line, acc: requiredAcc });
+  });
+
+  if (inversionShift > 0) {
+    for (let i = 0; i < inversionShift; i++) {
+      let shifted = rawNotes.shift();
+      shifted.line += 7;
+      rawNotes.push(shifted);
+    }
+  }
+
+  return rawNotes.map(n => getNoteDetails(n.line, n.acc, clef));
+}
+
+function getFullOptionName(structName, invId, type) {
+  if (type !== 'chords' && type !== 'septachords') return structName;
+  const invObj = INVERSIONS_DATA[type].find(i => i.id === invId);
+  return `${structName} - ${invObj.name}`;
+}
+
+function generateExercise() {
+  const type = document.getElementById('exType').value;
+  let clefSelectVal = document.getElementById('clefSelect').value;
+  
+  const checkedBoxes = Array.from(document.querySelectorAll('#optionsCheckboxes input:checked')).map(cb => cb.value);
+  if (checkedBoxes.length === 0) {
+    alert("יש לבחור לפחות אפשרות אחת לתרגול!");
+    return null;
+  }
+
+  let checkedInversions = [0];
+  if (type === 'chords' || type === 'septachords') {
+    checkedInversions = Array.from(document.querySelectorAll('#inversionsCheckboxes input:checked')).map(cb => parseInt(cb.value));
+    if (checkedInversions.length === 0) {
+      alert("יש לבחור לפחות היפוך אחד לתרגול!");
+      return null;
+    }
+  }
+
+  const poolStructs = BASE_STRUCTURES[type].filter(s => checkedBoxes.includes(s.name));
+  
+  let chosenStruct, chosenInversion, baseLine, baseAcc, clef, notes, exerciseKey;
+  let attempts = 0;
+
+  do {
+    attempts++;
+    clef = clefSelectVal === 'rand' ? (Math.random() < 0.5 ? 'sol' : 'fa') : clefSelectVal;
+    chosenStruct = poolStructs[Math.floor(Math.random() * poolStructs.length)];
+    chosenInversion = checkedInversions[Math.floor(Math.random() * checkedInversions.length)];
+
+    baseLine = Math.floor(Math.random() * 3) - 2;
+    baseAcc = Math.random() < 0.25 ? (Math.random() < 0.5 ? -1 : 1) : 0;
+    notes = buildNotes(baseLine, baseAcc, chosenStruct, clef, chosenInversion);
+
+    const midiSignature = notes.map(n => n.midiNum).join(',');
+    exerciseKey = `${type}_${chosenStruct.name}_inv${chosenInversion}_${clef}_${midiSignature}`;
+
+  } while (exerciseHistory.includes(exerciseKey) && attempts < 50);
+
+  exerciseHistory.push(exerciseKey);
+  if (exerciseHistory.length > MAX_HISTORY) exerciseHistory.shift();
+
+  let allPossibleOptions = [];
+  if (type === 'chords' || type === 'septachords') {
+    poolStructs.forEach(s => {
+      checkedInversions.forEach(invId => {
+        allPossibleOptions.push(getFullOptionName(s.name, invId, type));
+      });
+    });
+  } else {
+    allPossibleOptions = poolStructs.map(s => s.name);
+  }
+
+  const correctFullName = getFullOptionName(chosenStruct.name, chosenInversion, type);
+
+  return { type, struct: chosenStruct, clef, notes, inversion: chosenInversion, correctFullName, optionsPool: allPossibleOptions };
+}
+
+function renderStaff(ex) {
+  const svg = document.getElementById('staffSvg');
+  svg.innerHTML = '';
+
+  const isScale = ex.type === 'scales';
+  const startX = isScale ? 45 : 190;
+  const spacing = isScale ? 48 : 0;
+
+  for (let i = 0; i < 5; i++) {
+    let y = 51 - i * 8;
+    svg.innerHTML += `<line x1="20" y1="${y}" x2="430" y2="${y}" stroke="currentColor" opacity="0.4" stroke-width="1"/>`;
+  }
+  svg.innerHTML += `<line x1="20" y1="19" x2="20" y2="51" stroke="currentColor" opacity="0.4" stroke-width="2"/>`;
+  svg.innerHTML += `<line x1="430" y1="19" x2="430" y2="51" stroke="currentColor" opacity="0.4" stroke-width="2"/>`;
+
+  const clefPath = ex.clef === 'sol' 
+    ? `<g transform="translate(25, 28) scale(0.125)"><path d="M 14 185 C 35 185 54 167 54 140 C 54 110 30 90 4 90 C -25 90 -45 112 -45 145 C -45 185 -10 220 30 220 C 75 220 105 180 105 125 C 105 50 40 -15 15 -75 C 5 -100 15 -130 35 -130 C 45 -130 55 -115 50 -90 C 40 -40 0 50 -5 120 L -5 270 C -5 295 -25 315 -50 315 C -65 315 -80 300 -80 285 C -80 270 -65 255 -50 255 C -40 255 -30 265 -25 275" fill="none" stroke="currentColor" stroke-width="9.5"/></g>`
+    : `<g transform="translate(25, 19) scale(0.65)"><path d="M 12 12 C 12 6, 22 6, 22 14 C 22 22, 10 26, 10 38" fill="none" stroke="currentColor" stroke-width="3.5"/><circle cx="11" cy="12" r="3.5" fill="currentColor"/><circle cx="27" cy="10" r="2.5" fill="currentColor"/><circle cx="27" cy="22" r="2.5" fill="currentColor"/></g>`;
+  svg.innerHTML += clefPath;
+
+  let accCount = 0;
+
+  ex.notes.forEach((n, idx) => {
+    let y = 51 - n.absLine * 4;
+    let x = startX + (idx * spacing);
+
+    if (!isScale && idx > 0) {
+      const isSecond = Math.abs(ex.notes[idx].absLine - ex.notes[idx-1].absLine) === 1;
+      const isPrima = ex.notes[idx].absLine === ex.notes[idx-1].absLine;
+      if (isSecond || isPrima) x += 13;
+    }
+
+    if (y <= 11) { for (let ly = 19; ly >= y; ly -= 8) svg.innerHTML += `<line x1="${x-10}" y1="${ly}" x2="${x+10}" y2="${ly}" stroke="currentColor" stroke-width="1.2"/>`; }
+    if (y >= 59) { for (let ly = 51; ly <= y; ly += 8) svg.innerHTML += `<line x1="${x-10}" y1="${ly}" x2="${x+10}" y2="${ly}" stroke="currentColor" stroke-width="1.2"/>`; }
+
+    if (n.acc !== 0) {
+      let sym = n.acc === 1 ? '♯' : '♭';
+      let accXOffset = isScale ? 14 : (14 + (accCount * 11));
+      svg.innerHTML += `<text x="${x - accXOffset}" y="${y}" font-size="17" font-weight="bold" dominant-baseline="central" text-anchor="middle" fill="currentColor">${sym}</text>`;
+      accCount++;
+    }
+
+    svg.innerHTML += `<ellipse cx="${x}" cy="${y}" rx="5.5" ry="4" fill="currentColor" transform="rotate(-20 ${x} ${y})"/>`;
+  });
+}
+
+function playCurrentExercise() {
+  if (!currentExercise) return;
+  const ctx = getAudioContext();
+
+  const freqs = currentExercise.notes.map(n => midiToFreq(n.midiNum));
+
+  // תמיכה בנגינת סולמות רציפה
+  if (currentExercise.type === 'scales') {
+    const now = ctx.currentTime + 0.05;
+    // נגינת הסולם בעלייה
+    freqs.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, 0.8));
+    // נגינת הסולם בירידה
+    const scaleDesc = [...freqs].reverse().slice(1);
+    scaleDesc.forEach((f, idx) => playInstrumentNote(f, now + (freqs.length + idx) * 0.35, 0.8));
+    return;
+  }
+
+  const modeSelect = document.getElementById('playMode').value;
+  let mode = modeSelect;
+  if (mode === 'random') {
+    const modes = ['harmonic', 'ascending', 'descending'];
+    mode = modes[Math.floor(Math.random() * modes.length)];
+  }
+
+  const now = ctx.currentTime + 0.05;
+
+  if (mode === 'harmonic') {
+    freqs.forEach(f => playInstrumentNote(f, now, 1.5));
+  } else if (mode === 'ascending') {
+    freqs.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.4, 1.0));
+  } else if (mode === 'descending') {
+    [...freqs].reverse().forEach((f, idx) => playInstrumentNote(f, now + idx * 0.4, 1.0));
+  }
+}
+
+function startPractice() {
+  currentExercise = generateExercise();
+  if (!currentExercise) return;
+
+  document.getElementById('practiceArea').style.display = 'block';
+  document.getElementById('feedback').innerText = '';
+  document.getElementById('feedback').className = 'feedback';
+  isAnswered = false;
+
+  renderStaff(currentExercise);
+  setupOptionButtons(currentExercise.optionsPool);
+
+  if (currentExercise.type !== 'scales') {
+    playCurrentExercise();
+  }
+}
+
+function setupOptionButtons(options) {
+  const container = document.getElementById('optionsButtons');
+  container.innerHTML = '';
+
+  options.forEach(optName => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerText = optName;
+    btn.onclick = () => checkAnswer(optName, btn);
+    container.appendChild(btn);
+  });
+}
+
+function checkAnswer(selectedName, btnEl) {
+  if (isAnswered) return;
+
+  const feedback = document.getElementById('feedback');
+  if (selectedName === currentExercise.correctFullName) {
+    isAnswered = true;
+    btnEl.classList.add('correct');
+    feedback.innerText = 'תשובה מדויקת! ✨';
+    feedback.className = 'feedback success';
+    streak++;
+    document.getElementById('streak').innerText = streak;
+
+    setTimeout(() => { startPractice(); }, 1200);
+  } else {
+    btnEl.classList.add('wrong');
+    feedback.innerText = 'לא מדויק, נסה שוב...';
+    feedback.className = 'feedback error';
+    streak = 0;
+    document.getElementById('streak').innerText = streak;
+  }
+}
+
+function revealAnswer() {
+  if (isAnswered || !currentExercise) return;
+  
+  isAnswered = true;
+  const feedback = document.getElementById('feedback');
+  feedback.innerText = `התשובה הנכונה היא: ${currentExercise.correctFullName}`;
+  feedback.className = 'feedback info';
+  
+  const buttons = document.querySelectorAll('#optionsButtons .opt-btn');
+  buttons.forEach(btn => {
+    if (btn.innerText === currentExercise.correctFullName) {
+      btn.classList.add('revealed');
+    }
+  });
+
+  streak = 0;
+  document.getElementById('streak').innerText = streak;
+
+  setTimeout(() => { startPractice(); }, 2500);
+}
+
+onExerciseTypeChange();
+</script>
+</body>
+</html>
