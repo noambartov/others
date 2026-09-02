@@ -468,6 +468,14 @@
         </select>
       </div>
 
+      <div class="control-group" id="intervalFormatGroup">
+        <label>תצוגת מרווחים:</label>
+        <select id="intervalFormatSelect" onchange="updateOptionsList()">
+          <option value="full" selected>מילים מלאות (למשל: סקונדה קטנה)</option>
+          <option value="abbr">קיצורים (למשל: 2.ק)</option>
+        </select>
+      </div>
+
       <div class="control-group">
         <label>תצוגת התרגיל:</label>
         <select id="displayMode">
@@ -593,20 +601,21 @@ const NOTE_NAMES = [
 
 const BASE_STRUCTURES = {
   intervals: [
-    { name: 'פרימה זכה', stepOffsets: [0, 0], semitones: [0, 0] },
-    { name: 'סקונדה קטנה', stepOffsets: [0, 1], semitones: [0, 1] },
-    { name: 'סקונדה גדולה', stepOffsets: [0, 1], semitones: [0, 2] },
-    { name: 'טרצה קטנה', stepOffsets: [0, 2], semitones: [0, 3] },
-    { name: 'טרצה גדולה', stepOffsets: [0, 2], semitones: [0, 4] },
-    { name: 'קוורטה זכה', stepOffsets: [0, 3], semitones: [0, 5] },
-    { name: 'קוורטה מוגדלת / קווינטה מוקטנת', stepOffsets: [0, 3], semitones: [0, 6] },
-    { name: 'קווינטה זכה', stepOffsets: [0, 4], semitones: [0, 7] },
-    { name: 'קווינטה מוגדלת', stepOffsets: [0, 4], semitones: [0, 8] },
-    { name: 'סקסטה קטנה', stepOffsets: [0, 5], semitones: [0, 8] },
-    { name: 'סקסטה גדולה', stepOffsets: [0, 5], semitones: [0, 9] },
-    { name: 'ספטימה קטנה', stepOffsets: [0, 6], semitones: [0, 10] },
-    { name: 'ספטימה גדולה', stepOffsets: [0, 6], semitones: [0, 11] },
-    { name: 'אוקטבה זכה', stepOffsets: [0, 7], semitones: [0, 12] }
+    { name: 'פרימה זכה', abbr: '1.ז', stepOffsets: [0, 0], semitones: [0, 0] },
+    { name: 'סקונדה קטנה', abbr: '2.ק', stepOffsets: [0, 1], semitones: [0, 1] },
+    { name: 'סקונדה גדולה', abbr: '2.ג', stepOffsets: [0, 1], semitones: [0, 2] },
+    { name: 'טרצה קטנה', abbr: '3.ק', stepOffsets: [0, 2], semitones: [0, 3] },
+    { name: 'טרצה גדולה', abbr: '3.ג', stepOffsets: [0, 2], semitones: [0, 4] },
+    { name: 'קוורטה זכה', abbr: '4.ז', stepOffsets: [0, 3], semitones: [0, 5] },
+    { name: 'קוורטה מוגדלת', abbr: '4.מוג', stepOffsets: [0, 3], semitones: [0, 6] },
+    { name: 'קווינטה מוקטנת', abbr: '5.מוק', stepOffsets: [0, 4], semitones: [0, 6] },
+    { name: 'קווינטה זכה', abbr: '5.ז', stepOffsets: [0, 4], semitones: [0, 7] },
+    { name: 'קווינטה מוגדלת', abbr: '5.מוג', stepOffsets: [0, 4], semitones: [0, 8] },
+    { name: 'סקסטה קטנה', abbr: '6.ק', stepOffsets: [0, 5], semitones: [0, 8] },
+    { name: 'סקסטה גדולה', abbr: '6.ג', stepOffsets: [0, 5], semitones: [0, 9] },
+    { name: 'ספטימה קטנה', abbr: '7.ק', stepOffsets: [0, 6], semitones: [0, 10] },
+    { name: 'ספטימה גדולה', abbr: '7.ג', stepOffsets: [0, 6], semitones: [0, 11] },
+    { name: 'אוקטבה זכה', abbr: '8.ז', stepOffsets: [0, 7], semitones: [0, 12] }
   ],
   chords: [
     { name: 'מז׳ור', stepOffsets: [0, 2, 4], semitones: [0, 4, 7] },
@@ -741,29 +750,43 @@ function changeTheme(themeClass) {
   document.body.className = themeClass;
 }
 
+function getStructureLabel(item) {
+  if (!item) return '';
+  const isInterval = document.getElementById('exType').value === 'intervals';
+  const format = document.getElementById('intervalFormatSelect').value;
+  if (isInterval && format === 'abbr' && item.abbr) {
+    return item.abbr;
+  }
+  return item.name;
+}
+
 function onExerciseTypeChange() {
   const type = document.getElementById('exType').value;
   const invGroup = document.getElementById('inversionsGroup');
   const playGroup = document.getElementById('playModeGroup');
   const accGroup = document.getElementById('accidentalGroup');
   const optGroup = document.getElementById('optionsGroup');
+  const intervalFmtGroup = document.getElementById('intervalFormatGroup');
 
   if (type === 'note_id') {
     invGroup.style.display = 'none';
     playGroup.style.display = 'none';
     optGroup.style.display = 'none';
     accGroup.style.display = 'flex';
+    intervalFmtGroup.style.display = 'none';
   } else if (type === 'scales') {
     invGroup.style.display = 'none';
     playGroup.style.display = 'none';
     optGroup.style.display = 'flex';
     accGroup.style.display = 'none';
+    intervalFmtGroup.style.display = 'none';
     updateOptionsList();
   } else if (type === 'chords' || type === 'septachords') {
     invGroup.style.display = 'flex';
     playGroup.style.display = 'flex';
     optGroup.style.display = 'flex';
     accGroup.style.display = 'none';
+    intervalFmtGroup.style.display = 'none';
     updateInversionsList(type);
     updateOptionsList();
   } else {
@@ -771,6 +794,7 @@ function onExerciseTypeChange() {
     playGroup.style.display = 'flex';
     optGroup.style.display = 'flex';
     accGroup.style.display = 'none';
+    intervalFmtGroup.style.display = 'flex';
     updateOptionsList();
   }
 }
@@ -798,7 +822,7 @@ function updateOptionsList() {
     const pill = document.createElement('div');
     pill.className = 'tag-pill active';
     pill.dataset.value = item.name;
-    pill.innerText = item.name;
+    pill.innerText = getStructureLabel(item);
     pill.onclick = () => pill.classList.toggle('active');
     container.appendChild(pill);
   });
@@ -899,7 +923,7 @@ function generateExercise() {
     clef,
     notes,
     inversion: chosenInversion,
-    optionsPool: poolStructs.map(s => s.name),
+    optionsPool: poolStructs,
     inversionsPool: INVERSIONS_DATA[type] ? INVERSIONS_DATA[type].filter(i => activeInvPills.includes(i.id)) : []
   };
 }
@@ -1070,9 +1094,9 @@ function setupStandardUI() {
   currentExercise.optionsPool.forEach(opt => {
     const btn = document.createElement('button');
     btn.className = 'opt-btn';
-    btn.innerText = opt;
+    btn.innerText = getStructureLabel(opt);
     btn.onclick = () => {
-      if (opt === currentExercise.struct.name) {
+      if (opt.name === currentExercise.struct.name) {
         btn.classList.add('correct');
         currentScore += 1;
         document.getElementById('scoreDisplay').innerText = currentScore;
@@ -1095,11 +1119,11 @@ function setupChordUI() {
   typeContainer.innerHTML = '';
   invContainer.innerHTML = '';
 
-  currentExercise.optionsPool.forEach(type => {
+  currentExercise.optionsPool.forEach(opt => {
     const btn = document.createElement('button');
     btn.className = 'opt-btn';
-    btn.innerText = type;
-    btn.onclick = () => checkChordType(type, btn);
+    btn.innerText = getStructureLabel(opt);
+    btn.onclick = () => checkChordType(opt.name, btn);
     typeContainer.appendChild(btn);
   });
 
@@ -1112,12 +1136,12 @@ function setupChordUI() {
   });
 }
 
-function checkChordType(type, btn) {
-  if (selectedChordType === type) return;
+function checkChordType(typeName, btn) {
+  if (selectedChordType === typeName) return;
   
-  if (type === currentExercise.struct.name) {
+  if (typeName === currentExercise.struct.name) {
     btn.classList.add('correct');
-    selectedChordType = type;
+    selectedChordType = typeName;
     if (!typeAnsweredCorrectly) {
       currentScore += 0.5;
       typeAnsweredCorrectly = true;
@@ -1244,9 +1268,9 @@ function revealAnswer() {
     fb.innerText = `התו הנכון הוא: ${name}${accStr}`;
   } else if (currentExercise.type === 'chords' || currentExercise.type === 'septachords') {
     const invName = INVERSIONS_DATA[currentExercise.type].find(i => i.id === currentExercise.inversion).name;
-    fb.innerText = `התשובה: ${currentExercise.struct.name} (${invName})`;
+    fb.innerText = `התשובה: ${getStructureLabel(currentExercise.struct)} (${invName})`;
   } else {
-    fb.innerText = `התשובה הנכונה: ${currentExercise.struct.name}`;
+    fb.innerText = `התשובה הנכונה: ${getStructureLabel(currentExercise.struct)}`;
   }
   setTimeout(startPractice, 2500);
 }
