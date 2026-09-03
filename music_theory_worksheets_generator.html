@@ -6,6 +6,22 @@
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
+    @font-face {
+      font-family: 'Bravura';
+      src: url('https://cdn.jsdelivr.net/npm/smufl-bravura-font@1.39.0/redist/woff/bravura.woff') format('woff');
+    }
+
+    .music-clef {
+      font-family: 'Bravura', serif;
+      fill: #000000;
+      text-anchor: middle;
+      dominant-baseline: central;
+      user-select: none;
+    }
+
+    .g-clef-symbol { font-size: 82px; }
+    .f-clef-symbol { font-size: 43px; }
+
     :root {
       --primary: #2c3e50;
       --accent: #3498db;
@@ -157,6 +173,17 @@
   </style>
 </head>
 <body>
+
+<svg width="0" height="0" style="position: absolute;">
+    <defs>
+        <g id="clef-treble">
+            <text x="0" y="-8.5" class="music-clef g-clef-symbol">&#x1D11E;</text>
+        </g>
+        <g id="clef-bass">
+            <text x="0" y="8.5" class="music-clef f-clef-symbol">&#x1D122;</text>
+        </g>
+    </defs>
+</svg>
 
 <div class="app-container">
   <div class="app-header">
@@ -418,7 +445,7 @@ function buildChordNotes(givenLine, givenAcc, chordItem, clef, givenVoice = 'bas
     let targetLine = rootLine + rotatedOffsets[i];
     let targetDiatonicIdx = ((clef === 'sol' ? 2 : 4) + targetLine);
     let nameIdx = targetDiatonicIdx % 7;
-    while (nameIdx < 0) nameIdx += 7;
+    while (nameIdx < 0) nameIndex += 7;
     
     let targetOctave = Math.floor(targetDiatonicIdx / 7);
     let naturalSemitones = targetOctave * 12 + DIATONIC_SEMITONES[nameIdx];
@@ -651,16 +678,9 @@ function toggleAll(dropdownId) {
 
 function getClefSVG(clef) {
   if (clef === 'fa') {
-    return `<g transform="translate(25, 19) scale(0.65)">
-      <path d="M 12 12 C 12 6, 22 6, 22 14 C 22 22, 10 26, 10 38" fill="none" stroke="#111" stroke-width="3.5"/>
-      <circle cx="11" cy="12" r="3.5" fill="#111"/>
-      <circle cx="27" cy="10" r="2.5" fill="#111"/>
-      <circle cx="27" cy="22" r="2.5" fill="#111"/>
-    </g>`;
+    return `<use href="#clef-bass" x="35" y="27" />`;
   }
-  return `<g transform="translate(25, 28) scale(0.125)">
-    <path d="M 14 185 C 35 185 54 167 54 140 C 54 110 30 90 4 90 C -25 90 -45 112 -45 145 C -45 185 -10 220 30 220 C 75 220 105 180 105 125 C 105 50 40 -15 15 -75 C 5 -100 15 -130 35 -130 C 45 -130 55 -115 50 -90 C 40 -40 0 50 -5 120 L -5 270 C -5 295 -25 315 -50 315 C -65 315 -80 300 -80 285 C -80 270 -65 255 -50 255 C -40 255 -30 265 -25 275" fill="none" stroke="#111" stroke-width="9.5"/>
-  </g>`;
+  return `<use href="#clef-treble" x="35" y="43" />`;
 }
 
 function renderNoteGraphic(x, y, acc, shiftNoteHead = false, accShiftLeft = false) {
@@ -676,7 +696,7 @@ function renderNoteGraphic(x, y, acc, shiftNoteHead = false, accShiftLeft = fals
     if (accShiftLeft) {
       xOffset -= 12;
     }
-    svg += `<text x="${xOffset}" y="${y}" font-size="19" font-weight="bold" fill="#111" dominant-baseline="central" text-anchor="middle">${symbol}</text>`;
+    svg += `<text x="${xOffset}" y="${y}" font-size="23" font-weight="bold" fill="#111" dominant-baseline="central" text-anchor="middle">${symbol}</text>`;
   }
 
   svg += `<ellipse cx="${noteX}" cy="${y}" rx="5.5" ry="4" fill="#111" transform="rotate(-20 ${noteX} ${y})"/>`;
@@ -701,7 +721,7 @@ function renderKeyAccidental(measureX, idx, accType, clef) {
   let x = measureX + 45 + (idx * 11);
   let symbol = accToSymbol(accType);
 
-  return `<text x="${x}" y="${y}" font-size="18" font-weight="bold" fill="#111" dominant-baseline="central" text-anchor="middle">${symbol}</text>`;
+  return `<text x="${x}" y="${y}" font-size="22" font-weight="bold" fill="#111" dominant-baseline="central" text-anchor="middle">${symbol}</text>`;
 }
 
 function generateSheet() {
