@@ -3,14 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>תרגול תורת המוזיקה - מרווחים, אקורדים, היפוכים וסולמות</title>
+  <title>תרגול תורת המוזיקה - מעודכן</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap');
 
+    @font-face {
+      font-family: 'Bravura';
+      src: url('https://cdn.jsdelivr.net/npm/smufl-bravura-font@1.39.0/redist/woff/bravura.woff') format('woff');
+    }
+
     :root {
       --bg-gradient: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
-      --card-bg: rgba(255, 255, 255, 0.85);
-      --card-shadow: 0 12px 32px 0 rgba(234, 88, 12, 0.08);
+      --card-bg: rgba(255, 255, 255, 0.92);
+      --card-shadow: 0 4px 16px rgba(234, 88, 12, 0.08);
       --primary: #ea580c;
       --primary-hover: #c2410c;
       --secondary: #d97706;
@@ -18,106 +23,146 @@
       --text-muted: #78350f;
       --success: #10b981;
       --error: #ef4444;
-      --border: #fed7aa;
+      --border: 1px solid #fed7aa;
       --btn-bg: #ffffff;
-      --btn-shadow: 0 4px 12px rgba(234, 88, 12, 0.08);
+      --btn-color: #431407;
+      --radius-card: 16px;
+      --radius-btn: 10px;
     }
 
+    /* ערכת לילה / VIVID */
     body.theme-vivid {
       --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-      --card-bg: rgba(30, 41, 59, 0.75);
-      --card-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.37);
+      --card-bg: rgba(30, 41, 59, 0.85);
+      --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.37);
       --primary: #818cf8;
       --primary-hover: #6366f1;
       --secondary: #c084fc;
       --text-dark: #f8fafc;
       --text-muted: #94a3b8;
-      --border: rgba(51, 65, 85, 0.8);
+      --border: 1px solid rgba(51, 65, 85, 0.8);
       --btn-bg: #1e293b;
-      --btn-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      --btn-color: #f8fafc;
     }
 
-    body.theme-emerald {
-      --bg-gradient: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-      --card-bg: rgba(255, 255, 255, 0.85);
-      --card-shadow: 0 12px 32px 0 rgba(5, 150, 105, 0.08);
-      --primary: #059669;
-      --primary-hover: #047857;
-      --secondary: #0d9488;
-      --text-dark: #064e3b;
-      --text-muted: #047857;
-      --border: #a7f3d0;
-      --btn-bg: #ffffff;
-      --btn-shadow: 0 4px 12px rgba(5, 150, 105, 0.08);
-    }
-
-    body.theme-violet {
-      --bg-gradient: linear-gradient(135deg, #2e1065 0%, #3b0764 100%);
-      --card-bg: rgba(88, 28, 135, 0.4);
-      --card-shadow: 0 12px 32px 0 rgba(192, 132, 252, 0.15);
-      --primary: #c084fc;
-      --primary-hover: #a855f7;
-      --secondary: #f472b6;
-      --text-dark: #faf5ff;
-      --text-muted: #e9d5ff;
-      --border: rgba(168, 85, 247, 0.3);
-      --btn-bg: #3b0764;
-      --btn-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    }
-
+    /* ערכת אוקיינוס / OCEAN */
     body.theme-ocean {
-      --bg-gradient: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-      --card-bg: rgba(255, 255, 255, 0.85);
-      --card-shadow: 0 12px 32px 0 rgba(2, 132, 199, 0.08);
+      --bg-gradient: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+      --card-bg: rgba(255, 255, 255, 0.9);
+      --card-shadow: 0 4px 16px rgba(3, 105, 161, 0.1);
       --primary: #0284c7;
       --primary-hover: #0369a1;
-      --secondary: #06b6d4;
+      --secondary: #0d9488;
       --text-dark: #0c4a6e;
       --text-muted: #0369a1;
-      --border: #bae6fd;
+      --border: 1px solid #7dd3fc;
       --btn-bg: #ffffff;
-      --btn-shadow: 0 4px 12px rgba(2, 132, 199, 0.08);
+      --btn-color: #0c4a6e;
     }
 
-    body.theme-sunset {
-      --bg-gradient: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
-      --card-bg: rgba(255, 255, 255, 0.85);
-      --card-shadow: 0 12px 32px 0 rgba(225, 29, 72, 0.08);
-      --primary: #e11d48;
-      --primary-hover: #be123c;
-      --secondary: #f43f5e;
-      --text-dark: #881337;
-      --text-muted: #be123c;
-      --border: #fecdd3;
+    /* ערכה: לבן בלבד (נקי, ללא צבע וללא צל) */
+    body.theme-white-clean {
+      --bg-gradient: #ffffff;
+      --card-bg: #ffffff;
+      --card-shadow: none;
+      --primary: #171717;
+      --primary-hover: #000000;
+      --secondary: #404040;
+      --text-dark: #171717;
+      --text-muted: #525252;
+      --success: #16a34a;
+      --error: #dc2626;
+      --border: 1px solid #e5e5e5;
       --btn-bg: #ffffff;
-      --btn-shadow: 0 4px 12px rgba(225, 29, 72, 0.08);
+      --btn-color: #171717;
+    }
+
+    /* ערכה: לבן עם קווים עדינים ובלתי אחידים (עיפרון דק ידני) */
+    body.theme-pencil-thin {
+      --bg-gradient: #ffffff;
+      --card-bg: #ffffff;
+      --card-shadow: none;
+      --primary: #262626;
+      --primary-hover: #000000;
+      --secondary: #525252;
+      --text-dark: #1a1a1a;
+      --text-muted: #525252;
+      --success: #15803d;
+      --error: #b91c1c;
+      --border: 1px solid #737373;
+      --btn-bg: #ffffff;
+      --btn-color: #1a1a1a;
+      --radius-card: 255px 15px 225px 15px/15px 225px 15px 255px;
+      --radius-btn: 255px 12px 225px 10px/12px 225px 10px 255px;
+    }
+
+    body.theme-pencil-thin .card,
+    body.theme-pencil-thin .opt-btn,
+    body.theme-pencil-thin .play-btn,
+    body.theme-pencil-thin .next-btn,
+    body.theme-pencil-thin .help-btn,
+    body.theme-pencil-thin .share-btn,
+    body.theme-pencil-thin .tag-pill,
+    body.theme-pencil-thin .theme-selector,
+    body.theme-pencil-thin .staff-container,
+    body.theme-pencil-thin select,
+    body.theme-pencil-thin details,
+    body.theme-pencil-thin .tag-container,
+    body.theme-pencil-thin .chord-answers-container,
+    body.theme-pencil-thin .piano-keyboard,
+    body.theme-pencil-thin .acc-btn {
+      border-top: 1.2px solid #525252 !important;
+      border-right: 0.8px solid #737373 !important;
+      border-bottom: 1.4px solid #404040 !important;
+      border-left: 0.9px solid #737373 !important;
+      border-radius: var(--radius-btn);
+    }
+
+    body.theme-pencil-thin .card {
+      border-radius: var(--radius-card);
+    }
+
+    body.theme-white-clean h1,
+    body.theme-pencil-thin h1 {
+      background: none;
+      -webkit-text-fill-color: initial;
+      color: var(--text-dark);
     }
 
     * { box-sizing: border-box; touch-action: manipulation; }
 
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
     body {
       font-family: 'Rubik', -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg-gradient);
-      min-height: 100vh;
       margin: 0;
-      padding: 20px 14px;
+      padding: 8px;
       color: var(--text-dark);
       direction: rtl;
-      transition: background 0.4s ease, color 0.4s ease;
-      -webkit-tap-highlight-color: transparent;
+      transition: background 0.3s ease, color 0.3s ease;
       display: flex;
       flex-direction: column;
     }
 
-    .container { max-width: 900px; margin: 0 auto; flex: 1; width: 100%; }
+    .container { 
+      max-width: 600px; 
+      margin: 0 auto; 
+      flex: 1; 
+      width: 100%; 
+      display: flex; 
+      flex-direction: column;
+      justify-content: space-between;
+    }
     
     .header-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-      gap: 12px;
+      margin-bottom: 4px;
     }
 
     h1 {
@@ -126,315 +171,332 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       font-weight: 800;
-      font-size: 1.8rem;
-      letter-spacing: -0.5px;
+      font-size: 1.3rem;
     }
 
     .theme-selector {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
       background: var(--card-bg);
-      padding: 8px 14px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      backdrop-filter: blur(12px);
-      box-shadow: var(--card-shadow);
+      padding: 4px 8px;
+      border-radius: 12px;
+      border: var(--border);
     }
-    .theme-selector label { font-size: 13px; font-weight: 600; color: var(--text-dark); white-space: nowrap; }
+    .theme-selector label { font-size: 11px; font-weight: 600; color: var(--text-dark); }
     
     select {
-      padding: 8px 12px;
-      font-size: 13px;
+      padding: 4px 6px;
+      font-size: 11px;
       font-weight: 500;
       font-family: inherit;
-      border-radius: 12px;
-      border: 1px solid var(--border);
+      border-radius: 8px;
+      border: var(--border);
       background: var(--btn-bg);
       color: var(--text-dark);
-      cursor: pointer;
       outline: none;
-      transition: all 0.2s ease;
-      box-shadow: var(--btn-shadow);
     }
-    select:focus { border-color: var(--primary); }
 
     .card {
       background: var(--card-bg);
-      border-radius: 24px;
-      padding: 22px;
+      border-radius: var(--radius-card, 16px);
+      padding: 8px 12px;
       box-shadow: var(--card-shadow);
-      border: 1px solid var(--border);
+      border: var(--border);
       backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      margin-bottom: 20px;
+      margin-bottom: 4px;
+    }
+
+    details {
+      background: rgba(0,0,0,0.02);
+      border: var(--border);
+      border-radius: 10px;
+      padding: 4px 8px;
+    }
+    summary {
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--primary);
     }
 
     .controls-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 16px;
-      margin-bottom: 20px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 6px;
     }
 
-    .control-group { display: flex; flex-direction: column; gap: 6px; }
-    label { font-weight: 600; font-size: 13px; color: var(--text-dark); }
+    .control-group { display: flex; flex-direction: column; gap: 2px; }
+    label { font-weight: 600; font-size: 11px; color: var(--text-dark); }
 
     .tag-selector-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 6px;
+      margin-bottom: 2px;
     }
 
     .tag-selector-header button {
-      padding: 3px 8px;
-      font-size: 11px;
+      padding: 1px 5px;
+      font-size: 10px;
       cursor: pointer;
       background: transparent;
-      border: 1px solid var(--primary);
-      border-radius: 8px;
+      border: var(--border);
+      border-radius: 6px;
       font-weight: 600;
       color: var(--primary);
-      transition: all 0.2s;
     }
-    .tag-selector-header button:hover { background: var(--primary); color: white; }
 
     .tag-container {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
-      max-height: 140px;
+      gap: 4px;
+      max-height: 75px;
       overflow-y: auto;
-      padding: 8px;
+      padding: 4px;
       background: rgba(0, 0, 0, 0.03);
-      border-radius: 14px;
-      border: 1px solid var(--border);
+      border-radius: 8px;
+      border: var(--border);
     }
 
     .tag-pill {
-      font-size: 12px;
+      font-size: 10px;
       font-weight: 500;
-      padding: 6px 12px;
-      border-radius: 20px;
+      padding: 3px 8px;
+      border-radius: 12px;
       background: var(--btn-bg);
-      border: 1px solid var(--border);
+      border: var(--border);
       color: var(--text-dark);
       cursor: pointer;
-      user-select: none;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      gap: 4px;
     }
     .tag-pill.active {
       background: var(--primary);
       color: white;
       border-color: var(--primary);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+    body.theme-white-clean .tag-pill.active,
+    body.theme-pencil-thin .tag-pill.active {
+      background: #171717;
+      color: #ffffff;
     }
 
     .btn-main {
       background: linear-gradient(135deg, var(--primary), var(--secondary));
       color: white;
-      border: none;
-      padding: 14px 24px;
-      font-size: 16px;
+      border: var(--border);
+      padding: 8px 12px;
+      font-size: 13px;
       font-weight: 700;
       font-family: inherit;
-      border-radius: 16px;
+      border-radius: var(--radius-btn, 10px);
       cursor: pointer;
       width: 100%;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-      transition: all 0.2s ease;
+      margin-top: 4px;
     }
-    .btn-main:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+    body.theme-white-clean .btn-main,
+    body.theme-pencil-thin .btn-main {
+      background: #ffffff;
+      color: #171717;
     }
-    .btn-main:active { transform: translateY(0); }
 
-    .practice-area { text-align: center; display: none; }
+    .practice-area { text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
     
     .action-bar {
       display: flex;
       justify-content: center;
-      gap: 12px;
-      margin-bottom: 16px;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
       flex-wrap: wrap;
     }
 
-    .play-btn, .help-btn, .share-btn {
-      padding: 10px 20px;
-      border-radius: 30px;
+    .play-btn, .next-btn, .help-btn, .share-btn {
+      padding: 6px 10px;
+      border-radius: var(--radius-btn, 16px);
       font-weight: 700;
-      font-size: 14px;
+      font-size: 11px;
       font-family: inherit;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      transition: all 0.2s ease;
-      border: none;
+      gap: 4px;
+      border: var(--border);
     }
 
-    .play-btn {
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      color: white;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-    }
-    .play-btn:hover { transform: scale(1.03); }
+    .play-btn { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
+    body.theme-white-clean .play-btn,
+    body.theme-pencil-thin .play-btn { background: #ffffff; color: #171717; }
 
-    .help-btn, .share-btn {
+    .next-btn, .help-btn, .share-btn { background: var(--btn-bg); color: var(--text-dark); }
+
+    /* תצוגת רמז עזרה סמוך לכפתור */
+    .help-wrapper {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      position: relative;
+    }
+
+    .help-popover {
+      display: none;
+      font-size: 11px;
+      font-weight: 700;
       background: var(--btn-bg);
-      color: var(--text-dark);
-      border: 2px solid var(--border);
-      box-shadow: var(--btn-shadow);
+      color: var(--primary);
+      border: var(--border);
+      padding: 4px 8px;
+      border-radius: 8px;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      animation: fadeIn 0.2s ease-in-out;
     }
-    .help-btn:hover, .share-btn:hover { border-color: var(--primary); transform: scale(1.03); }
+    .help-popover.visible { display: inline-block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-2px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
     .staff-container { 
       background: #ffffff; 
-      border-radius: 20px; 
-      padding: 16px 8px; 
-      border: 1px solid var(--border); 
-      margin: 16px 0 20px 0; 
-      overflow-x: auto;
-      box-shadow: inset 0 2px 8px rgba(0,0,0,0.03);
+      border-radius: 12px; 
+      padding: 4px; 
+      border: var(--border); 
+      margin: 2px 0; 
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.03);
     }
-    .staff-svg { width: 100%; min-width: 320px; max-width: 780px; height: 130px; }
+    body.theme-white-clean .staff-container,
+    body.theme-pencil-thin .staff-container {
+      box-shadow: none;
+    }
+
+    .staff-svg { width: 100%; height: 110px; }
+
+    .music-clef {
+      font-family: 'Bravura', serif;
+      fill: currentColor;
+      text-anchor: middle;
+      dominant-baseline: central;
+    }
+
+    .g-clef-symbol { font-size: 82px; }
+    .f-clef-symbol { font-size: 43px; }
 
     .options-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 12px;
-      margin-top: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(85px, 1fr));
+      gap: 6px;
+      margin-top: 4px;
     }
 
     .chord-answers-container {
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      margin-top: 16px;
+      gap: 4px;
       background: rgba(0, 0, 0, 0.02);
-      padding: 16px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
+      padding: 6px;
+      border-radius: 10px;
+      border: var(--border);
     }
 
     .section-title {
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 700;
       text-align: right;
       color: var(--text-dark);
-      margin-bottom: 2px;
     }
 
     .opt-btn {
       background: var(--btn-bg);
-      border: 2px solid var(--border);
-      padding: 12px 10px;
-      border-radius: 14px;
+      border: var(--border);
+      padding: 6px 4px;
+      border-radius: var(--radius-btn, 8px);
       font-weight: 600;
-      font-size: 14px;
+      font-size: 11px;
       font-family: inherit;
       cursor: pointer;
-      color: var(--text-dark);
-      box-shadow: var(--btn-shadow);
-      transition: all 0.2s ease;
+      color: var(--btn-color);
     }
-    .opt-btn:hover { border-color: var(--primary); transform: translateY(-2px); }
     .opt-btn.correct { background: var(--success) !important; color: white !important; border-color: var(--success) !important; }
     .opt-btn.wrong { background: var(--error) !important; color: white !important; border-color: var(--error) !important; }
 
     .acc-selector {
       display: flex;
       justify-content: center;
-      gap: 10px;
-      margin-bottom: 16px;
+      gap: 6px;
+      margin-bottom: 4px;
     }
     .acc-btn {
       background: var(--btn-bg);
-      border: 2px solid var(--border);
-      padding: 8px 18px;
-      border-radius: 20px;
+      border: var(--border);
+      padding: 4px 10px;
+      border-radius: 12px;
       font-weight: 700;
+      font-size: 11px;
       font-family: inherit;
       cursor: pointer;
       color: var(--text-dark);
-      transition: all 0.2s;
     }
-    .acc-btn.selected { background: var(--primary); color: white; border-color: var(--primary); }
+    .acc-btn.selected { background: var(--primary); color: white; }
+    body.theme-white-clean .acc-btn.selected,
+    body.theme-pencil-thin .acc-btn.selected { background: #171717; color: #ffffff; }
 
     .piano-keyboard {
       display: flex;
       justify-content: center;
       position: relative;
-      height: 120px;
-      margin: 20px auto;
-      user-select: none;
+      height: 70px;
+      margin: 4px auto;
       direction: ltr;
       width: fit-content;
-      padding: 10px;
+      padding: 4px;
       background: rgba(0,0,0,0.05);
-      border-radius: 16px;
+      border-radius: 10px;
+      border: var(--border);
     }
     .key-white {
-      width: 42px;
+      width: 28px;
       height: 100%;
       background: #ffffff;
       border: 1px solid #cbd5e1;
-      border-radius: 0 0 8px 8px;
+      border-radius: 0 0 5px 5px;
       cursor: pointer;
       z-index: 1;
       display: flex;
       align-items: flex-end;
       justify-content: center;
-      padding-bottom: 10px;
+      padding-bottom: 4px;
       font-weight: 700;
-      font-size: 13px;
+      font-size: 10px;
       color: #334155;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.05);
-      transition: background 0.1s;
     }
-    .key-white:active { background: #f1f5f9; }
     .key-black {
-      width: 26px;
+      width: 18px;
       height: 60%;
       background: #1e293b;
-      border-radius: 0 0 6px 6px;
+      border-radius: 0 0 4px 4px;
       cursor: pointer;
       z-index: 2;
-      margin-left: -13px;
-      margin-right: -13px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-      transition: background 0.1s;
+      margin-left: -9px;
+      margin-right: -9px;
     }
-    .key-black:active { background: #0f172a; }
 
-    .feedback { font-size: 18px; font-weight: 700; margin-top: 16px; min-height: 28px; }
+    .feedback { font-size: 13px; font-weight: 700; min-height: 18px; margin-top: 2px; }
     .feedback.success { color: var(--success); }
     .feedback.error { color: var(--error); }
     .feedback.info { color: var(--secondary); }
 
-    .stats { font-size: 14px; color: var(--text-muted); margin-top: 12px; font-weight: 600; }
+    .stats { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
 
     footer {
       text-align: center;
-      padding: 16px 0 8px 0;
-      font-size: 14px;
+      padding: 2px 0;
+      font-size: 11px;
       font-weight: 600;
       color: var(--text-muted);
     }
-    footer a {
-      color: var(--primary);
-      text-decoration: none;
-      transition: opacity 0.2s;
-    }
-    footer a:hover {
-      text-decoration: underline;
-      opacity: 0.85;
-    }
+    footer a { color: var(--primary); text-decoration: none; }
   </style>
 </head>
 <body class="theme-warm">
@@ -443,87 +505,87 @@
   <div class="header-bar">
     <h1>תרגול תורת המוזיקה</h1>
     <div class="theme-selector">
-      <label for="themeSelect">🎨 עיצוב:</label>
+      <label for="themeSelect">🎨 ערכה:</label>
       <select id="themeSelect" onchange="changeTheme(this.value)">
-        <option value="theme-warm" selected>חם (Warm Amber)</option>
-        <option value="theme-vivid">מפתח לילה (Modern Dark)</option>
-        <option value="theme-emerald">אמרלד (Emerald)</option>
-        <option value="theme-violet">סגול ניאון (Cyber Violet)</option>
-        <option value="theme-ocean">כחול אוקיינוס (Ocean Blue)</option>
-        <option value="theme-sunset">ורוד שקיעה (Sunset Pink)</option>
+        <option value="theme-warm" selected>חם</option>
+        <option value="theme-vivid">לילה</option>
+        <option value="theme-ocean">אוקיינוס</option>
+        <option value="theme-white-clean">לבן נקי</option>
+        <option value="theme-pencil-thin">✏️ עיפרון דק (ידני)</option>
       </select>
     </div>
   </div>
 
   <div class="card">
-    <div class="controls-grid">
-      <div class="control-group">
-        <label>סוג התרגיל:</label>
-        <select id="exType" onchange="onExerciseTypeChange()">
-          <option value="note_id">זיהוי תווים</option>
-          <option value="intervals" selected>מרווחים</option>
-          <option value="chords">אקורדים משולשים</option>
-          <option value="septachords">ספטאקורדים</option>
-          <option value="scales">סולמות</option>
-        </select>
+    <details id="settingsCollapse">
+      <summary>⚙️ הגדרות תרגיל</summary>
+      <div class="controls-grid">
+        <div class="control-group">
+          <label>סוג התרגיל:</label>
+          <select id="exType" onchange="onExerciseTypeChange()">
+            <option value="note_id">זיהוי תווים</option>
+            <option value="intervals" selected>מרווחים</option>
+            <option value="chords">אקורדים משולשים</option>
+            <option value="septachords">ספטאקורדים</option>
+            <option value="scales">סולמות</option>
+          </select>
+        </div>
+
+        <div class="control-group" id="intervalFormatGroup">
+          <label>תצוגת מרווחים:</label>
+          <select id="intervalFormatSelect" onchange="updateOptionsList()">
+            <option value="full">מילים מלאות</option>
+            <option value="abbr" selected>קיצורים (2.מוג)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>תצוגה:</label>
+          <select id="displayMode">
+            <option value="both">כתוב ומושמע</option>
+            <option value="audio_only">מושמע בלבד</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>כלי נגינה:</label>
+          <select id="instrumentSelect">
+            <option value="marimba" selected>🪵 מרימבה</option>
+            <option value="piano">🎹 פסנתר</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>מפתח:</label>
+          <select id="clefSelect">
+            <option value="rand" selected>אקראי</option>
+            <option value="sol">סול</option>
+            <option value="fa">פה</option>
+          </select>
+        </div>
+
+        <div class="control-group" id="accidentalGroup" style="display: none;">
+          <label>סימני התק:</label>
+          <select id="accidentalSelect">
+            <option value="with">עם סימני התק</option>
+            <option value="without">רק טבעיים</option>
+          </select>
+        </div>
+
+        <div class="control-group" id="playModeGroup">
+          <label>נגינה:</label>
+          <select id="playMode">
+            <option value="random" selected>אקראי</option>
+            <option value="harmonic">הרמוני</option>
+            <option value="ascending">מלודי עולה</option>
+            <option value="descending">מלודי יורד</option>
+          </select>
+        </div>
       </div>
 
-      <div class="control-group" id="intervalFormatGroup">
-        <label>תצוגת מרווחים:</label>
-        <select id="intervalFormatSelect" onchange="updateOptionsList()">
-          <option value="full" selected>מילים מלאות (למשל: סקונדה קטנה)</option>
-          <option value="abbr">קיצורים (למשל: 2.ק)</option>
-        </select>
-      </div>
-
-      <div class="control-group">
-        <label>תצוגת התרגיל:</label>
-        <select id="displayMode">
-          <option value="both">כתוב ומושמע</option>
-          <option value="audio_only">מושמע בלבד</option>
-        </select>
-      </div>
-
-      <div class="control-group">
-        <label>כלי נגינה:</label>
-        <select id="instrumentSelect">
-          <option value="marimba" selected>🪵 מרימבה</option>
-          <option value="piano">🎹 פסנתר</option>
-          <option value="flute">🪈 חליל</option>
-          <option value="synth">🎛️ סינתאיזטור</option>
-        </select>
-      </div>
-
-      <div class="control-group">
-        <label>מפתח:</label>
-        <select id="clefSelect">
-          <option value="rand" selected>אקראי</option>
-          <option value="sol">מפתח סול</option>
-          <option value="fa">מפתח פה</option>
-        </select>
-      </div>
-
-      <div class="control-group" id="accidentalGroup" style="display: none;">
-        <label>סימני התק:</label>
-        <select id="accidentalSelect">
-          <option value="with">עם סימני התק</option>
-          <option value="without">ללא סימני התק (רק טבעיים)</option>
-        </select>
-      </div>
-
-      <div class="control-group" id="playModeGroup">
-        <label>נגינת התרגיל:</label>
-        <select id="playMode">
-          <option value="random" selected>אקראי</option>
-          <option value="harmonic">הרמוני (יחד)</option>
-          <option value="ascending">מלודי (עולה)</option>
-          <option value="descending">מלודי (יורד)</option>
-        </select>
-      </div>
-
-      <div class="control-group" id="inversionsGroup" style="display: none;">
+      <div class="control-group" id="inversionsGroup" style="display: none; margin-top:4px;">
         <div class="tag-selector-header">
-          <label>היפוכים:</label>
+          <label>היפוך:</label>
           <div>
             <button onclick="selectAllInversions(true)">הכל</button>
             <button onclick="selectAllInversions(false)">נקה</button>
@@ -532,7 +594,7 @@
         <div class="tag-container" id="inversionsTags"></div>
       </div>
 
-      <div class="control-group" id="optionsGroup">
+      <div class="control-group" id="optionsGroup" style="margin-top:4px;">
         <div class="tag-selector-header">
           <label id="optionsListLabel">סינון סוגים:</label>
           <div>
@@ -542,20 +604,24 @@
         </div>
         <div class="tag-container" id="optionsTags"></div>
       </div>
-    </div>
+    </details>
 
-    <button class="btn-main" onclick="startPractice()">צור תרגיל חדש ➔</button>
+    <button class="btn-main" onclick="startPractice(); closeSettings();">צור תרגיל חדש ➔</button>
   </div>
 
   <div class="card practice-area" id="practiceArea">
     <div class="action-bar">
-      <button class="play-btn" id="playAudioBtn" onclick="playCurrentExercise()">🎵 השמע תרגיל</button>
-      <button class="share-btn" onclick="shareCurrentExercise()">🔗 שתף תרגיל זה</button>
-      <button class="help-btn" onclick="revealAnswer()">💡 עזור לי</button>
+      <button class="play-btn" id="playAudioBtn" onclick="playCurrentExercise()">🎵 השמע</button>
+      <button class="next-btn" onclick="startPractice()">➡️ לתרגיל הבא</button>
+      <button class="share-btn" onclick="shareCurrentExercise()">🔗 שתף</button>
+      <div class="help-wrapper">
+        <button class="help-btn" onclick="revealAnswer()">💡 עזרה</button>
+        <span class="help-popover" id="helpPopover"></span>
+      </div>
     </div>
     
     <div class="staff-container" id="staffContainer">
-      <svg id="staffSvg" class="staff-svg" viewBox="0 0 520 100"></svg>
+      <svg id="staffSvg" class="staff-svg" viewBox="0 0 520 110"></svg>
     </div>
 
     <div id="standardAnswersArea">
@@ -563,7 +629,7 @@
     </div>
 
     <div id="chordAnswersArea" class="chord-answers-container" style="display: none;">
-      <div class="section-title">1. בחירת טיפוס האקורד (חצי נקודה):</div>
+      <div class="section-title">1. בחירת הטיפוס:</div>
       <div class="options-grid" id="chordTypeButtons"></div>
       <div class="section-title">2. בחירת ההיפוך:</div>
       <div class="options-grid" id="chordInvButtons"></div>
@@ -579,14 +645,16 @@
       <div class="piano-keyboard" id="pianoKeyboard"></div>
     </div>
 
-    <div class="feedback" id="feedback"></div>
-    <div class="stats" id="stats">ניקוד מצטבר: <span id="scoreDisplay">0</span></div>
+    <div>
+      <div class="feedback" id="feedback"></div>
+      <div class="stats" id="stats">ניקוד מצטבר: <span id="scoreDisplay">0</span></div>
+    </div>
   </div>
-</div>
 
-<footer>
-  נעם ברטוב <a href="https://noambartov.com" target="_blank" rel="noopener noreferrer">noambartov.com</a>
-</footer>
+  <footer>
+    נעם ברטוב <a href="https://noambartov.com" target="_blank" rel="noopener noreferrer">noambartov.com</a>
+  </footer>
+</div>
 
 <script>
 const NOTE_NAMES = [
@@ -604,6 +672,7 @@ const BASE_STRUCTURES = {
     { name: 'פרימה זכה', abbr: '1.ז', stepOffsets: [0, 0], semitones: [0, 0] },
     { name: 'סקונדה קטנה', abbr: '2.ק', stepOffsets: [0, 1], semitones: [0, 1] },
     { name: 'סקונדה גדולה', abbr: '2.ג', stepOffsets: [0, 1], semitones: [0, 2] },
+    { name: 'סקונדה מוגדלת', abbr: '2.מוג', stepOffsets: [0, 1], semitones: [0, 3] },
     { name: 'טרצה קטנה', abbr: '3.ק', stepOffsets: [0, 2], semitones: [0, 3] },
     { name: 'טרצה גדולה', abbr: '3.ג', stepOffsets: [0, 2], semitones: [0, 4] },
     { name: 'קוורטה זכה', abbr: '4.ז', stepOffsets: [0, 3], semitones: [0, 5] },
@@ -643,14 +712,14 @@ const BASE_STRUCTURES = {
 const INVERSIONS_DATA = {
   chords: [
     { id: 0, name: 'מצב יסודי' },
-    { id: 1, name: 'היפוך ראשון (סקסטאקורד)' },
-    { id: 2, name: 'היפוך שני (קוורטסקסטאקורד)' }
+    { id: 1, name: 'היפוך ראשון' },
+    { id: 2, name: 'היפוך שני' }
   ],
   septachords: [
     { id: 0, name: 'מצב יסודי' },
-    { id: 1, name: 'היפוך ראשון (קווינטסקסטאקורד)' },
-    { id: 2, name: 'היפוך שני (טרצקוורטאקורד)' },
-    { id: 3, name: 'היפוך שלישי (ספטאקורד/שניות)' }
+    { id: 1, name: 'היפוך ראשון' },
+    { id: 2, name: 'היפוך שני' },
+    { id: 3, name: 'היפוך שלישי' }
   ]
 };
 
@@ -663,6 +732,11 @@ let selectedAccidental = '0';
 let selectedChordType = null;
 let selectedChordInv = null;
 let typeAnsweredCorrectly = false;
+
+function closeSettings() {
+  const settings = document.getElementById('settingsCollapse');
+  if (settings) settings.removeAttribute('open');
+}
 
 function getAudioContext() {
   if (!audioCtx) {
@@ -685,8 +759,7 @@ function playInstrumentNote(freq, startTime, duration = 1.2) {
   if (inst === 'marimba') {
     const partials = [
       { ratio: 1.0, gain: 1.0, decay: duration },
-      { ratio: 3.9, gain: 0.4, decay: duration * 0.2 },
-      { ratio: 9.8, gain: 0.15, decay: duration * 0.08 }
+      { ratio: 3.9, gain: 0.4, decay: duration * 0.2 }
     ];
     partials.forEach(p => {
       const osc = ctx.createOscillator();
@@ -701,48 +774,18 @@ function playInstrumentNote(freq, startTime, duration = 1.2) {
       osc.start(startTime);
       osc.stop(startTime + p.decay);
     });
-  } else if (inst === 'piano') {
+  } else {
     const osc1 = ctx.createOscillator();
-    const osc2 = ctx.createOscillator();
     const gainNode = ctx.createGain();
     osc1.type = 'triangle';
-    osc2.type = 'sine';
     osc1.frequency.setValueAtTime(freq, startTime);
-    osc2.frequency.setValueAtTime(freq * 2, startTime);
     gainNode.gain.setValueAtTime(0, startTime);
     gainNode.gain.linearRampToValueAtTime(0.4, startTime + 0.02);
     gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration * 1.5);
     osc1.connect(gainNode);
-    osc2.connect(gainNode);
     gainNode.connect(ctx.destination);
     osc1.start(startTime);
-    osc2.start(startTime);
     osc1.stop(startTime + duration * 1.5);
-    osc2.stop(startTime + duration * 1.5);
-  } else if (inst === 'flute') {
-    const osc = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, startTime);
-    gainNode.gain.setValueAtTime(0, startTime);
-    gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.08);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-    osc.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    osc.start(startTime);
-    osc.stop(startTime + duration);
-  } else {
-    const osc = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(freq, startTime);
-    gainNode.gain.setValueAtTime(0, startTime);
-    gainNode.gain.linearRampToValueAtTime(0.25, startTime + 0.01);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-    osc.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    osc.start(startTime);
-    osc.stop(startTime + duration);
   }
 }
 
@@ -891,6 +934,9 @@ function generateExercise() {
     }
     let line = Math.floor(Math.random() * 9) - 2;
     let note = getNoteDetails(line, acc, clef);
+
+    if (note.absLine < -4 || note.absLine > 12) return generateExercise();
+
     return { type, clef, notes: [note], correctNote: note };
   }
 
@@ -917,6 +963,19 @@ function generateExercise() {
   let baseAcc = Math.random() < 0.25 ? (Math.random() < 0.5 ? -1 : 1) : 0;
   let notes = buildNotes(baseLine, baseAcc, chosenStruct, clef, chosenInversion);
 
+  let isValid = notes.every(n => Math.abs(n.acc) <= 2 && n.absLine >= -4 && n.absLine <= 14);
+  if (!isValid) {
+    return generateExercise();
+  }
+
+  const hasDoubleAccidental = notes.some(n => Math.abs(n.acc) >= 2);
+  if (hasDoubleAccidental) {
+    const isAllowedScale = (type === 'scales') && (chosenStruct.name === 'מינור הרמוני' || chosenStruct.name === 'מינור מלודי');
+    if (!isAllowedScale) {
+      return generateExercise();
+    }
+  }
+
   return {
     type,
     struct: chosenStruct,
@@ -935,9 +994,9 @@ function shareCurrentExercise() {
   const shareableUrl = window.location.origin + window.location.pathname + '?' + params.toString();
 
   navigator.clipboard.writeText(shareableUrl).then(() => {
-    alert("הקישור לתרגיל הועתק ללוח בהצלחה! תוכל לשלוח אותו כעת.");
+    alert("הקישור לתרגיל הועתק ללוח!");
   }).catch(() => {
-    prompt("העתק את הקישור הבא לשיתוף התרגיל:", shareableUrl);
+    prompt("העתק את הקישור:", shareableUrl);
   });
 }
 
@@ -947,8 +1006,8 @@ function loadExerciseFromUrl() {
   if (dataStr) {
     try {
       currentExercise = JSON.parse(dataStr);
-      document.getElementById('practiceArea').style.display = 'block';
-      document.getElementById('feedback').innerText = 'תרגיל הוטען מקישור משותף!';
+      document.getElementById('practiceArea').style.display = 'flex';
+      document.getElementById('feedback').innerText = 'תרגיל הוטען מקישור!';
       document.getElementById('feedback').className = 'feedback info';
       renderStaff(currentExercise);
       setupAnswerUI();
@@ -969,56 +1028,106 @@ function renderStaff(ex) {
   container.style.display = 'block';
 
   const svg = document.getElementById('staffSvg');
-  svg.innerHTML = '';
+  
+  let svgContent = `
+    <defs>
+      <g id="clef-treble">
+        <text x="0" y="-8.5" class="music-clef g-clef-symbol">&#x1D11E;</text>
+      </g>
+      <g id="clef-bass">
+        <text x="0" y="8.5" class="music-clef f-clef-symbol">&#x1D122;</text>
+      </g>
+
+      <g id="acc-flat" transform="scale(0.8)">
+        <path d="M -2.5 -18.3 L -1.2 -18.3 L -1.2 -3.3 C -0.2 -5.0 1.4 -5.7 3.0 -5.7 C 5.8 -5.7 7.8 -3.4 7.8 0 C 7.8 3.3 5.8 5.7 2.8 5.7 C 0.8 5.7 -0.5 4.8 -1.2 3.4 L -1.2 6.7 L -2.5 6.7 Z M -1.2 -1.6 L -1.2 2.0 C -0.7 3.1 0.2 3.6 1.2 3.6 C 3.1 3.6 4.8 2.0 4.8 0 C 4.8 -2.0 3.1 -3.7 1.2 -3.7 C 0.2 -3.7 -0.7 -3.0 -1.2 -1.6 Z" fill="currentColor"/>
+      </g>
+
+      <g id="acc-sharp" transform="scale(0.8)">
+        <path d="M -5.5 -1.2 L -3.2 -1.8 L -3.2 -12 L -1.8 -12 L -1.8 -2.2 L 1.8 -3.2 L 1.8 -12 L 3.2 -12 L 3.2 -3.6 L 5.5 -4.2 L 5.5 -2.8 L 3.2 -2.2 L 3.2 3.8 L 5.5 3.2 L 5.5 4.6 L 3.2 5.2 L 3.2 12 L 1.8 12 L 1.8 5.6 L -1.8 6.6 L -1.8 12 L -3.2 12 L -3.2 7.0 L -5.5 7.6 L -5.5 6.2 L -3.2 5.6 L -3.2 -0.4 L -5.5 0.2 Z M -1.8 -0.8 L -1.8 5.2 L 1.8 4.2 L 1.8 -1.8 Z" fill="currentColor"/>
+      </g>
+
+      <g id="acc-natural" transform="scale(0.8)">
+        <path d="M -3 -13 L -1.2 -13 L -1.2 3.5 L 3.5 2.2 L 3.5 -4.5 L 5.3 -4.5 L 5.3 13 L 3.5 13 L 3.5 3.8 L -1.2 5.1 L -1.2 11.5 L -3 11.5 Z M -1.2 1.8 L 3.5 0.5 L 3.5 2.2 L -1.2 3.5 Z" fill="currentColor"/>
+      </g>
+
+      <g id="acc-double-sharp" transform="scale(0.8)">
+        <path d="M -6.5 -6.5 L -2.5 -2.5 L -6.5 1.5 L -1.5 6.5 L 2.5 2.5 L 6.5 6.5 L 1.5 1.5 L 5.5 -2.5 L 1.5 -6.5 L -2.5 -2.5 Z" fill="currentColor"/>
+        <circle cx="-5.5" cy="-5.5" r="1.3" fill="currentColor"/>
+        <circle cx="5.5" cy="-5.5" r="1.3" fill="currentColor"/>
+        <circle cx="-5.5" cy="5.5" r="1.3" fill="currentColor"/>
+        <circle cx="5.5" cy="5.5" r="1.3" fill="currentColor"/>
+      </g>
+    </defs>
+  `;
 
   const isScale = ex.type === 'scales';
-  const startX = isScale ? 55 : 260;
-  const spacing = isScale ? 52 : 0;
+  const startX = isScale ? 85 : 260;
+  const spacing = isScale ? 48 : 0;
 
   for (let i = 0; i < 5; i++) {
-    let y = 51 - i * 8;
-    svg.innerHTML += `<line x1="20" y1="${y}" x2="500" y2="${y}" stroke="currentColor" opacity="0.3" stroke-width="1"/>`;
+    let y = 66 - i * 8;
+    svgContent += `<line x1="20" y1="${y}" x2="500" y2="${y}" stroke="currentColor" opacity="0.4" stroke-width="1.2"/>`;
   }
-  svg.innerHTML += `<line x1="20" y1="19" x2="20" y2="51" stroke="currentColor" opacity="0.3" stroke-width="2"/>`;
-  svg.innerHTML += `<line x1="500" y1="19" x2="500" y2="51" stroke="currentColor" opacity="0.3" stroke-width="2"/>`;
+  svgContent += `<line x1="20" y1="34" x2="20" y2="66" stroke="currentColor" stroke-width="1.5"/>`;
 
-  const clefPath = ex.clef === 'sol' 
-    ? `<g transform="translate(25, 28) scale(0.125)"><path d="M 14 185 C 35 185 54 167 54 140 C 54 110 30 90 4 90 C -25 90 -45 112 -45 145 C -45 185 -10 220 30 220 C 75 220 105 180 105 125 C 105 50 40 -15 15 -75 C 5 -100 15 -130 35 -130 C 45 -130 55 -115 50 -90 C 40 -40 0 50 -5 120 L -5 270 C -5 295 -25 315 -50 315 C -65 315 -80 300 -80 285 C -80 270 -65 255 -50 255 C -40 255 -30 265 -25 275" fill="none" stroke="currentColor" stroke-width="9.5"/></g>`
-    : `<g transform="translate(25, 19) scale(0.65)"><path d="M 12 12 C 12 6, 22 6, 22 14 C 22 22, 10 26, 10 38" fill="none" stroke="currentColor" stroke-width="3.5"/><circle cx="11" cy="12" r="3.5" fill="currentColor"/><circle cx="27" cy="10" r="2.5" fill="currentColor"/><circle cx="27" cy="22" r="2.5" fill="currentColor"/></g>`;
-  svg.innerHTML += clefPath;
+  if (ex.clef === 'sol') {
+    svgContent += `<use href="#clef-treble" x="35" y="58" />`;
+  } else {
+    svgContent += `<use href="#clef-bass" x="35" y="42" />`;
+  }
 
-  let accShiftOffset = 0;
+  let accOffsets = [];
+  if (!isScale) {
+    let accCounter = 0;
+    for (let i = 0; i < ex.notes.length; i++) {
+      if (ex.notes[i].acc !== 0) {
+        let shift = (accCounter % 2 === 1) ? 12 : 0;
+        accOffsets.push(shift);
+        accCounter++;
+      } else {
+        accOffsets.push(0);
+      }
+    }
+  } else {
+    accOffsets = ex.notes.map(() => 0);
+  }
 
   ex.notes.forEach((n, idx) => {
-    let y = 51 - n.absLine * 4;
-    let x = startX + (idx * spacing);
+    let y = 66 - n.absLine * 4;
+    let baseX = startX + (idx * spacing);
+    let noteX = baseX;
 
     if (!isScale && idx > 0) {
       const isSecond = Math.abs(ex.notes[idx].absLine - ex.notes[idx-1].absLine) === 1;
-      if (isSecond) x += 11;
+      if (isSecond) noteX += 10;
     }
 
     if (n.absLine < 0) {
       for (let l = -2; l >= n.absLine; l -= 2) {
-        let ly = 51 - l * 4;
-        svg.innerHTML += `<line x1="${x-10}" y1="${ly}" x2="${x+10}" y2="${ly}" stroke="currentColor" stroke-width="1.2"/>`;
+        let ly = 66 - l * 4;
+        svgContent += `<line x1="${noteX-8}" y1="${ly}" x2="${noteX+8}" y2="${ly}" stroke="currentColor" stroke-width="1.2"/>`;
       }
     } else if (n.absLine > 8) {
       for (let l = 10; l <= n.absLine; l += 2) {
-        let ly = 51 - l * 4;
-        svg.innerHTML += `<line x1="${x-10}" y1="${ly}" x2="${x+10}" y2="${ly}" stroke="currentColor" stroke-width="1.2"/>`;
+        let ly = 66 - l * 4;
+        svgContent += `<line x1="${noteX-8}" y1="${ly}" x2="${noteX+8}" y2="${ly}" stroke="currentColor" stroke-width="1.2"/>`;
       }
     }
 
     if (n.acc !== 0) {
-      let sym = n.acc === 1 ? '♯' : '♭';
-      let accXOffset = isScale ? 16 : (16 + (accShiftOffset * 13));
-      svg.innerHTML += `<text x="${x - accXOffset}" y="${y}" font-size="17" font-weight="bold" dominant-baseline="central" text-anchor="middle" fill="currentColor">${sym}</text>`;
-      accShiftOffset++;
+      let accHref = '#acc-natural';
+      if (n.acc === 1) accHref = '#acc-sharp';
+      else if (n.acc === -1) accHref = '#acc-flat';
+      else if (n.acc === 2) accHref = '#acc-double-sharp';
+
+      let accX = baseX - 15 - accOffsets[idx];
+      svgContent += `<use href="${accHref}" x="${accX}" y="${y}" />`;
     }
 
-    svg.innerHTML += `<ellipse cx="${x}" cy="${y}" rx="5.5" ry="4" fill="currentColor" transform="rotate(-20 ${x} ${y})"/>`;
+    svgContent += `<ellipse cx="${noteX}" cy="${y}" rx="4.4" ry="3.2" fill="currentColor" transform="rotate(-20 ${noteX} ${y})"/>`;
   });
+
+  svg.innerHTML = svgContent;
 }
 
 function playCurrentExercise() {
@@ -1028,9 +1137,9 @@ function playCurrentExercise() {
 
   if (currentExercise.type === 'scales') {
     const now = ctx.currentTime + 0.05;
-    freqs.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, 0.8));
+    freqs.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.3, 0.7));
     const scaleDesc = [...freqs].reverse().slice(1);
-    scaleDesc.forEach((f, idx) => playInstrumentNote(f, now + (freqs.length + idx) * 0.35, 0.8));
+    scaleDesc.forEach((f, idx) => playInstrumentNote(f, now + (freqs.length + idx) * 0.3, 0.7));
     return;
   }
 
@@ -1043,11 +1152,11 @@ function playCurrentExercise() {
 
   const now = ctx.currentTime + 0.05;
   if (mode === 'harmonic') {
-    freqs.forEach(f => playInstrumentNote(f, now, 1.5));
+    freqs.forEach(f => playInstrumentNote(f, now, 1.4));
   } else if (mode === 'ascending') {
-    freqs.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.4, 1.0));
+    freqs.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, 0.9));
   } else if (mode === 'descending') {
-    [...freqs].reverse().forEach((f, idx) => playInstrumentNote(f, now + idx * 0.4, 1.0));
+    [...freqs].reverse().forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, 0.9));
   }
 }
 
@@ -1055,9 +1164,13 @@ function startPractice() {
   currentExercise = generateExercise();
   if (!currentExercise) return;
 
-  document.getElementById('practiceArea').style.display = 'block';
+  document.getElementById('practiceArea').style.display = 'flex';
   document.getElementById('feedback').innerText = '';
   document.getElementById('feedback').className = 'feedback';
+
+  const popover = document.getElementById('helpPopover');
+  popover.classList.remove('visible');
+  popover.innerText = '';
 
   selectedChordType = null;
   selectedChordInv = null;
@@ -1100,12 +1213,12 @@ function setupStandardUI() {
         btn.classList.add('correct');
         currentScore += 1;
         document.getElementById('scoreDisplay').innerText = currentScore;
-        document.getElementById('feedback').innerText = 'תשובה נכונה! ✨';
+        document.getElementById('feedback').innerText = 'נכון מאוד! ✨';
         document.getElementById('feedback').className = 'feedback success';
-        setTimeout(startPractice, 1200);
+        setTimeout(startPractice, 1000);
       } else {
         btn.classList.add('wrong');
-        document.getElementById('feedback').innerText = 'טעות, נסה שוב...';
+        document.getElementById('feedback').innerText = 'נסה שוב...';
         document.getElementById('feedback').className = 'feedback error';
       }
     };
@@ -1147,12 +1260,12 @@ function checkChordType(typeName, btn) {
       typeAnsweredCorrectly = true;
       document.getElementById('scoreDisplay').innerText = currentScore;
     }
-    document.getElementById('feedback').innerText = 'טיפוס נכון (+0.5 pt)! בחר כעת היפוך.';
+    document.getElementById('feedback').innerText = 'טיפוס נכון! כעת בחר היפוך.';
     document.getElementById('feedback').className = 'feedback success';
     checkChordComplete();
   } else {
     btn.classList.add('wrong');
-    document.getElementById('feedback').innerText = 'טיפוס שגוי, נסה שוב...';
+    document.getElementById('feedback').innerText = 'טיפוס שגוי...';
     document.getElementById('feedback').className = 'feedback error';
   }
 }
@@ -1166,7 +1279,7 @@ function checkChordInv(invId, btn) {
     checkChordComplete();
   } else {
     btn.classList.add('wrong');
-    document.getElementById('feedback').innerText = 'היפוך שגוי, נסה שוב...';
+    document.getElementById('feedback').innerText = 'היפוך שגוי...';
     document.getElementById('feedback').className = 'feedback error';
   }
 }
@@ -1175,9 +1288,9 @@ function checkChordComplete() {
   if (selectedChordType === currentExercise.struct.name && selectedChordInv === currentExercise.inversion) {
     currentScore += 0.5;
     document.getElementById('scoreDisplay').innerText = currentScore;
-    document.getElementById('feedback').innerText = 'כל הכבוד! אקורד מבוצע בהצלחה! 🎉';
+    document.getElementById('feedback').innerText = 'מצוין! אקורד הושלם 🎉';
     document.getElementById('feedback').className = 'feedback success';
-    setTimeout(startPractice, 1200);
+    setTimeout(startPractice, 1000);
   }
 }
 
@@ -1188,7 +1301,7 @@ function setupNoteIdUI() {
   NOTE_NAMES.forEach(n => {
     const btn = document.createElement('button');
     btn.className = 'opt-btn';
-    btn.innerText = `${n.eng} - ${n.name}`;
+    btn.innerText = `${n.eng} / ${n.name}`;
     btn.onclick = () => checkNoteAnswer(n.pc, parseInt(selectedAccidental), btn);
     container.appendChild(btn);
   });
@@ -1214,8 +1327,7 @@ function renderPianoKeyboard() {
     { name: 'F', pc: 5, hasBlack: true },
     { name: 'G', pc: 7, hasBlack: true },
     { name: 'A', pc: 9, hasBlack: true },
-    { name: 'B', pc: 11, hasBlack: false },
-    { name: 'C', pc: 0, hasBlack: false }
+    { name: 'B', pc: 11, hasBlack: false }
   ];
 
   keysLayout.forEach((k) => {
@@ -1246,33 +1358,35 @@ function checkNoteAnswer(pc, acc, el) {
     el.classList.add('correct');
     currentScore += 1;
     document.getElementById('scoreDisplay').innerText = currentScore;
-    document.getElementById('feedback').innerText = 'זיהוי תו מדויק! 🎵';
+    document.getElementById('feedback').innerText = 'נכון מאוד! 🎵';
     document.getElementById('feedback').className = 'feedback success';
-    setTimeout(startPractice, 1200);
+    setTimeout(startPractice, 1000);
   } else {
     el.classList.add('wrong');
-    document.getElementById('feedback').innerText = 'תו שגוי, נסה שוב...';
+    document.getElementById('feedback').innerText = 'תו שגוי...';
     document.getElementById('feedback').className = 'feedback error';
   }
 }
 
 function revealAnswer() {
   if (!currentExercise) return;
-  const fb = document.getElementById('feedback');
-  fb.className = 'feedback info';
+  const popover = document.getElementById('helpPopover');
+  let text = '';
 
   if (currentExercise.type === 'note_id') {
     const n = currentExercise.correctNote;
     let name = NOTE_NAMES[n.nameIndex].eng + ' / ' + NOTE_NAMES[n.nameIndex].name;
     let accStr = n.acc === 1 ? ' דיאז' : (n.acc === -1 ? ' במול' : '');
-    fb.innerText = `התו הנכון הוא: ${name}${accStr}`;
+    text = `${name}${accStr}`;
   } else if (currentExercise.type === 'chords' || currentExercise.type === 'septachords') {
     const invName = INVERSIONS_DATA[currentExercise.type].find(i => i.id === currentExercise.inversion).name;
-    fb.innerText = `התשובה: ${getStructureLabel(currentExercise.struct)} (${invName})`;
+    text = `${getStructureLabel(currentExercise.struct)} (${invName})`;
   } else {
-    fb.innerText = `התשובה הנכונה: ${getStructureLabel(currentExercise.struct)}`;
+    text = `${getStructureLabel(currentExercise.struct)}`;
   }
-  setTimeout(startPractice, 2500);
+
+  popover.innerText = text;
+  popover.classList.add('visible');
 }
 
 onExerciseTypeChange();
