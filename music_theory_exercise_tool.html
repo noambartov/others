@@ -13,6 +13,25 @@
     }
 
     :root {
+      --bg-gradient: #ffffff;
+      --card-bg: #ffffff;
+      --card-shadow: none;
+      --primary: #171717;
+      --primary-hover: #000000;
+      --secondary: #404040;
+      --text-dark: #171717;
+      --text-muted: #525252;
+      --success: #16a34a;
+      --error: #dc2626;
+      --border: 1px solid #e5e5e5;
+      --btn-bg: #ffffff;
+      --btn-color: #171717;
+      --radius-card: 16px;
+      --radius-btn: 10px;
+    }
+
+    /* ערכת חם / WARM */
+    body.theme-warm {
       --bg-gradient: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
       --card-bg: rgba(255, 255, 255, 0.92);
       --card-shadow: 0 4px 16px rgba(234, 88, 12, 0.08);
@@ -26,8 +45,6 @@
       --border: 1px solid #fed7aa;
       --btn-bg: #ffffff;
       --btn-color: #431407;
-      --radius-card: 16px;
-      --radius-btn: 10px;
     }
 
     /* ערכת לילה / VIVID */
@@ -330,7 +347,6 @@
 
     .next-btn, .help-btn, .share-btn { background: var(--btn-bg); color: var(--text-dark); }
 
-    /* תצוגת רמז עזרה סמוך לכפתור */
     .help-wrapper {
       display: inline-flex;
       align-items: center;
@@ -390,7 +406,7 @@
       margin-top: 4px;
     }
 
-    .chord-answers-container {
+    .chord-answers-container, .mode-answers-container {
       display: flex;
       flex-direction: column;
       gap: 4px;
@@ -499,7 +515,7 @@
     footer a { color: var(--primary); text-decoration: none; }
   </style>
 </head>
-<body class="theme-warm">
+<body class="theme-white-clean">
 
 <div class="container">
   <div class="header-bar">
@@ -507,10 +523,10 @@
     <div class="theme-selector">
       <label for="themeSelect">🎨 ערכה:</label>
       <select id="themeSelect" onchange="changeTheme(this.value)">
-        <option value="theme-warm" selected>חם</option>
+        <option value="theme-white-clean" selected>לבן נקי</option>
+        <option value="theme-warm">חם</option>
         <option value="theme-vivid">לילה</option>
         <option value="theme-ocean">אוקיינוס</option>
-        <option value="theme-white-clean">לבן נקי</option>
         <option value="theme-pencil-thin">✏️ עיפרון דק (ידני)</option>
       </select>
     </div>
@@ -528,6 +544,7 @@
             <option value="chords">אקורדים משולשים</option>
             <option value="septachords">ספטאקורדים</option>
             <option value="scales">סולמות</option>
+            <option value="modes">מודוסים יווניים</option>
           </select>
         </div>
 
@@ -612,6 +629,7 @@
   <div class="card practice-area" id="practiceArea">
     <div class="action-bar">
       <button class="play-btn" id="playAudioBtn" onclick="playCurrentExercise()">🎵 השמע</button>
+      <button class="play-btn" id="playFirstNoteBtn" onclick="playFirstNoteOnly()" style="display:none;">🎯 נגן צליל ראשון</button>
       <button class="next-btn" onclick="startPractice()">➡️ לתרגיל הבא</button>
       <button class="share-btn" onclick="shareCurrentExercise()">🔗 שתף</button>
       <div class="help-wrapper">
@@ -633,6 +651,13 @@
       <div class="options-grid" id="chordTypeButtons"></div>
       <div class="section-title">2. בחירת ההיפוך:</div>
       <div class="options-grid" id="chordInvButtons"></div>
+    </div>
+
+    <div id="modeAnswersArea" class="mode-answers-container" style="display: none;">
+      <div class="section-title">1. בחירת תו היסוד (שם + סימן):</div>
+      <div class="options-grid" id="modeRootButtons"></div>
+      <div class="section-title">2. בחירת המודוס:</div>
+      <div class="options-grid" id="modeTypeButtons"></div>
     </div>
 
     <div id="noteIdAnswersArea" style="display: none;">
@@ -665,6 +690,16 @@ const NOTE_NAMES = [
   { name: 'סול', eng: 'G', pc: 7 },
   { name: 'לה', eng: 'A', pc: 9 },
   { name: 'סי', eng: 'B', pc: 11 }
+];
+
+const ROOT_NOTE_OPTIONS = [
+  { name: 'דו', acc: 0 }, { name: 'דו♯', acc: 1 }, { name: 'רה♭', acc: -1 },
+  { name: 'רה', acc: 0 }, { name: 'רה♯', acc: 1 }, { name: 'מי♭', acc: -1 },
+  { name: 'מי', acc: 0 },
+  { name: 'פה', acc: 0 }, { name: 'פה♯', acc: 1 }, { name: 'סול♭', acc: -1 },
+  { name: 'סול', acc: 0 }, { name: 'סול♯', acc: 1 }, { name: 'לה♭', acc: -1 },
+  { name: 'לה', acc: 0 }, { name: 'לה♯', acc: 1 }, { name: 'סי♭', acc: -1 },
+  { name: 'סי', acc: 0 }
 ];
 
 const BASE_STRUCTURES = {
@@ -706,6 +741,15 @@ const BASE_STRUCTURES = {
     { name: 'מינור טבעי', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,3,5,7,8,10,12] },
     { name: 'מינור הרמוני', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,3,5,7,8,11,12] },
     { name: 'מינור מלודי', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,3,5,7,9,11,12] }
+  ],
+  modes: [
+    { name: 'יוני (מז׳ור)', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,4,5,7,9,11,12] },
+    { name: 'דורי', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,3,5,7,9,10,12] },
+    { name: 'פריגי', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,1,3,5,7,8,10,12] },
+    { name: 'לידי', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,4,6,7,9,11,12] },
+    { name: 'מיקסולידי', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,4,5,7,9,10,12] },
+    { name: 'אאולי (מינור טבעי)', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,3,5,7,8,10,12] },
+    { name: 'לוקרי', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,1,3,5,6,8,10,12] }
   ]
 };
 
@@ -731,7 +775,10 @@ let currentScore = 0;
 let selectedAccidental = '0';
 let selectedChordType = null;
 let selectedChordInv = null;
+let selectedModeRoot = null;
+let selectedModeType = null;
 let typeAnsweredCorrectly = false;
+let currentPlayDirection = 'ascending';
 
 function closeSettings() {
   const settings = document.getElementById('settingsCollapse');
@@ -817,7 +864,7 @@ function onExerciseTypeChange() {
     optGroup.style.display = 'none';
     accGroup.style.display = 'flex';
     intervalFmtGroup.style.display = 'none';
-  } else if (type === 'scales') {
+  } else if (type === 'scales' || type === 'modes') {
     invGroup.style.display = 'none';
     playGroup.style.display = 'none';
     optGroup.style.display = 'flex';
@@ -1060,9 +1107,9 @@ function renderStaff(ex) {
     </defs>
   `;
 
-  const isScale = ex.type === 'scales';
-  const startX = isScale ? 85 : 260;
-  const spacing = isScale ? 48 : 0;
+  const isScaleOrMode = (ex.type === 'scales' || ex.type === 'modes');
+  const startX = isScaleOrMode ? 85 : 260;
+  const spacing = isScaleOrMode ? 48 : 0;
 
   for (let i = 0; i < 5; i++) {
     let y = 66 - i * 8;
@@ -1077,7 +1124,7 @@ function renderStaff(ex) {
   }
 
   let accOffsets = [];
-  if (!isScale) {
+  if (!isScaleOrMode) {
     let accCounter = 0;
     for (let i = 0; i < ex.notes.length; i++) {
       if (ex.notes[i].acc !== 0) {
@@ -1097,7 +1144,7 @@ function renderStaff(ex) {
     let baseX = startX + (idx * spacing);
     let noteX = baseX;
 
-    if (!isScale && idx > 0) {
+    if (!isScaleOrMode && idx > 0) {
       const isSecond = Math.abs(ex.notes[idx].absLine - ex.notes[idx-1].absLine) === 1;
       if (isSecond) noteX += 10;
     }
@@ -1130,12 +1177,29 @@ function renderStaff(ex) {
   svg.innerHTML = svgContent;
 }
 
+function updateFirstNoteButtonUI() {
+  const btn = document.getElementById('playFirstNoteBtn');
+  if (!currentExercise || currentExercise.type === 'note_id') {
+    btn.style.display = 'none';
+    return;
+  }
+  btn.style.display = 'inline-flex';
+
+  if (currentPlayDirection === 'descending') {
+    btn.innerText = '🎯 נגן צליל ראשון (סופרן)';
+  } else {
+    btn.innerText = '🎯 נגן צליל ראשון (בס)';
+  }
+}
+
 function playCurrentExercise() {
   if (!currentExercise) return;
   const freqs = currentExercise.notes.map(n => midiToFreq(n.midiNum));
   const ctx = getAudioContext();
 
-  if (currentExercise.type === 'scales') {
+  if (currentExercise.type === 'scales' || currentExercise.type === 'modes') {
+    currentPlayDirection = 'ascending';
+    updateFirstNoteButtonUI();
     const now = ctx.currentTime + 0.05;
     freqs.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.3, 0.7));
     const scaleDesc = [...freqs].reverse().slice(1);
@@ -1150,6 +1214,9 @@ function playCurrentExercise() {
     mode = modes[Math.floor(Math.random() * modes.length)];
   }
 
+  currentPlayDirection = mode;
+  updateFirstNoteButtonUI();
+
   const now = ctx.currentTime + 0.05;
   if (mode === 'harmonic') {
     freqs.forEach(f => playInstrumentNote(f, now, 1.4));
@@ -1158,6 +1225,26 @@ function playCurrentExercise() {
   } else if (mode === 'descending') {
     [...freqs].reverse().forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, 0.9));
   }
+}
+
+function playFirstNoteOnly() {
+  if (!currentExercise || !currentExercise.notes || currentExercise.notes.length === 0) return;
+  
+  let targetNote;
+  if (currentPlayDirection === 'descending') {
+    targetNote = currentExercise.notes[currentExercise.notes.length - 1];
+  } else {
+    targetNote = currentExercise.notes[0];
+  }
+
+  const freq = midiToFreq(targetNote.midiNum);
+  const ctx = getAudioContext();
+  playInstrumentNote(freq, ctx.currentTime + 0.05, 1.2);
+}
+
+function triggerSuccessAndNext() {
+  playCurrentExercise();
+  setTimeout(startPractice, 1200);
 }
 
 function startPractice() {
@@ -1174,24 +1261,33 @@ function startPractice() {
 
   selectedChordType = null;
   selectedChordInv = null;
+  selectedModeRoot = null;
+  selectedModeType = null;
   typeAnsweredCorrectly = false;
+  currentPlayDirection = 'ascending';
 
   renderStaff(currentExercise);
   setupAnswerUI();
+  updateFirstNoteButtonUI();
 }
 
 function setupAnswerUI() {
   const stdArea = document.getElementById('standardAnswersArea');
   const chordArea = document.getElementById('chordAnswersArea');
+  const modeArea = document.getElementById('modeAnswersArea');
   const noteArea = document.getElementById('noteIdAnswersArea');
 
   stdArea.style.display = 'none';
   chordArea.style.display = 'none';
+  modeArea.style.display = 'none';
   noteArea.style.display = 'none';
 
   if (currentExercise.type === 'chords' || currentExercise.type === 'septachords') {
     chordArea.style.display = 'flex';
     setupChordUI();
+  } else if (currentExercise.type === 'modes') {
+    modeArea.style.display = 'flex';
+    setupModeUI();
   } else if (currentExercise.type === 'note_id') {
     noteArea.style.display = 'block';
     setupNoteIdUI();
@@ -1215,7 +1311,7 @@ function setupStandardUI() {
         document.getElementById('scoreDisplay').innerText = currentScore;
         document.getElementById('feedback').innerText = 'נכון מאוד! ✨';
         document.getElementById('feedback').className = 'feedback success';
-        setTimeout(startPractice, 1000);
+        triggerSuccessAndNext();
       } else {
         btn.classList.add('wrong');
         document.getElementById('feedback').innerText = 'נסה שוב...';
@@ -1290,7 +1386,79 @@ function checkChordComplete() {
     document.getElementById('scoreDisplay').innerText = currentScore;
     document.getElementById('feedback').innerText = 'מצוין! אקורד הושלם 🎉';
     document.getElementById('feedback').className = 'feedback success';
-    setTimeout(startPractice, 1000);
+    triggerSuccessAndNext();
+  }
+}
+
+function setupModeUI() {
+  const rootContainer = document.getElementById('modeRootButtons');
+  const typeContainer = document.getElementById('modeTypeButtons');
+  rootContainer.innerHTML = '';
+  typeContainer.innerHTML = '';
+
+  ROOT_NOTE_OPTIONS.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerText = opt.name;
+    btn.onclick = () => checkModeRoot(opt, btn);
+    rootContainer.appendChild(btn);
+  });
+
+  currentExercise.optionsPool.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerText = opt.name;
+    btn.onclick = () => checkModeType(opt.name, btn);
+    typeContainer.appendChild(btn);
+  });
+}
+
+function checkModeRoot(rootOpt, btn) {
+  const rootNote = currentExercise.notes[0];
+  const rootName = NOTE_NAMES[rootNote.nameIndex].name;
+  
+  if (rootOpt.name === rootName + (rootNote.acc === 1 ? '♯' : (rootNote.acc === -1 ? '♭' : ''))) {
+    btn.classList.add('correct');
+    selectedModeRoot = rootOpt.name;
+    if (!typeAnsweredCorrectly) {
+      currentScore += 0.5;
+      typeAnsweredCorrectly = true;
+      document.getElementById('scoreDisplay').innerText = currentScore;
+    }
+    document.getElementById('feedback').innerText = 'צליל יסוד נכון! כעת בחר מודוס.';
+    document.getElementById('feedback').className = 'feedback success';
+    checkModeComplete();
+  } else {
+    btn.classList.add('wrong');
+    document.getElementById('feedback').innerText = 'צליל יסוד שגוי...';
+    document.getElementById('feedback').className = 'feedback error';
+  }
+}
+
+function checkModeType(typeName, btn) {
+  if (typeName === currentExercise.struct.name) {
+    btn.classList.add('correct');
+    selectedModeType = typeName;
+    document.getElementById('feedback').innerText = 'מודוס נכון!';
+    document.getElementById('feedback').className = 'feedback success';
+    checkModeComplete();
+  } else {
+    btn.classList.add('wrong');
+    document.getElementById('feedback').innerText = 'מודוס שגוי...';
+    document.getElementById('feedback').className = 'feedback error';
+  }
+}
+
+function checkModeComplete() {
+  const rootNote = currentExercise.notes[0];
+  const expectedRootName = NOTE_NAMES[rootNote.nameIndex].name + (rootNote.acc === 1 ? '♯' : (rootNote.acc === -1 ? '♭' : ''));
+
+  if (selectedModeRoot === expectedRootName && selectedModeType === currentExercise.struct.name) {
+    currentScore += 0.5;
+    document.getElementById('scoreDisplay').innerText = currentScore;
+    document.getElementById('feedback').innerText = 'מצוין! מודוס הושלם 🎉';
+    document.getElementById('feedback').className = 'feedback success';
+    triggerSuccessAndNext();
   }
 }
 
@@ -1360,7 +1528,7 @@ function checkNoteAnswer(pc, acc, el) {
     document.getElementById('scoreDisplay').innerText = currentScore;
     document.getElementById('feedback').innerText = 'נכון מאוד! 🎵';
     document.getElementById('feedback').className = 'feedback success';
-    setTimeout(startPractice, 1000);
+    triggerSuccessAndNext();
   } else {
     el.classList.add('wrong');
     document.getElementById('feedback').innerText = 'תו שגוי...';
@@ -1378,6 +1546,10 @@ function revealAnswer() {
     let name = NOTE_NAMES[n.nameIndex].eng + ' / ' + NOTE_NAMES[n.nameIndex].name;
     let accStr = n.acc === 1 ? ' דיאז' : (n.acc === -1 ? ' במול' : '');
     text = `${name}${accStr}`;
+  } else if (currentExercise.type === 'modes') {
+    const rootNote = currentExercise.notes[0];
+    const rootStr = NOTE_NAMES[rootNote.nameIndex].name + (rootNote.acc === 1 ? '♯' : (rootNote.acc === -1 ? '♭' : ''));
+    text = `${rootStr} ${currentExercise.struct.name}`;
   } else if (currentExercise.type === 'chords' || currentExercise.type === 'septachords') {
     const invName = INVERSIONS_DATA[currentExercise.type].find(i => i.id === currentExercise.inversion).name;
     text = `${getStructureLabel(currentExercise.struct)} (${invName})`;
