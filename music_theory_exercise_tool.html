@@ -654,16 +654,19 @@
     </div>
 
     <div id="modeAnswersArea" class="mode-answers-container" style="display: none;">
-      <div class="section-title">1. בחירת תו היסוד (שם + סימן):</div>
-      <div class="options-grid" id="modeRootButtons"></div>
-      <div class="section-title">2. בחירת המודוס:</div>
+      <div class="section-title">1. בחירת תו היסוד:</div>
+      <div class="acc-selector">
+        <button class="acc-btn" id="modeAccFlat" onclick="toggleAccidental('-1')">במול (♭)</button>
+        <button class="acc-btn" id="modeAccSharp" onclick="toggleAccidental('1')">דיאז (♯)</button>
+      </div>
+      <div class="options-grid" id="modeNoteNameButtons"></div>
+      <div class="section-title">2. בחירת המודוס / הסולם:</div>
       <div class="options-grid" id="modeTypeButtons"></div>
     </div>
 
     <div id="noteIdAnswersArea" style="display: none;">
       <div class="acc-selector">
         <button class="acc-btn" id="accFlat" onclick="toggleAccidental('-1')">במול (♭)</button>
-        <button class="acc-btn selected" id="accNatural" onclick="toggleAccidental('0')">טבעי</button>
         <button class="acc-btn" id="accSharp" onclick="toggleAccidental('1')">דיאז (♯)</button>
       </div>
       <div class="options-grid" id="noteNameButtons"></div>
@@ -775,10 +778,16 @@ let currentScore = 0;
 let selectedAccidental = '0';
 let selectedChordType = null;
 let selectedChordInv = null;
-let selectedModeRoot = null;
+let selectedNoteNameIdx = null;
 let selectedModeType = null;
 let typeAnsweredCorrectly = false;
 let currentPlayDirection = 'ascending';
+
+function clearWrongButtons() {
+  document.querySelectorAll('.opt-btn.wrong').forEach(btn => {
+    btn.classList.remove('wrong');
+  });
+}
 
 function closeSettings() {
   const settings = document.getElementById('settingsCollapse');
@@ -1259,9 +1268,10 @@ function startPractice() {
   popover.classList.remove('visible');
   popover.innerText = '';
 
+  selectedAccidental = '0';
   selectedChordType = null;
   selectedChordInv = null;
-  selectedModeRoot = null;
+  selectedNoteNameIdx = null;
   selectedModeType = null;
   typeAnsweredCorrectly = false;
   currentPlayDirection = 'ascending';
@@ -1285,7 +1295,7 @@ function setupAnswerUI() {
   if (currentExercise.type === 'chords' || currentExercise.type === 'septachords') {
     chordArea.style.display = 'flex';
     setupChordUI();
-  } else if (currentExercise.type === 'modes') {
+  } else if (currentExercise.type === 'modes' || currentExercise.type === 'scales') {
     modeArea.style.display = 'flex';
     setupModeUI();
   } else if (currentExercise.type === 'note_id') {
@@ -1305,6 +1315,7 @@ function setupStandardUI() {
     btn.className = 'opt-btn';
     btn.innerText = getStructureLabel(opt);
     btn.onclick = () => {
+      clearWrongButtons();
       if (opt.name === currentExercise.struct.name) {
         btn.classList.add('correct');
         currentScore += 1;
@@ -1346,6 +1357,7 @@ function setupChordUI() {
 }
 
 function checkChordType(typeName, btn) {
+  clearWrongButtons();
   if (selectedChordType === typeName) return;
   
   if (typeName === currentExercise.struct.name) {
@@ -1356,7 +1368,7 @@ function checkChordType(typeName, btn) {
       typeAnsweredCorrectly = true;
       document.getElementById('scoreDisplay').innerText = currentScore;
     }
-    document.getElementById('feedback').innerText = 'טיפוס נכון! כעת בחר היפוך.';
+    document.getElementById('feedback').innerText = 'טיפוס נכון!';
     document.getElementById('feedback').className = 'feedback success';
     checkChordComplete();
   } else {
@@ -1367,6 +1379,7 @@ function checkChordType(typeName, btn) {
 }
 
 function checkChordInv(invId, btn) {
+  clearWrongButtons();
   if (invId === currentExercise.inversion) {
     btn.classList.add('correct');
     selectedChordInv = invId;
@@ -1391,16 +1404,18 @@ function checkChordComplete() {
 }
 
 function setupModeUI() {
-  const rootContainer = document.getElementById('modeRootButtons');
+  const rootContainer = document.getElementById('modeNoteNameButtons');
   const typeContainer = document.getElementById('modeTypeButtons');
   rootContainer.innerHTML = '';
   typeContainer.innerHTML = '';
 
-  ROOT_NOTE_OPTIONS.forEach(opt => {
+  toggleAccidental('0');
+
+  NOTE_NAMES.forEach((n, idx) => {
     const btn = document.createElement('button');
     btn.className = 'opt-btn';
-    btn.innerText = opt.name;
-    btn.onclick = () => checkModeRoot(opt, btn);
+    btn.innerText = `${n.eng} / ${n.name}`;
+    btn.onclick = () => checkModeNoteName(idx, btn);
     rootContainer.appendChild(btn);
   });
 
@@ -1413,19 +1428,19 @@ function setupModeUI() {
   });
 }
 
-function checkModeRoot(rootOpt, btn) {
+function checkModeNoteName(nameIdx, btn) {
+  clearWrongButtons();
   const rootNote = currentExercise.notes[0];
-  const rootName = NOTE_NAMES[rootNote.nameIndex].name;
   
-  if (rootOpt.name === rootName + (rootNote.acc === 1 ? '♯' : (rootNote.acc === -1 ? '♭' : ''))) {
+  if (nameIdx === rootNote.nameIndex && parseInt(selectedAccidental) === rootNote.acc) {
     btn.classList.add('correct');
-    selectedModeRoot = rootOpt.name;
+    selectedNoteNameIdx = nameIdx;
     if (!typeAnsweredCorrectly) {
       currentScore += 0.5;
       typeAnsweredCorrectly = true;
       document.getElementById('scoreDisplay').innerText = currentScore;
     }
-    document.getElementById('feedback').innerText = 'צליל יסוד נכון! כעת בחר מודוס.';
+    document.getElementById('feedback').innerText = 'צליל יסוד נכון!';
     document.getElementById('feedback').className = 'feedback success';
     checkModeComplete();
   } else {
@@ -1436,27 +1451,27 @@ function checkModeRoot(rootOpt, btn) {
 }
 
 function checkModeType(typeName, btn) {
+  clearWrongButtons();
   if (typeName === currentExercise.struct.name) {
     btn.classList.add('correct');
     selectedModeType = typeName;
-    document.getElementById('feedback').innerText = 'מודוס נכון!';
+    document.getElementById('feedback').innerText = 'סוג נכון!';
     document.getElementById('feedback').className = 'feedback success';
     checkModeComplete();
   } else {
     btn.classList.add('wrong');
-    document.getElementById('feedback').innerText = 'מודוס שגוי...';
+    document.getElementById('feedback').innerText = 'סוג שגוי...';
     document.getElementById('feedback').className = 'feedback error';
   }
 }
 
 function checkModeComplete() {
   const rootNote = currentExercise.notes[0];
-  const expectedRootName = NOTE_NAMES[rootNote.nameIndex].name + (rootNote.acc === 1 ? '♯' : (rootNote.acc === -1 ? '♭' : ''));
 
-  if (selectedModeRoot === expectedRootName && selectedModeType === currentExercise.struct.name) {
+  if (selectedNoteNameIdx === rootNote.nameIndex && parseInt(selectedAccidental) === rootNote.acc && selectedModeType === currentExercise.struct.name) {
     currentScore += 0.5;
     document.getElementById('scoreDisplay').innerText = currentScore;
-    document.getElementById('feedback').innerText = 'מצוין! מודוס הושלם 🎉';
+    document.getElementById('feedback').innerText = 'מצוין! הושלם בהצלחה 🎉';
     document.getElementById('feedback').className = 'feedback success';
     triggerSuccessAndNext();
   }
@@ -1466,11 +1481,13 @@ function setupNoteIdUI() {
   const container = document.getElementById('noteNameButtons');
   container.innerHTML = '';
   
-  NOTE_NAMES.forEach(n => {
+  toggleAccidental('0');
+
+  NOTE_NAMES.forEach((n, idx) => {
     const btn = document.createElement('button');
     btn.className = 'opt-btn';
     btn.innerText = `${n.eng} / ${n.name}`;
-    btn.onclick = () => checkNoteAnswer(n.pc, parseInt(selectedAccidental), btn);
+    btn.onclick = () => checkNoteAnswer(idx, btn);
     container.appendChild(btn);
   });
 
@@ -1478,10 +1495,22 @@ function setupNoteIdUI() {
 }
 
 function toggleAccidental(val) {
-  selectedAccidental = val;
-  document.getElementById('accFlat').classList.toggle('selected', val === '-1');
-  document.getElementById('accNatural').classList.toggle('selected', val === '0');
-  document.getElementById('accSharp').classList.toggle('selected', val === '1');
+  clearWrongButtons();
+  if (selectedAccidental === val) {
+    selectedAccidental = '0';
+  } else {
+    selectedAccidental = val;
+  }
+  
+  const accFlat = document.getElementById('accFlat');
+  const accSharp = document.getElementById('accSharp');
+  if (accFlat) accFlat.classList.toggle('selected', selectedAccidental === '-1');
+  if (accSharp) accSharp.classList.toggle('selected', selectedAccidental === '1');
+
+  const modeAccFlat = document.getElementById('modeAccFlat');
+  const modeAccSharp = document.getElementById('modeAccSharp');
+  if (modeAccFlat) modeAccFlat.classList.toggle('selected', selectedAccidental === '-1');
+  if (modeAccSharp) modeAccSharp.classList.toggle('selected', selectedAccidental === '1');
 }
 
 function renderPianoKeyboard() {
@@ -1502,7 +1531,7 @@ function renderPianoKeyboard() {
     const wKey = document.createElement('div');
     wKey.className = 'key-white';
     wKey.innerText = k.name;
-    wKey.onclick = () => checkNoteAnswer(k.pc, 0, wKey);
+    wKey.onclick = () => checkNoteAnswerByPc(k.pc, wKey);
     kb.appendChild(wKey);
 
     if (k.hasBlack) {
@@ -1510,19 +1539,38 @@ function renderPianoKeyboard() {
       bKey.className = 'key-black';
       bKey.onclick = (e) => {
         e.stopPropagation();
-        checkNoteAnswer((k.pc + 1) % 12, 0, bKey);
+        checkNoteAnswerByPc((k.pc + 1) % 12, bKey);
       };
       kb.appendChild(bKey);
     }
   });
 }
 
-function checkNoteAnswer(pc, acc, el) {
+function checkNoteAnswer(nameIdx, el) {
+  clearWrongButtons();
+  const correctNote = currentExercise.correctNote;
+  const userAcc = parseInt(selectedAccidental);
+
+  if (nameIdx === correctNote.nameIndex && userAcc === correctNote.acc) {
+    el.classList.add('correct');
+    currentScore += 1;
+    document.getElementById('scoreDisplay').innerText = currentScore;
+    document.getElementById('feedback').innerText = 'נכון מאוד! 🎵';
+    document.getElementById('feedback').className = 'feedback success';
+    triggerSuccessAndNext();
+  } else {
+    el.classList.add('wrong');
+    document.getElementById('feedback').innerText = 'תו שגוי...';
+    document.getElementById('feedback').className = 'feedback error';
+  }
+}
+
+function checkNoteAnswerByPc(pc, el) {
+  clearWrongButtons();
   const correctNote = currentExercise.correctNote;
   let targetPc = (DIATONIC_SEMITONES[correctNote.nameIndex] + correctNote.acc + 12) % 12;
-  let userPc = (pc + acc + 12) % 12;
 
-  if (targetPc === userPc) {
+  if (targetPc === pc) {
     el.classList.add('correct');
     currentScore += 1;
     document.getElementById('scoreDisplay').innerText = currentScore;
@@ -1546,7 +1594,7 @@ function revealAnswer() {
     let name = NOTE_NAMES[n.nameIndex].eng + ' / ' + NOTE_NAMES[n.nameIndex].name;
     let accStr = n.acc === 1 ? ' דיאז' : (n.acc === -1 ? ' במול' : '');
     text = `${name}${accStr}`;
-  } else if (currentExercise.type === 'modes') {
+  } else if (currentExercise.type === 'modes' || currentExercise.type === 'scales') {
     const rootNote = currentExercise.notes[0];
     const rootStr = NOTE_NAMES[rootNote.nameIndex].name + (rootNote.acc === 1 ? '♯' : (rootNote.acc === -1 ? '♭' : ''));
     text = `${rootStr} ${currentExercise.struct.name}`;
