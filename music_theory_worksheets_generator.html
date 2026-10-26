@@ -180,7 +180,7 @@
     .read-text { color: var(--sheet-text); font-size: 11px; margin-bottom: 2px; }
   </style>
 </head>
-<body>
+<body data-section="print">
 
 <div class="app-container">
   <div class="app-header">
@@ -711,5 +711,6 @@ async function downloadPDF() {
 window.onload = () => { addRow(); generateSheet(); };
 </script>
 
+<script src="site-nav.js"></script>
 </body>
 </html>
