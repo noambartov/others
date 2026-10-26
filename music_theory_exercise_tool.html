@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>תרגול תורת המוזיקה - מעודכן</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&display=swap');
 
     :root {
       --bg-gradient: #ffffff;
@@ -24,6 +24,50 @@
       --radius-card: 16px;
       --radius-btn: 10px;
     }
+
+    /* ערכה מודרנית — זהה לדפי התרגול */
+    body.theme-modern {
+      --bg-gradient: #f1f5f9;
+      --card-bg: #ffffff;
+      --card-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --secondary: #2563eb;
+      --text-dark: #0f172a;
+      --text-muted: #64748b;
+      --success: #16a34a;
+      --error: #dc2626;
+      --border: 1px solid #e2e8f0;
+      --btn-bg: #ffffff;
+      --btn-color: #334155;
+      --radius-card: 14px;
+      --radius-btn: 10px;
+      --staff-line: #94a3b8;
+    }
+    body.theme-modern h1 {
+      background: none;
+      -webkit-text-fill-color: initial;
+      color: var(--text-dark);
+      font-weight: 600;
+    }
+    body.theme-modern .eyebrow { display: block; }
+    body.theme-modern .btn-main,
+    body.theme-modern .play-btn { background: var(--primary); color: #fff; border-color: var(--primary); }
+    body.theme-modern #playFirstNoteBtn { background: var(--btn-bg); color: var(--primary); border-color: #bfdbfe; }
+    body.theme-modern .btn-main:hover,
+    body.theme-modern .play-btn:hover { background: var(--primary-hover); }
+    body.theme-modern .opt-btn,
+    body.theme-modern .next-btn,
+    body.theme-modern .help-btn,
+    body.theme-modern .share-btn,
+    body.theme-modern .acc-btn { font-weight: 500; }
+    body.theme-modern .opt-btn:hover { border-color: #93c5fd; background: #eff6ff; }
+    body.theme-modern .tag-pill.active { background: var(--primary); border-color: var(--primary); }
+    body.theme-modern .staff-container { box-shadow: none; border-color: #e2e8f0; }
+    body.theme-modern details,
+    body.theme-modern .chord-answers-container,
+    body.theme-modern .mode-answers-container { background: #f8fafc; }
+    body.theme-modern .section-title { font-weight: 600; color: #0f172a; }
 
     /* ערכת חם / WARM */
     body.theme-warm {
@@ -149,7 +193,7 @@
     }
 
     body {
-      font-family: 'Rubik', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Assistant', -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg-gradient);
       margin: 0;
       padding: 8px;
@@ -182,7 +226,7 @@
       background: linear-gradient(135deg, var(--primary), var(--secondary));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      font-weight: 800;
+      font-weight: 700;
       font-size: 1.3rem;
     }
 
@@ -227,7 +271,7 @@
     }
     summary {
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 600;
       cursor: pointer;
       color: var(--primary);
     }
@@ -299,7 +343,7 @@
       border: var(--border);
       padding: 8px 12px;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 600;
       font-family: inherit;
       border-radius: var(--radius-btn, 10px);
       cursor: pointer;
@@ -312,7 +356,7 @@
       color: #171717;
     }
 
-    .practice-area { text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+    .practice-area { text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; gap: 8px; }
     
     .action-bar {
       display: flex;
@@ -326,7 +370,7 @@
     .play-btn, .next-btn, .help-btn, .share-btn {
       padding: 6px 10px;
       border-radius: var(--radius-btn, 16px);
-      font-weight: 700;
+      font-weight: 600;
       font-size: 11px;
       font-family: inherit;
       cursor: pointer;
@@ -352,7 +396,7 @@
     .help-popover {
       display: none;
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 600;
       background: var(--btn-bg);
       color: var(--primary);
       border: var(--border);
@@ -383,6 +427,9 @@
     }
 
     .staff-svg { width: 100%; height: 110px; }
+    .staff-line { stroke: var(--staff-line, currentColor); }
+    body:not(.theme-modern) .staff-line:not(.strong) { opacity: 0.4; }
+    .eyebrow { display: none; font-size: 11px; font-weight: 600; color: var(--primary); letter-spacing: 1px; }
 
     .options-grid {
       display: grid;
@@ -403,7 +450,7 @@
 
     .section-title {
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 600;
       text-align: right;
       color: var(--text-dark);
     }
@@ -433,7 +480,7 @@
       border: var(--border);
       padding: 4px 10px;
       border-radius: 12px;
-      font-weight: 700;
+      font-weight: 600;
       font-size: 11px;
       font-family: inherit;
       cursor: pointer;
@@ -468,7 +515,7 @@
       align-items: flex-end;
       justify-content: center;
       padding-bottom: 4px;
-      font-weight: 700;
+      font-weight: 600;
       font-size: 10px;
       color: #334155;
     }
@@ -483,7 +530,7 @@
       margin-right: -9px;
     }
 
-    .feedback { font-size: 13px; font-weight: 700; min-height: 18px; margin-top: 2px; }
+    .feedback { font-size: 13px; font-weight: 600; min-height: 18px; margin-top: 2px; }
     .feedback.success { color: var(--success); }
     .feedback.error { color: var(--error); }
     .feedback.info { color: var(--secondary); }
@@ -500,15 +547,19 @@
     footer a { color: var(--primary); text-decoration: none; }
   </style>
 </head>
-<body class="theme-white-clean">
+<body class="theme-modern">
 
 <div class="container">
   <div class="header-bar">
-    <h1>תרגול תורת המוזיקה</h1>
+    <div>
+      <span class="eyebrow">תרגול אונליין</span>
+      <h1>תרגול תורת המוזיקה</h1>
+    </div>
     <div class="theme-selector">
       <label for="themeSelect">🎨 ערכה:</label>
       <select id="themeSelect" onchange="changeTheme(this.value)">
-        <option value="theme-white-clean" selected>לבן נקי</option>
+        <option value="theme-modern" selected>מודרני</option>
+        <option value="theme-white-clean">לבן נקי</option>
         <option value="theme-warm">חם</option>
         <option value="theme-vivid">לילה</option>
         <option value="theme-ocean">אוקיינוס</option>
@@ -995,42 +1046,25 @@ function renderStaff(ex) {
 
   for (let i = 0; i < 5; i++) {
     let y = 66 - i * 8;
-    svgContent += `<line x1="20" y1="${y}" x2="500" y2="${y}" stroke="currentColor" opacity="0.4" stroke-width="1.2"/>`;
+    svgContent += `<line x1="20" y1="${y}" x2="500" y2="${y}" class="staff-line" stroke-width="1.2"/>`;
   }
-  svgContent += `<line x1="20" y1="34" x2="20" y2="66" stroke="currentColor" stroke-width="1.5"/>`;
+  svgContent += `<line x1="20" y1="34" x2="20" y2="66" class="staff-line strong" stroke-width="1.5"/>`;
 
   svgContent += T.svg.clef(ex.clef === 'fa' ? 'fa' : 'sol', 35, STAFF);
 
-  let accOffsets = [];
-  if (!isScaleOrMode) {
-    let accCounter = 0;
-    for (let i = 0; i < ex.notes.length; i++) {
-      if (ex.notes[i].acc !== 0) {
-        let shift = (accCounter % 2 === 1) ? 12 : 0;
-        accOffsets.push(shift);
-        accCounter++;
-      } else {
-        accOffsets.push(0);
-      }
-    }
-  } else {
-    accOffsets = ex.notes.map(() => 0);
-  }
+  const layout = isScaleOrMode ? null : T.chordLayout(ex.notes);
 
   ex.notes.forEach((n, idx) => {
     let y = 66 - n.absLine * 4;
     let baseX = startX + (idx * spacing);
     let noteX = baseX;
 
-    if (!isScaleOrMode && idx > 0) {
-      const isSecond = Math.abs(ex.notes[idx].absLine - ex.notes[idx-1].absLine) === 1;
-      if (isSecond) noteX += 10;
-    }
+    if (layout && layout[idx].shifted) noteX += 10;
 
     svgContent += T.svg.ledgerLines(noteX, n.absLine, STAFF, 8);
 
     if (n.acc !== 0) {
-      let accRightX = baseX - 11 - accOffsets[idx];
+      let accRightX = baseX - 7 - (layout ? layout[idx].accColumn * 11 : 0);
       svgContent += T.svg.accidental(n.acc, accRightX, y, STAFF.space);
     }
 
