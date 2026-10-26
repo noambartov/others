@@ -2,6 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>דפי תרגול להדפסה - תורת המוזיקה</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -10,12 +11,11 @@
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     :root {
-      --primary: #2c3e50;
-      --accent: #3498db;
-      --bg: #f4f7f6;
-      --card-bg: #ffffff;
-      --border-color: #e2e8f0;
-      --text-color: #333333;
+      --text-color: #222222;
+      --muted: #999999;
+      --tile: #efefef;
+      --tile-hover: #e4e4e4;
+      --rule: #eeeeee;
 
       /* דף התרגול */
       --sheet-ink: #0f172a;
@@ -29,48 +29,35 @@
 
     body {
       font-family: 'Assistant', 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background-color: var(--bg);
+      background: #ffffff;
       margin: 0;
-      padding: 30px 15px;
+      padding: 0 16px 40px;
       color: var(--text-color);
       direction: rtl;
     }
 
-    .app-container { max-width: 1100px; margin: 0 auto; }
-    .app-header { text-align: center; margin-bottom: 20px; }
-    .app-header h1 { color: var(--primary); margin: 0 0 8px 0; font-size: 24px; }
+    .app-container { max-width: 900px; margin: 0 auto; }
+    .app-header { text-align: center; margin: 40px 0 28px; }
+    .app-header h1 { font-weight: 300; font-size: 36px; color: #111111; margin: 0; }
 
-    .controls-panel {
-      background: var(--card-bg);
-      border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-      padding: 20px;
-      margin-bottom: 20px;
-    }
+    .controls-panel { border-top: 1px solid var(--rule); margin-bottom: 8px; }
 
     .row-control {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       gap: 10px;
-      padding: 10px;
-      border-bottom: 1px solid var(--border-color);
-      background: #fff;
-      border-radius: 6px;
-      margin-bottom: 4px;
-      transition: background 0.2s, border 0.2s;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--rule);
+      transition: background 0.2s;
     }
-    .row-control.dragging {
-      opacity: 0.4;
-      background: #ebf8ff;
-    }
-    .row-control.drag-over {
-      border-top: 2px solid var(--accent);
-    }
+    .row-control.dragging { opacity: 0.4; background: #f7f7f7; }
+    .row-control.drag-over { border-top: 1px solid #222222; }
 
     .drag-handle {
       cursor: grab;
       font-size: 18px;
-      color: #a0aec0;
+      color: #cccccc;
       padding: 0 4px;
       user-select: none;
     }
@@ -78,17 +65,20 @@
       cursor: grabbing;
     }
 
-    .row-label { font-weight: 700; color: var(--primary); font-size: 13.5px; white-space: nowrap; min-width: 65px; }
+    .row-label { font-weight: 400; color: var(--muted); font-size: 14px; white-space: nowrap; min-width: 56px; }
 
     select, .custom-select-btn {
-      padding: 8px 10px;
-      border: 1px solid #cbd5e0;
+      padding: 8px 12px;
+      border: 1px solid var(--tile);
       border-radius: 6px;
-      background-color: #f8fafc;
-      font-size: 13px;
+      background-color: var(--tile);
+      font: inherit;
+      font-size: 14px;
       color: var(--text-color);
       outline: none;
+      cursor: pointer;
     }
+    select:hover, .custom-select-btn:hover { background-color: var(--tile-hover); }
 
     .multi-select-container { position: relative; }
     .multi-select-btn {
@@ -97,41 +87,45 @@
     }
     .multi-select-dropdown {
       display: none; position: absolute; top: calc(100% + 4px); right: 0;
-      width: 240px; background: #fff; border: 1px solid var(--border-color);
+      width: 240px; background: #fff; border: 1px solid #e6e6e6;
       border-radius: 8px; max-height: 250px; overflow-y: auto; z-index: 1000;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.15); padding: 8px 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08); padding: 8px 12px;
     }
     .multi-select-dropdown.show { display: block; }
-    .multi-select-dropdown label { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12.5px; cursor: pointer; }
-    .select-all-btn { font-size: 11.5px; color: var(--accent); font-weight: bold; cursor: pointer; margin-bottom: 6px; border-bottom: 1px dashed #ccc; padding-bottom: 4px; display: inline-block; }
+    .multi-select-dropdown label { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; cursor: pointer; }
+    .select-all-btn { font-size: 12px; color: #777777; cursor: pointer; margin-bottom: 6px; display: inline-block; }
+    .select-all-btn:hover { color: #222222; }
 
     .scale-controls-wrapper { display: flex; gap: 8px; align-items: center; }
 
-    .btn-remove { 
-      background: #e74c3c; 
-      color: white; 
-      border: none; 
-      border-radius: 6px; 
-      padding: 6px 12px; 
-      cursor: pointer; 
-      font-weight: bold; 
+    .btn-remove {
+      background: none;
+      color: #bbbbbb;
+      border: none;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-size: 18px;
       margin-right: auto;
-      width: auto;
       flex-shrink: 0;
     }
-    .btn-add-row { background: #27ae60; color: white; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer; margin-top: 10px; display: inline-block; }
+    .btn-remove:hover { color: #222222; }
+    .btn-add-row { background: none; color: #777777; border: none; padding: 10px 0; font: inherit; font-size: 14px; cursor: pointer; }
+    .btn-add-row:hover { color: #222222; }
 
-    .btn-group { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
-    .btn { padding: 10px 24px; font-size: 15px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .btn-generate { background-color: var(--accent); color: white; }
-    .btn-pdf { background-color: #2ecc71; color: white; }
-    .btn-answers { background-color: #9b59b6; color: white; }
+    .btn-group { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 28px; }
+    .btn { padding: 11px 22px; font: inherit; font-size: 15px; border: none; border-radius: 6px; cursor: pointer; }
+    .btn-generate { background: #222222; color: #ffffff; }
+    .btn-generate:hover { background: #000000; }
+    .btn-answers, .btn-pdf { background: var(--tile); color: var(--text-color); }
+    .btn-answers:hover, .btn-pdf:hover { background: var(--tile-hover); }
 
-    .a4-page-container { display: flex; flex-direction: column; align-items: center; gap: 30px; margin-top: 20px; }
+    .a4-page-container { display: flex; flex-direction: column; align-items: center; gap: 30px; margin-top: 36px; }
+    /* בטלפון התצוגה המקדימה מוקטנת לרוחב המסך (fitSheets); ה-PDF תמיד בגודל מלא */
+    .a4-page-container.fit { zoom: var(--fit, 1); }
 
     .worksheet-a4 {
       width: 210mm; min-height: 297mm; padding: 0 15mm 12mm 15mm;
-      background: white; box-shadow: 0 5px 20px rgba(0,0,0,0.1); box-sizing: border-box; direction: rtl;
+      background: white; border: 1px solid #e6e6e6; box-sizing: border-box; direction: rtl;
       display: flex; flex-direction: column; justify-content: space-between;
       font-family: 'Assistant', 'Segoe UI', sans-serif; color: var(--sheet-text);
     }
@@ -180,7 +174,7 @@
     .read-text { color: var(--sheet-text); font-size: 11px; margin-bottom: 2px; }
   </style>
 </head>
-<body>
+<body data-section="print">
 
 <div class="app-container">
   <div class="app-header">
@@ -189,16 +183,16 @@
 
   <div class="controls-panel">
     <div id="rowsContainer"></div>
-    <button class="btn-add-row" onclick="addRow()">הוסף חמשה +</button>
+    <button class="btn-add-row" onclick="addRow()">+ הוספת חמשה</button>
   </div>
 
   <div class="btn-group">
-    <button class="btn btn-generate" onclick="generateSheet()">צור/רענן תרגילים</button>
-    <button class="btn btn-answers" onclick="toggleAnswersPage()">הצג/הסתר דף תשובות</button>
-    <button class="btn btn-pdf" onclick="downloadPDF()">הורד קובץ PDF</button>
+    <button class="btn btn-generate" onclick="generateSheet()">צור תרגילים</button>
+    <button class="btn btn-answers" onclick="toggleAnswersPage()">דף תשובות</button>
+    <button class="btn btn-pdf" onclick="downloadPDF()">הורדת PDF</button>
   </div>
 
-  <div class="a4-page-container">
+  <div class="a4-page-container fit">
     <div id="worksheet-a4" class="worksheet-a4">
       <div>
         <div class="sheet-header">
@@ -300,7 +294,7 @@ function addRow() {
 
   row.innerHTML = `
     <div class="drag-handle" title="לחץ וגרור לשרירות סדר החמשות">⋮⋮</div>
-    <div class="row-label">חמשה <span class="row-num"></span>:</div>
+    <div class="row-label">חמשה <span class="row-num"></span></div>
     <div class="multi-select-container">
       <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, 'clefs_${id}')">מפתחות</div>
       <div class="multi-select-dropdown" id="clefs_${id}">
@@ -323,7 +317,7 @@ function addRow() {
       <option value="soprano">צליל סופרן</option>
     </select>
     <div id="sub_container_${id}"></div>
-    <button class="btn-remove" onclick="removeRow(${id})">✕</button>
+    <button class="btn-remove" title="הסרת החמשה" onclick="removeRow(${id})">×</button>
   `;
 
   row.addEventListener('dragstart', (e) => {
@@ -687,6 +681,9 @@ async function downloadPDF() {
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF('p', 'mm', 'a4');
   
+  const pages = document.querySelector('.a4-page-container');
+  pages.classList.remove('fit');
+
   const canvas1 = await html2canvas(document.getElementById('worksheet-a4'), { scale: 2 });
   pdf.addImage(canvas1.toDataURL('image/png'), 'PNG', 0, 0, 210, 297);
 
@@ -705,11 +702,21 @@ async function downloadPDF() {
     ansSheet.style.display = 'none';
   }
 
+  pages.classList.add('fit');
   pdf.save('דפי_תרגול.pdf');
 }
 
-window.onload = () => { addRow(); generateSheet(); };
+// מקטין את התצוגה המקדימה של דף ה-A4 כשהמסך צר ממנו
+function fitSheets() {
+  const pages = document.querySelector('.a4-page-container');
+  const sheetWidth = document.getElementById('worksheet-a4').offsetWidth;
+  pages.style.setProperty('--fit', Math.min(1, pages.parentElement.clientWidth / sheetWidth));
+}
+window.addEventListener('resize', fitSheets);
+
+window.onload = () => { addRow(); generateSheet(); fitSheets(); };
 </script>
 
+<script src="site-nav.js"></script>
 </body>
 </html>

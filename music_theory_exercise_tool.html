@@ -105,8 +105,8 @@
     body.theme-clean .btn-main:hover { background: #000000; transform: none; }
     body.theme-clean select { border: 1px solid #e2e2e2; box-shadow: none; }
     body.theme-clean .tag-selector-header button { font-weight: 400; color: #777777; }
-    body.theme-clean .tag-pill { background: #efefef; border-color: #efefef; color: #222222; }
-    body.theme-clean .tag-pill.active { background: #222222; border-color: #222222; color: #ffffff; }
+    body.theme-clean .tag-pill { background: #ffffff; border: 1px solid #e6e6e6; color: #999999; }
+    body.theme-clean .tag-pill.active { background: #e6e6e6; border-color: #e6e6e6; color: #222222; }
     body.theme-clean .card { background: none; border: none; box-shadow: none; padding: 0; }
     body.theme-clean .practice-area { padding: 0; }
     body.theme-clean .staff-container { border: none; background: none; box-shadow: none; padding: 30px 0 10px; }
@@ -127,7 +127,7 @@
     body.theme-clean .chord-answers-container,
     body.theme-clean .mode-answers-container { background: none; border: none; padding: 0; gap: 8px; }
     body.theme-clean .section-title { text-align: center; color: var(--text-muted); font-weight: 400; font-size: 13px; }
-    body.theme-clean .options-grid { gap: 8px; }
+    body.theme-clean .options-grid { --gap: 8px; }
     body.theme-clean .opt-btn { font-weight: 400; font-size: 14px; padding: 12px 6px; }
     body.theme-clean .opt-btn:hover { background: #e2e2e2; }
     body.theme-clean .opt-btn.correct { background: #222222 !important; color: #ffffff !important; }
@@ -141,12 +141,27 @@
     .big-play:active { transform: scale(0.96); }
     .big-play-label { font-size: 14px; color: var(--text-muted); }
     .mode-tabs { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); display: flex; gap: 18px; white-space: nowrap; }
-    .mode-tabs button { background: none; border: none; padding: 2px 0; font: inherit; font-size: 15px; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; }
-    .mode-tabs button.active { color: var(--text-dark); border-bottom-color: var(--text-dark); }
+    .mode-tabs button { background: none; border: none; padding: 2px 0; font: inherit; font-size: 15px; color: var(--text-muted); cursor: pointer; transition: color .15s; }
+    .mode-tabs button:hover, .mode-tabs button.active { color: var(--text-dark); }
+    /* קריאה ושמיעה נבחרות בסרגל האתר; כאן נשארים רק חופשי / לפי שלבים בתוך השמיעה */
+    .mode-tabs button[data-mode="read"], body.mode-read .mode-tabs { display: none; }
     @media (max-width: 480px) {
       .mode-tabs { gap: 12px; }
       .mode-tabs button { font-size: 14px; }
     }
+    .ex-types { display: flex; justify-content: center; gap: 16px; padding: 10px 0 4px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+    .ex-types::-webkit-scrollbar { display: none; }
+    .ex-types button { background: none; border: none; padding: 2px 0; font: inherit; font-size: 14px; color: var(--text-muted); cursor: pointer; flex: none; transition: color .15s; }
+    .ex-types button:hover, .ex-types button.active { color: var(--text-dark); }
+    @media (max-width: 480px) {
+      .ex-types { gap: 12px; justify-content: flex-start; }
+      .ex-types button { font-size: 13px; }
+    }
+    .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+    .seg button { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 6px; cursor: pointer; background: #ffffff; border: 1px solid #e6e6e6; color: #999999; }
+    .seg button.active { background: #e6e6e6; color: #222222; }
+    body.mode-read .ear-only-setting { display: none !important; }
+    body.mode-train #intervalFormatGroup { display: flex !important; }
     body.mode-ear .read-only-setting,
     body.mode-train .read-only-setting,
     body.mode-ear .read-only-opt,
@@ -191,7 +206,7 @@
     body.theme-clean .feedback { font-weight: 400; font-size: 15px; color: #555555; }
     body.theme-clean footer { font-weight: 400; color: #aaaaaa; }
     body.theme-clean footer a { color: #888888; }
-    body.theme-clean footer a:hover { color: #222222; text-decoration: underline; }
+    body.theme-clean footer a:hover { color: #222222; }
 
     /* ערכת חם / WARM */
     body.theme-warm {
@@ -554,12 +569,16 @@
     body:not(.theme-modern):not(.theme-clean) .staff-line:not(.strong) { opacity: 0.4; }
     .eyebrow { display: none; font-size: 11px; font-weight: 600; color: var(--primary); letter-spacing: 1px; }
 
+    /* שורות ממורכזות: מספר העמודות (--cols) נקבע ב-fitOptionsGrid לפי הרוחב */
     .options-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(85px, 1fr));
-      gap: 6px;
+      --gap: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: var(--gap);
       margin-top: 4px;
     }
+    .options-grid > * { flex: 0 0 calc((100% - (var(--cols, 4) - 1) * var(--gap)) / var(--cols, 4)); min-width: 0; box-sizing: border-box; }
 
     .chord-answers-container, .mode-answers-container {
       display: flex;
@@ -677,29 +696,17 @@
     <span class="topscore"><span id="scoreLabel">ניקוד </span><span id="scoreDisplay">0</span></span>
     <nav class="mode-tabs" id="modeTabs">
       <button data-mode="read" onclick="setAppMode('read')">קריאה</button>
-      <button data-mode="ear" onclick="setAppMode('ear')">שמיעה</button>
-      <button data-mode="train" onclick="setAppMode('train')">אימון שמיעה</button>
+      <button data-mode="ear" onclick="setAppMode('ear')">חופשי</button>
+      <button data-mode="train" onclick="setAppMode('train')">לפי שלבים</button>
     </nav>
     <details id="settingsCollapse">
       <summary>הגדרות</summary>
       <div class="controls-grid">
-        <div class="control-group no-train">
-          <label>סוג התרגיל:</label>
-          <select id="exType" onchange="onExerciseTypeChange()">
-            <option value="note_id" class="read-only-opt">זיהוי תווים</option>
-            <option value="intervals" selected>מרווחים</option>
-            <option value="chords">אקורדים משולשים</option>
-            <option value="septachords">ספטאקורדים</option>
-            <option value="scales">סולמות</option>
-            <option value="modes">מודוסים יווניים</option>
-          </select>
-        </div>
-
         <div class="control-group" id="intervalFormatGroup">
           <label>תצוגת מרווחים:</label>
           <select id="intervalFormatSelect" onchange="updateOptionsList()">
             <option value="full">מילים מלאות</option>
-            <option value="abbr" selected>קיצורים (2.מוג)</option>
+            <option value="abbr" selected>קיצורים</option>
           </select>
         </div>
 
@@ -711,7 +718,7 @@
           </select>
         </div>
 
-        <div class="control-group">
+        <div class="control-group ear-only-setting">
           <label>כלי נגינה:</label>
           <select id="instrumentSelect" onchange="loadSamples(this.value)">
             <option value="vibraphone" selected>ויברפון</option>
@@ -736,13 +743,13 @@
           </select>
         </div>
 
-        <div class="control-group no-train" id="playModeGroup">
+        <div class="control-group no-train ear-only-setting" id="playModeGroup">
           <label>נגינה:</label>
           <select id="playMode">
             <option value="random" selected>אקראי</option>
             <option value="harmonic">הרמוני</option>
-            <option value="ascending">מלודי עולה</option>
-            <option value="descending">מלודי יורד</option>
+            <option value="ascending">עולה</option>
+            <option value="descending">יורד</option>
           </select>
         </div>
       </div>
@@ -760,7 +767,7 @@
 
       <div class="control-group no-train" id="optionsGroup" style="margin-top:4px;">
         <div class="tag-selector-header">
-          <label id="optionsListLabel">סינון סוגים:</label>
+          <label id="optionsListLabel">מה לתרגל:</label>
           <div>
             <button onclick="selectAllOptions(true)">הכל</button>
             <button onclick="selectAllOptions(false)">נקה</button>
@@ -768,9 +775,25 @@
         </div>
         <div class="tag-container" id="optionsTags"></div>
       </div>
-      <button class="btn-main no-train" onclick="goToNextExercise(); closeSettings();">תרגיל חדש</button>
     </details>
   </div>
+
+  <nav class="ex-types no-train" id="exTypeRow">
+    <select id="exType" onchange="onExerciseTypeChange()" style="display: none;">
+      <option value="note_id" class="read-only-opt">זיהוי תווים</option>
+      <option value="intervals" selected>מרווחים</option>
+      <option value="chords">אקורדים משולשים</option>
+      <option value="septachords">ספטאקורדים</option>
+      <option value="scales">סולמות</option>
+      <option value="modes">מודוסים יווניים</option>
+    </select>
+    <button data-type="note_id" class="read-only-opt" onclick="setExType('note_id')">תווים</button>
+    <button data-type="intervals" onclick="setExType('intervals')">מרווחים</button>
+    <button data-type="chords" onclick="setExType('chords')">משולשים</button>
+    <button data-type="septachords" onclick="setExType('septachords')">ספטאקורדים</button>
+    <button data-type="scales" onclick="setExType('scales')">סולמות</button>
+    <button data-type="modes" onclick="setExType('modes')">מודוסים</button>
+  </nav>
 
   <div class="card training-panel" id="trainingPanel" style="display: none;"></div>
 
@@ -780,6 +803,7 @@
       <button class="play-btn" id="playFirstNoteBtn" onclick="playFirstNoteOnly()" style="display:none;">צליל ראשון</button>
       <button class="next-btn" onclick="skipExercise()">לתרגיל הבא</button>
       <button class="share-btn no-train" onclick="shareCurrentExercise()">שתף</button>
+      <button class="next-btn train-only" onclick="showTrainingReport(true)">דוח עד כה</button>
       <button class="next-btn train-only" onclick="endTraining()">סיום אימון</button>
       <div class="help-wrapper no-train">
         <button class="help-btn" onclick="revealAnswer()">עזרה</button>
@@ -841,6 +865,7 @@
   </footer>
 </div>
 
+<script src="site-nav.js"></script>
 <script src="theory-core.js"></script>
 <script>
 const T = window.TheoryCore;
@@ -891,7 +916,54 @@ function clearWrongButtons() {
 
 function closeSettings() {
   const settings = document.getElementById('settingsCollapse');
+  settingsDirty = false;
   if (settings) settings.removeAttribute('open');
+}
+
+// שינוי בהגדרות נכנס לתוקף כשסוגרים אותן, בלי כפתור "תרגיל חדש"
+let settingsDirty = false;
+(function watchSettings() {
+  const settings = document.getElementById('settingsCollapse');
+  settings.addEventListener('change', e => { if (e.target.id !== 'instrumentSelect') settingsDirty = true; });
+  settings.addEventListener('click', e => { if (e.target.closest('.tag-pill, .tag-selector-header button')) settingsDirty = true; });
+  settings.addEventListener('toggle', () => {
+    if (settings.open || !settingsDirty) return;
+    settingsDirty = false;
+    if (appMode !== 'train') goToNextExercise();
+  });
+})();
+
+// הגדרות עם מעט אפשרויות: כפתורים במקום תפריט נפתח. ה-select נשאר מוסתר ומקור האמת
+function buildSegmentedSettings() {
+  document.querySelectorAll('#settingsCollapse .controls-grid select').forEach(sel => {
+    if (sel.id === 'displayMode') return;
+    const seg = document.createElement('div');
+    seg.className = 'seg';
+    Array.from(sel.options).forEach(opt => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = opt.textContent;
+      b.dataset.value = opt.value;
+      b.onclick = () => {
+        if (sel.value === opt.value) return;
+        sel.value = opt.value;
+        seg.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+      b.classList.toggle('active', opt.value === sel.value);
+      seg.appendChild(b);
+    });
+    sel.style.display = 'none';
+    sel.after(seg);
+  });
+}
+buildSegmentedSettings();
+
+function setExType(type) {
+  document.getElementById('exType').value = type;
+  onExerciseTypeChange();
+  closeSettings();
+  goToNextExercise();
 }
 
 function getAudioContext() {
@@ -1118,6 +1190,7 @@ function onExerciseTypeChange() {
     intervalFmtGroup.style.display = 'flex';
     updateOptionsList();
   }
+  document.querySelectorAll('#exTypeRow button').forEach(b => b.classList.toggle('active', b.dataset.type === type));
 }
 
 function updateInversionsList(type) {
@@ -1138,8 +1211,8 @@ function updateOptionsList() {
   if (!BASE_STRUCTURES[type]) return;
   const container = document.getElementById('optionsTags');
   container.innerHTML = '';
-  
-  BASE_STRUCTURES[type].forEach(item => {
+
+  optionStructures(type).forEach(item => {
     const pill = document.createElement('div');
     pill.className = 'tag-pill active';
     pill.dataset.value = item.name;
@@ -1214,7 +1287,7 @@ function generateExercise(cfg = null) {
     }
   }
 
-  const poolStructs = cfg ? cfg.pool : BASE_STRUCTURES[type].filter(s => activeOptionPills.includes(s.name));
+  const poolStructs = cfg ? cfg.pool : optionStructures(type).filter(s => activeOptionPills.includes(s.name));
   const chosenStruct = poolStructs[Math.floor(Math.random() * poolStructs.length)];
   let chosenInversion = activeInvPills[Math.floor(Math.random() * activeInvPills.length)];
   // למשולש מוגדל אין משמעות להיפוך: תמיד במצב יסודי, ושאלת ההיפוך נופלת
@@ -1380,9 +1453,13 @@ function playCurrentExercise() {
   }
 
   let mode = currentExercise.playMode || document.getElementById('playMode').value;
-  if (mode === 'random') {
-    const modes = ['harmonic', 'ascending', 'descending'];
-    mode = modes[Math.floor(Math.random() * modes.length)];
+  // באקראי מגרילים סוג נגינה פעם אחת לתרגיל, וכל השמעה חוזרת שלו נשמעת אותו דבר
+  if (mode === 'random' || Array.isArray(mode)) {
+    const modes = Array.isArray(mode) ? mode : ['harmonic', 'ascending', 'descending'];
+    if (!modes.includes(currentExercise.randomPlay)) {
+      currentExercise.randomPlay = modes[Math.floor(Math.random() * modes.length)];
+    }
+    mode = currentExercise.randomPlay;
   }
 
   currentPlayDirection = mode;
@@ -1836,36 +1913,53 @@ function checkNoteAnswerByPc(pc, el) {
 const TRAINING_LENGTH = 20;
 const HISTORY_KEY = 'mt_training_history';
 
+// באוזן אין הבדל בין מרווחים אנהרמוניים: סקונדה מוגדלת נשמעת כטרצה קטנה, קווינטה מוגדלת כסקסטה קטנה,
+// וקוורטה מוגדלת וקווינטה מוקטנת הן טריטון אחד. בשמיעה נשאר כפתור אחד לכל מרחק, ורק בקריאה הכתיב חשוב.
+const EAR_HIDDEN_INTERVALS = ['A2', 'd5', 'A5'];
+
+function earStructures(type) {
+  if (type !== 'intervals') return BASE_STRUCTURES[type];
+  return BASE_STRUCTURES[type]
+    .filter(st => !EAR_HIDDEN_INTERVALS.includes(st.id))
+    .map(st => st.id === 'A4' ? { ...st, name: 'טריטון', abbr: 'טריטון' } : st);
+}
+
+function optionStructures(type) {
+  return appMode === 'read' ? BASE_STRUCTURES[type] : earStructures(type);
+}
+
 function structsById(type, ids) {
-  return ids.map(id => {
-    const st = BASE_STRUCTURES[type].find(x => x.id === id);
-    // באוזן קוורטה מוגדלת וקווינטה מוקטנת זהות, אז מציגים אותן כטריטון אחד
-    return (type === 'intervals' && id === 'A4') ? { ...st, name: 'טריטון', abbr: 'טריטון' } : st;
-  });
+  return ids.map(id => earStructures(type).find(x => x.id === id));
 }
 
 const EAR_INTERVALS = ['m2', 'M2', 'm3', 'M3', 'P4', 'A4', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8'];
+// נגינה מלמעלה למטה קשה יותר לשמיעה, אז היא מגיעה רק אחרי שהעולה וההרמוני כבר מוכרים
+const UP_PLAY = ['harmonic', 'ascending'];
 const EAR_LEVELS = [
   { name: 'רמה 1', desc: 'טרצות, קווינטה ואוקטבה, עולים', cats: [
     { label: 'מרווחים עולים', type: 'intervals', ids: ['m3', 'M3', 'P5', 'P8'], play: 'ascending' }
   ]},
-  { name: 'רמה 2', desc: 'כל המרווחים, עולים ויורדים', cats: [
-    { label: 'מרווחים עולים', type: 'intervals', ids: EAR_INTERVALS, play: 'ascending' },
-    { label: 'מרווחים יורדים', type: 'intervals', ids: EAR_INTERVALS, play: 'descending' }
+  { name: 'רמה 2', desc: 'כל המרווחים, עולים', cats: [
+    { label: 'מרווחים עולים', type: 'intervals', ids: EAR_INTERVALS, play: 'ascending' }
   ]},
   { name: 'רמה 3', desc: 'מרווחים הרמוניים, משולשים מז׳ור ומינור', cats: [
     { label: 'מרווחים הרמוניים', type: 'intervals', ids: EAR_INTERVALS, play: 'harmonic' },
     { label: 'משולשים', type: 'chords', ids: ['major', 'minor'], inversions: [0], play: 'harmonic' }
   ]},
-  { name: 'רמה 4', desc: 'כל המשולשים והיפוכים, מז׳ור ומינור טבעי', cats: [
-    { label: 'משולשים', type: 'chords', ids: ['major', 'minor', 'diminished', 'augmented'], inversions: [0, 1, 2], play: 'random' },
+  { name: 'רמה 4', desc: 'מרווחים יורדים, כל המשולשים וההיפוכים', cats: [
+    { label: 'מרווחים יורדים', type: 'intervals', ids: EAR_INTERVALS, play: 'descending' },
+    { label: 'משולשים', type: 'chords', ids: ['major', 'minor', 'diminished', 'augmented'], inversions: [0, 1, 2], play: UP_PLAY }
+  ]},
+  { name: 'רמה 5', desc: 'ספטאקורדים עיקריים, מז׳ור ומינור טבעי', cats: [
+    { label: 'ספטאקורדים', type: 'septachords', ids: ['major7', 'dominant7', 'minor7', 'half_diminished'], inversions: [0], play: UP_PLAY },
     { label: 'סולמות', type: 'scales', ids: ['major', 'minor_natural'] }
   ]},
-  { name: 'רמה 5', desc: 'ספטאקורדים עיקריים, כל סוגי המינור', cats: [
+  { name: 'רמה 6', desc: 'אקורדים גם מלמעלה למטה, כל סוגי המינור', cats: [
+    { label: 'משולשים', type: 'chords', ids: ['major', 'minor', 'diminished', 'augmented'], inversions: [0, 1, 2], play: 'random' },
     { label: 'ספטאקורדים', type: 'septachords', ids: ['major7', 'dominant7', 'minor7', 'half_diminished'], inversions: [0], play: 'random' },
     { label: 'סולמות', type: 'scales', ids: ['major', 'minor_natural', 'minor_harmonic', 'minor_melodic'] }
   ]},
-  { name: 'רמה 6', desc: 'כל הספטאקורדים וההיפוכים, מודוסים', cats: [
+  { name: 'רמה 7', desc: 'כל הספטאקורדים וההיפוכים, מודוסים', cats: [
     { label: 'ספטאקורדים', type: 'septachords', ids: T.CATALOG.septachords.map(x => x.id), inversions: [0, 1, 2, 3], play: 'random' },
     { label: 'מודוסים', type: 'modes', ids: T.CATALOG.modes.map(x => x.id) }
   ]}
@@ -1892,17 +1986,22 @@ function saveHistory(entry) {
 }
 
 function setAppMode(mode, initial = false) {
+  const spellingChanged = (appMode === 'read') !== (mode === 'read');
   appMode = mode;
   try { localStorage.setItem('mt_app_mode', mode); } catch (e) {}
   document.body.classList.remove('mode-read', 'mode-ear', 'mode-train', 'in-session');
   document.body.classList.add('mode-' + mode);
   document.querySelectorAll('#modeTabs button').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  document.body.dataset.section = mode === 'read' ? 'read' : 'ear';
+  if (window.SiteNav) SiteNav.setActive(document.body.dataset.section);
   document.getElementById('displayMode').value = mode === 'read' ? 'both' : 'audio_only';
   training = null;
   const exType = document.getElementById('exType');
   if (mode !== 'read' && exType.value === 'note_id') {
     exType.value = 'intervals';
     onExerciseTypeChange();
+  } else if (spellingChanged && exType.value === 'intervals') {
+    updateOptionsList();
   }
   closeSettings();
   if (mode === 'train') {
@@ -2015,13 +2114,20 @@ function statRow(g) {
   return `<div class="report-row"><div>${g.key}</div><div class="report-bar"><span style="width:${pct}%"></span></div><div class="num">${g.correct}/${g.total}</div></div>`;
 }
 
-function showTrainingReport() {
+function resumeTraining() {
+  document.getElementById('trainingPanel').style.display = 'none';
+  document.getElementById('practiceArea').style.display = 'flex';
+  window.scrollTo(0, 0);
+}
+
+// partial: דוח ביניים באמצע אימון. האימון נשאר פתוח ולא נשמר בהיסטוריה
+function showTrainingReport(partial = false) {
   const t = training;
   const results = t.results;
   const total = results.length;
   const correct = results.filter(r => r.correct).length;
   const pct = total ? Math.round(100 * correct / total) : 0;
-  saveHistory({ t: Date.now(), level: t.level, correct, total });
+  if (!partial) saveHistory({ t: Date.now(), level: t.level, correct, total });
 
   const byCat = groupStats(results, r => r.category);
   const byItem = groupStats(results, r => r.item).sort((a, b) => a.correct / a.total - b.correct / b.total);
@@ -2040,7 +2146,9 @@ function showTrainingReport() {
   const weak = byItem.filter(g => g.correct / g.total < 0.7).map(g => g.key);
   const hasNext = t.level < EAR_LEVELS.length - 1;
   let advice;
-  if (pct >= 85) {
+  if (partial) {
+    advice = total ? `ענית על ${total} מתוך ${t.plan.length} תרגילים. ההמלצה לרמה הבאה תופיע בסוף האימון.` : 'עוד לא ענית על אף תרגיל.';
+  } else if (pct >= 85) {
     advice = hasNext ? 'מצוין. אפשר לעבור לרמה הבאה.' : 'מצוין. סיימת את הרמה הגבוהה ביותר.';
   } else if (weak.length) {
     advice = 'כדאי לחזור על הרמה הזו, עם דגש על מה שמופיע למטה בחיזוק.';
@@ -2048,26 +2156,32 @@ function showTrainingReport() {
     advice = 'כמעט שם. עוד סבב אחד ברמה הזו ואפשר להתקדם.';
   }
 
-  training = null;
-  document.body.classList.remove('in-session');
+  if (!partial) {
+    training = null;
+    document.body.classList.remove('in-session');
+  }
   document.getElementById('practiceArea').style.display = 'none';
   const panel = document.getElementById('trainingPanel');
   panel.style.display = 'block';
   updateTopbarProgress();
-  panel.innerHTML = `<h2>${EAR_LEVELS[t.level].name}: סיכום</h2>
-    <div class="report-score">${pct}%</div>
-    <p class="sub">${correct} נכונות מתוך ${total} בניסיון הראשון</p>
+  const actions = partial
+    ? `<button class="primary" onclick="resumeTraining()">המשך אימון</button>
+      <button onclick="endTraining()">סיום אימון</button>`
+    : `${hasNext && pct >= 85 ? `<button class="primary" onclick="startTraining(${t.level + 1})">לרמה הבאה</button>` : ''}
+      <button class="${hasNext && pct >= 85 ? '' : 'primary'}" onclick="startTraining(${t.level})">שוב ברמה הזו</button>
+      <button onclick="showLevelPicker()">כל הרמות</button>`;
+  panel.innerHTML = `<h2>${EAR_LEVELS[t.level].name}: ${partial ? 'דוח עד כה' : 'סיכום'}</h2>
+    ${total ? `<div class="report-score">${pct}%</div>
+    <p class="sub">${correct} נכונות מתוך ${total} בניסיון הראשון</p>` : ''}
     <div class="report-section"><p class="report-advice">${advice}</p></div>
     ${byCat.length > 1 ? `<div class="report-section"><h3>לפי קטגוריה</h3>${byCat.map(statRow).join('')}</div>` : ''}
-    <div class="report-section"><h3>לפי סוג</h3>${byItem.map(statRow).join('')}</div>
+    ${total ? `<div class="report-section"><h3>לפי סוג</h3>${byItem.map(statRow).join('')}</div>` : ''}
     ${byInv.length ? `<div class="report-section"><h3>היפוכים</h3>${byInv.map(statRow).join('')}</div>` : ''}
     ${strong.length ? `<div class="report-section"><h3>חזק</h3><p class="report-advice">${strong.join(', ')}</p></div>` : ''}
     ${weak.length ? `<div class="report-section"><h3>לחיזוק</h3><p class="report-advice">${weak.join(', ')}</p></div>` : ''}
     ${confList ? `<div class="report-section"><h3>בלבולים נפוצים</h3><ul class="report-list">${confList}</ul></div>` : ''}
     <div class="report-actions">
-      ${hasNext && pct >= 85 ? `<button class="primary" onclick="startTraining(${t.level + 1})">לרמה הבאה</button>` : ''}
-      <button class="${hasNext && pct >= 85 ? '' : 'primary'}" onclick="startTraining(${t.level})">שוב ברמה הזו</button>
-      <button onclick="showLevelPicker()">כל הרמות</button>
+      ${actions}
     </div>`;
   window.scrollTo(0, 0);
 }
@@ -2106,6 +2220,21 @@ function revealAnswer() {
   popover.innerText = text;
   popover.classList.add('visible');
 }
+
+// כמה כפתורים נכנסים בשורה (לפחות 85px לכפתור), כמו grid auto-fit, אבל השורה האחרונה ממורכזת
+function fitOptionsGrid(grid) {
+  const width = grid.clientWidth;
+  if (!width) return;
+  const gap = parseFloat(getComputedStyle(grid).columnGap) || 0;
+  const fit = Math.max(1, Math.floor((width + gap) / (85 + gap)));
+  grid.style.setProperty('--cols', Math.max(1, Math.min(grid.children.length, fit)));
+}
+const gridResize = new ResizeObserver(entries => entries.forEach(e => fitOptionsGrid(e.target)));
+const gridChildren = new MutationObserver(records => records.forEach(r => fitOptionsGrid(r.target)));
+document.querySelectorAll('.options-grid').forEach(g => {
+  gridResize.observe(g);
+  gridChildren.observe(g, { childList: true });
+});
 
 onExerciseTypeChange();
 loadSamples(document.getElementById('instrumentSelect').value);
