@@ -49,9 +49,9 @@
         let svg = '';
         for (let i = 0; i < 5; i++) {
             const y = S.lineY(staff, i * 2);
-            svg += `<line x1="0" x2="700" y1="${y}" y2="${y}" stroke="#94a3b8" stroke-width="1.2"/>`;
+            svg += `<line x1="0" x2="700" y1="${y}" y2="${y}" stroke="#aaaaaa" stroke-width="1.2"/>`;
         }
-        svg += `<line x1="0.6" x2="0.6" y1="${S.lineY(staff, 8)}" y2="${S.lineY(staff, 0)}" stroke="#94a3b8" stroke-width="1.2"/>`;
+        svg += `<line x1="0.6" x2="0.6" y1="${S.lineY(staff, 8)}" y2="${S.lineY(staff, 0)}" stroke="#aaaaaa" stroke-width="1.2"/>`;
         svg += S.clef('sol', 30, staff);
         [2, 4, 6].forEach(line => svg += S.notehead(240, S.lineY(staff, line), staff.space));
         for (let line = 1; line <= 8; line++) svg += S.notehead(350 + line * 30, S.lineY(staff, line), staff.space);
