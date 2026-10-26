@@ -762,13 +762,15 @@
     </div>
 
     <div id="modeAnswersArea" class="mode-answers-container" style="display: none;">
-      <div class="section-title">1. בחירת תו היסוד:</div>
-      <div class="acc-selector">
-        <button class="acc-btn" id="modeAccFlat" onclick="toggleAccidental('-1')">במול (♭)</button>
-        <button class="acc-btn" id="modeAccSharp" onclick="toggleAccidental('1')">דיאז (♯)</button>
+      <div id="modeRootPart" style="display: contents;">
+        <div class="section-title">1. בחירת תו היסוד:</div>
+        <div class="acc-selector">
+          <button class="acc-btn" id="modeAccFlat" onclick="toggleAccidental('-1')">במול (♭)</button>
+          <button class="acc-btn" id="modeAccSharp" onclick="toggleAccidental('1')">דיאז (♯)</button>
+        </div>
+        <div class="options-grid" id="modeNoteNameButtons"></div>
       </div>
-      <div class="options-grid" id="modeNoteNameButtons"></div>
-      <div class="section-title">2. בחירת המודוס / הסולם:</div>
+      <div class="section-title" id="modeTypeTitle">2. בחירת המודוס / הסולם:</div>
       <div class="options-grid" id="modeTypeButtons"></div>
     </div>
 
@@ -827,6 +829,7 @@ let selectedChordInv = null;
 let selectedNoteNameIdx = null;
 // תו שנבחר לפני סימן ההתק: נבדק שוב כשבוחרים סימן התק, כך שסדר הלחיצות לא משנה
 let pendingLetter = null;
+let modeRootGiven = false;
 let selectedModeType = null;
 let typeAnsweredCorrectly = false;
 let exerciseSolved = false;
@@ -1416,6 +1419,12 @@ function setupModeUI() {
 
   toggleAccidental('0');
 
+  // במושמע בלבד לא שואלים על צליל היסוד, כי זה דורש שמיעה אבסולוטית: רק סוג הסולם, בנקודה מלאה
+  modeRootGiven = document.getElementById('displayMode').value === 'audio_only';
+  document.getElementById('modeRootPart').style.display = modeRootGiven ? 'none' : 'contents';
+  document.getElementById('modeTypeTitle').innerText = modeRootGiven ? 'בחירת המודוס / הסולם:' : '2. בחירת המודוס / הסולם:';
+  if (modeRootGiven) selectedNoteNameIdx = currentExercise.notes[0].nameIndex;
+
   NOTE_NAMES.forEach((n, idx) => {
     const btn = document.createElement('button');
     btn.className = 'opt-btn';
@@ -1496,7 +1505,7 @@ function checkModeComplete() {
 
   // selectedNoteNameIdx נקבע רק כשהצליל וסימן ההתק נכונים, כך ששינוי סימן אחר כך לא מבטל
   if (selectedNoteNameIdx === rootNote.nameIndex && selectedModeType === currentExercise.struct.name) {
-    currentScore += 0.5;
+    currentScore += modeRootGiven ? 1 : 0.5;
     document.getElementById('scoreDisplay').innerText = currentScore;
     document.getElementById('feedback').innerText = 'נכון';
     document.getElementById('feedback').className = 'feedback success';
