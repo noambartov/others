@@ -131,6 +131,7 @@
     body.theme-clean .opt-btn { font-weight: 400; font-size: 14px; padding: 12px 6px; }
     body.theme-clean .opt-btn:hover { background: #e2e2e2; }
     body.theme-clean .opt-btn.correct { background: #222222 !important; color: #ffffff !important; }
+    .opt-btn.pending { box-shadow: inset 0 0 0 2px var(--primary); }
     body.theme-clean .opt-btn.wrong { background: #ffffff !important; color: #bbbbbb !important; border: none !important; text-decoration: line-through; }
     body.theme-clean .acc-btn { font-weight: 400; font-size: 14px; padding: 6px 14px; border-radius: 6px; }
     body.theme-clean .acc-btn.selected { background: #222222; color: #ffffff; }
@@ -808,6 +809,8 @@ let selectedAccidental = '0';
 let selectedChordType = null;
 let selectedChordInv = null;
 let selectedNoteNameIdx = null;
+// תו שנבחר לפני סימן ההתק: נבדק שוב כשבוחרים סימן התק, כך שסדר הלחיצות לא משנה
+let pendingLetter = null;
 let selectedModeType = null;
 let typeAnsweredCorrectly = false;
 let exerciseSolved = false;
@@ -1220,6 +1223,7 @@ function startPractice() {
   selectedChordType = null;
   selectedChordInv = null;
   selectedNoteNameIdx = null;
+  pendingLetter = null;
   selectedModeType = null;
   typeAnsweredCorrectly = false;
   exerciseSolved = false;
@@ -1380,11 +1384,29 @@ function setupModeUI() {
   });
 }
 
+function setPendingLetter(next) {
+  if (pendingLetter) pendingLetter.btn.classList.remove('pending');
+  pendingLetter = next;
+  if (next) next.btn.classList.add('pending');
+}
+
+// התו נכון אבל עוד לא נבחר סימן התק: מחכים לסימן במקום לסמן טעות
+function waitsForAccidental(nameIdx, target) {
+  return nameIdx === target.nameIndex && parseInt(selectedAccidental) === 0 && target.acc !== 0;
+}
+
 function checkModeNoteName(nameIdx, btn) {
   if (exerciseSolved) return;
   clearWrongButtons();
   const rootNote = currentExercise.notes[0];
-  
+  setPendingLetter(null);
+
+  if (waitsForAccidental(nameIdx, rootNote)) {
+    setPendingLetter({ idx: nameIdx, btn, check: checkModeNoteName });
+    document.getElementById('feedback').innerText = '';
+    return;
+  }
+
   if (nameIdx === rootNote.nameIndex && parseInt(selectedAccidental) === rootNote.acc) {
     btn.classList.add('correct');
     selectedNoteNameIdx = nameIdx;
@@ -1398,6 +1420,7 @@ function checkModeNoteName(nameIdx, btn) {
     checkModeComplete();
   } else {
     btn.classList.add('wrong');
+    if (nameIdx === rootNote.nameIndex) setPendingLetter({ idx: nameIdx, btn, check: checkModeNoteName });
     document.getElementById('feedback').innerText = 'צליל יסוד שגוי';
     document.getElementById('feedback').className = 'feedback error';
   }
@@ -1422,7 +1445,8 @@ function checkModeType(typeName, btn) {
 function checkModeComplete() {
   const rootNote = currentExercise.notes[0];
 
-  if (selectedNoteNameIdx === rootNote.nameIndex && parseInt(selectedAccidental) === rootNote.acc && selectedModeType === currentExercise.struct.name) {
+  // selectedNoteNameIdx נקבע רק כשהצליל וסימן ההתק נכונים, כך ששינוי סימן אחר כך לא מבטל
+  if (selectedNoteNameIdx === rootNote.nameIndex && selectedModeType === currentExercise.struct.name) {
     currentScore += 0.5;
     document.getElementById('scoreDisplay').innerText = currentScore;
     document.getElementById('feedback').innerText = 'נכון';
@@ -1465,6 +1489,8 @@ function toggleAccidental(val) {
   const modeAccSharp = document.getElementById('modeAccSharp');
   if (modeAccFlat) modeAccFlat.classList.toggle('selected', selectedAccidental === '-1');
   if (modeAccSharp) modeAccSharp.classList.toggle('selected', selectedAccidental === '1');
+
+  if (pendingLetter && !exerciseSolved) pendingLetter.check(pendingLetter.idx, pendingLetter.btn);
 }
 
 function renderPianoKeyboard() {
@@ -1505,6 +1531,13 @@ function checkNoteAnswer(nameIdx, el) {
   clearWrongButtons();
   const correctNote = currentExercise.correctNote;
   const userAcc = parseInt(selectedAccidental);
+  setPendingLetter(null);
+
+  if (waitsForAccidental(nameIdx, correctNote)) {
+    setPendingLetter({ idx: nameIdx, btn: el, check: checkNoteAnswer });
+    document.getElementById('feedback').innerText = '';
+    return;
+  }
 
   if (nameIdx === correctNote.nameIndex && userAcc === correctNote.acc) {
     el.classList.add('correct');
@@ -1515,6 +1548,7 @@ function checkNoteAnswer(nameIdx, el) {
     triggerSuccessAndNext();
   } else {
     el.classList.add('wrong');
+    if (nameIdx === correctNote.nameIndex) setPendingLetter({ idx: nameIdx, btn: el, check: checkNoteAnswer });
     document.getElementById('feedback').innerText = 'תו שגוי';
     document.getElementById('feedback').className = 'feedback error';
   }
