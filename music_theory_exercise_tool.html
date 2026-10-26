@@ -908,12 +908,35 @@ function midiToFreq(midi) {
   return 440 * Math.pow(2, (midi - 69) / 12);
 }
 
-// stopAt: בנגינה מלודית הצליל משתתק כשמגיע הבא, כדי שהצלילים לא יערמו זה על זה
+// כל השמעה מתנגנת דרך ערוץ משלה, כדי שאפשר יהיה להשתיק את מה שעוד מצלצל לפני ההשמעה הבאה
+let playBus = null;
+
+function newPlayBus(ctx) {
+  silenceAll(0.08);
+  playBus = ctx.createGain();
+  playBus.connect(masterOut(ctx));
+}
+
+// מחזיר true אם היה צליל שעוד מצלצל
+function silenceAll(fade) {
+  if (!playBus) return false;
+  const bus = playBus;
+  const t = audioCtx.currentTime;
+  bus.gain.cancelScheduledValues(t);
+  bus.gain.setValueAtTime(bus.gain.value, t);
+  bus.gain.linearRampToValueAtTime(0, t + fade);
+  setTimeout(() => bus.disconnect(), fade * 1000 + 200);
+  playBus = null;
+  return true;
+}
+
+// stopAt: בסולם כל צליל משתתק כשמגיע הבא. במרווח ובאקורד מלודי אין stopAt: הצלילים ממשיכים לצלצל, כמו עם פדל
 function playInstrumentNote(freq, startTime, stopAt = null) {
   const ctx = getAudioContext();
   const inst = document.getElementById('instrumentSelect').value;
+  if (!playBus) newPlayBus(ctx);
   const damper = ctx.createGain();
-  damper.connect(masterOut(ctx));
+  damper.connect(playBus);
   if (stopAt !== null) damper.gain.setTargetAtTime(0, stopAt, 0.04);
   // עד שהדגימות נטענות (או כשהדף נפתח מקובץ מקומי) מנגנים פסנתר מסונתז
   if (sampleBuffers[inst]) playSampleNote(ctx, inst, freq, startTime, stopAt, damper);
@@ -1345,6 +1368,7 @@ function playCurrentExercise() {
   if (!currentExercise) return;
   const freqs = currentExercise.notes.map(n => midiToFreq(n.midiNum));
   const ctx = getAudioContext();
+  newPlayBus(ctx);
 
   if (currentExercise.type === 'scales' || currentExercise.type === 'modes') {
     currentPlayDirection = 'ascending';
@@ -1352,7 +1376,7 @@ function playCurrentExercise() {
     const now = ctx.currentTime + 0.05;
     const all = [...freqs, ...[...freqs].reverse().slice(1)];
     all.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.3, idx < all.length - 1 ? now + (idx + 1) * 0.3 : null));
-    return all.length * 0.3 + 0.4;
+    return;
   }
 
   let mode = currentExercise.playMode || document.getElementById('playMode').value;
@@ -1368,12 +1392,10 @@ function playCurrentExercise() {
   if (mode === 'harmonic') {
     freqs.forEach(f => playInstrumentNote(f, now));
   } else if (mode === 'ascending') {
-    freqs.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, idx < freqs.length - 1 ? now + (idx + 1) * 0.35 : null));
+    freqs.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35));
   } else if (mode === 'descending') {
-    const rev = [...freqs].reverse();
-    rev.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, idx < rev.length - 1 ? now + (idx + 1) * 0.35 : null));
+    [...freqs].reverse().forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35));
   }
-  return mode === 'harmonic' ? 1.2 : freqs.length * 0.35 + 0.5;
 }
 
 function playFirstNoteOnly() {
@@ -1394,14 +1416,10 @@ function playFirstNoteOnly() {
 function triggerSuccessAndNext() {
   exerciseSolved = true;
   if (training) recordTrainingResult();
-  const isScale = currentExercise.type === 'scales' || currentExercise.type === 'modes';
-  // סולם ארוך מדי להשמעה חוזרת; מרווח ואקורד מושמעים שוב ועוברים כשההשמעה נגמרת
-  if (isScale) {
-    setTimeout(goToNextExercise, 800);
-  } else {
-    const seconds = playCurrentExercise();
-    setTimeout(goToNextExercise, Math.max(1000, seconds * 1000));
-  }
+  // בלי השמעה חוזרת: הצליל דועך, רגע של שקט, ואז התרגיל הבא
+  silenceAll(0.5);
+  const isAudio = document.getElementById('displayMode').value === 'audio_only';
+  setTimeout(goToNextExercise, isAudio ? 1500 : 1000);
 }
 
 function goToNextExercise() {
@@ -1410,7 +1428,10 @@ function goToNextExercise() {
     return;
   }
   startPractice();
-  if (document.getElementById('displayMode').value === 'audio_only') playCurrentExercise();
+  if (document.getElementById('displayMode').value !== 'audio_only') return;
+  // אם התרגיל הקודם עוד מצלצל (למשל "תרגיל חדש" באמצע), משתיקים ומשאירים רגע שקט לפני ההשמעה
+  if (silenceAll(0.3)) setTimeout(playCurrentExercise, 900);
+  else playCurrentExercise();
 }
 
 function exerciseKey(ex) {
