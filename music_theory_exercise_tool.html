@@ -127,7 +127,7 @@
     body.theme-clean .chord-answers-container,
     body.theme-clean .mode-answers-container { background: none; border: none; padding: 0; gap: 8px; }
     body.theme-clean .section-title { text-align: center; color: var(--text-muted); font-weight: 400; font-size: 13px; }
-    body.theme-clean .options-grid { gap: 8px; }
+    body.theme-clean .options-grid { --gap: 8px; }
     body.theme-clean .opt-btn { font-weight: 400; font-size: 14px; padding: 12px 6px; }
     body.theme-clean .opt-btn:hover { background: #e2e2e2; }
     body.theme-clean .opt-btn.correct { background: #222222 !important; color: #ffffff !important; }
@@ -141,16 +141,18 @@
     .big-play:active { transform: scale(0.96); }
     .big-play-label { font-size: 14px; color: var(--text-muted); }
     .mode-tabs { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); display: flex; gap: 18px; white-space: nowrap; }
-    .mode-tabs button { background: none; border: none; padding: 2px 0; font: inherit; font-size: 15px; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; }
-    .mode-tabs button.active { color: var(--text-dark); border-bottom-color: var(--text-dark); }
+    .mode-tabs button { background: none; border: none; padding: 2px 0; font: inherit; font-size: 15px; color: var(--text-muted); cursor: pointer; transition: color .15s; }
+    .mode-tabs button:hover, .mode-tabs button.active { color: var(--text-dark); }
+    /* קריאה ושמיעה נבחרות בסרגל האתר; כאן נשארים רק חופשי / לפי שלבים בתוך השמיעה */
+    .mode-tabs button[data-mode="read"], body.mode-read .mode-tabs { display: none; }
     @media (max-width: 480px) {
       .mode-tabs { gap: 12px; }
       .mode-tabs button { font-size: 14px; }
     }
     .ex-types { display: flex; justify-content: center; gap: 16px; padding: 10px 0 4px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
     .ex-types::-webkit-scrollbar { display: none; }
-    .ex-types button { background: none; border: none; padding: 2px 0; font: inherit; font-size: 14px; color: var(--text-muted); cursor: pointer; border-bottom: 1px solid transparent; flex: none; }
-    .ex-types button.active { color: var(--text-dark); border-bottom-color: var(--text-dark); }
+    .ex-types button { background: none; border: none; padding: 2px 0; font: inherit; font-size: 14px; color: var(--text-muted); cursor: pointer; flex: none; transition: color .15s; }
+    .ex-types button:hover, .ex-types button.active { color: var(--text-dark); }
     @media (max-width: 480px) {
       .ex-types { gap: 12px; justify-content: flex-start; }
       .ex-types button { font-size: 13px; }
@@ -201,7 +203,7 @@
     body.theme-clean .feedback { font-weight: 400; font-size: 15px; color: #555555; }
     body.theme-clean footer { font-weight: 400; color: #aaaaaa; }
     body.theme-clean footer a { color: #888888; }
-    body.theme-clean footer a:hover { color: #222222; text-decoration: underline; }
+    body.theme-clean footer a:hover { color: #222222; }
 
     /* ערכת חם / WARM */
     body.theme-warm {
@@ -564,12 +566,16 @@
     body:not(.theme-modern):not(.theme-clean) .staff-line:not(.strong) { opacity: 0.4; }
     .eyebrow { display: none; font-size: 11px; font-weight: 600; color: var(--primary); letter-spacing: 1px; }
 
+    /* שורות ממורכזות: מספר העמודות (--cols) נקבע ב-fitOptionsGrid לפי הרוחב */
     .options-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(85px, 1fr));
-      gap: 6px;
+      --gap: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: var(--gap);
       margin-top: 4px;
     }
+    .options-grid > * { flex: 0 0 calc((100% - (var(--cols, 4) - 1) * var(--gap)) / var(--cols, 4)); min-width: 0; box-sizing: border-box; }
 
     .chord-answers-container, .mode-answers-container {
       display: flex;
@@ -687,8 +693,8 @@
     <span class="topscore"><span id="scoreLabel">ניקוד </span><span id="scoreDisplay">0</span></span>
     <nav class="mode-tabs" id="modeTabs">
       <button data-mode="read" onclick="setAppMode('read')">קריאה</button>
-      <button data-mode="ear" onclick="setAppMode('ear')">שמיעה</button>
-      <button data-mode="train" onclick="setAppMode('train')">אימון שמיעה</button>
+      <button data-mode="ear" onclick="setAppMode('ear')">חופשי</button>
+      <button data-mode="train" onclick="setAppMode('train')">לפי שלבים</button>
     </nav>
     <details id="settingsCollapse">
       <summary>הגדרות</summary>
@@ -856,6 +862,7 @@
   </footer>
 </div>
 
+<script src="site-nav.js"></script>
 <script src="theory-core.js"></script>
 <script>
 const T = window.TheoryCore;
@@ -1956,6 +1963,8 @@ function setAppMode(mode, initial = false) {
   document.body.classList.remove('mode-read', 'mode-ear', 'mode-train', 'in-session');
   document.body.classList.add('mode-' + mode);
   document.querySelectorAll('#modeTabs button').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  document.body.dataset.section = mode === 'read' ? 'read' : 'ear';
+  if (window.SiteNav) SiteNav.setActive(document.body.dataset.section);
   document.getElementById('displayMode').value = mode === 'read' ? 'both' : 'audio_only';
   training = null;
   const exType = document.getElementById('exType');
@@ -2182,6 +2191,21 @@ function revealAnswer() {
   popover.innerText = text;
   popover.classList.add('visible');
 }
+
+// כמה כפתורים נכנסים בשורה (לפחות 85px לכפתור), כמו grid auto-fit, אבל השורה האחרונה ממורכזת
+function fitOptionsGrid(grid) {
+  const width = grid.clientWidth;
+  if (!width) return;
+  const gap = parseFloat(getComputedStyle(grid).columnGap) || 0;
+  const fit = Math.max(1, Math.floor((width + gap) / (85 + gap)));
+  grid.style.setProperty('--cols', Math.max(1, Math.min(grid.children.length, fit)));
+}
+const gridResize = new ResizeObserver(entries => entries.forEach(e => fitOptionsGrid(e.target)));
+const gridChildren = new MutationObserver(records => records.forEach(r => fitOptionsGrid(r.target)));
+document.querySelectorAll('.options-grid').forEach(g => {
+  gridResize.observe(g);
+  gridChildren.observe(g, { childList: true });
+});
 
 onExerciseTypeChange();
 loadSamples(document.getElementById('instrumentSelect').value);
