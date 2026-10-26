@@ -4,7 +4,7 @@
 
 | קובץ | מה הוא עושה |
 | --- | --- |
-| `index.html` | דף קישורים לכלים |
+| `index.html` | דף הבית: חמשה וקישורים לכלים |
 | `music_theory_exercise_tool.html` | תרגול אונליין עם השמעה |
 | `music_theory_worksheets_generator.html` | דפי תרגול להדפסה ול-PDF |
 | `music_theory_algorythm.html` | מחשבון מרווחים, סולמות ואקורדים |
