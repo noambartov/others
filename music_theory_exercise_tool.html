@@ -997,6 +997,9 @@ function buildNotes(baseLine, baseAcc, struct, clef, inversionShift = 0) {
   return T.build(shared, { line: baseLine, acc: baseAcc, clef, inversion: inversionShift, given: 'root' }).notes;
 }
 
+const AUDIO_RANGE = { low: 45, high: 81 }; // A2..A5
+const AUDIO_RANGE_TYPES = ['intervals', 'chords', 'septachords'];
+
 function generateExercise() {
   const type = document.getElementById('exType').value;
   let clefSelectVal = document.getElementById('clefSelect').value;
@@ -1035,11 +1038,15 @@ function generateExercise() {
   const chosenStruct = poolStructs[Math.floor(Math.random() * poolStructs.length)];
   const chosenInversion = activeInvPills[Math.floor(Math.random() * activeInvPills.length)];
 
+  // במושמע בלבד מרווחים ואקורדים נשארים ברגיסטר נעים: מלה בחלל התחתון של מפתח פה (A2) ועד לה מעל מפתח סול (A5)
+  const audioRange = document.getElementById('displayMode').value === 'audio_only' && AUDIO_RANGE_TYPES.includes(type);
   let baseLine = (clef === 'sol') ? Math.floor(Math.random() * 3) - 2 : Math.floor(Math.random() * 3) - 1;
+  if (audioRange) baseLine = Math.floor(Math.random() * 15) - 4;
   let baseAcc = Math.random() < 0.25 ? (Math.random() < 0.5 ? -1 : 1) : 0;
   let notes = buildNotes(baseLine, baseAcc, chosenStruct, clef, chosenInversion);
 
   let isValid = notes.every(n => Math.abs(n.acc) <= 2 && n.absLine >= -4 && n.absLine <= 14);
+  if (audioRange) isValid = isValid && notes.every(n => n.midiNum >= AUDIO_RANGE.low && n.midiNum <= AUDIO_RANGE.high);
   if (!isValid) {
     return generateExercise();
   }
