@@ -6,7 +6,7 @@
 | --- | --- |
 | `index.html` | דף קישורים לכלים |
 | `music_theory_exercise_tool.html` | תרגול אונליין עם השמעה |
-| `music_theory_worksheets_generator.html` | מחולל דפי תרגול להדפסה ול-PDF |
+| `music_theory_worksheets_generator.html` | דפי תרגול להדפסה ול-PDF |
 | `music_theory_algorythm.html` | מחשבון מרווחים, סולמות ואקורדים |
 | `theory-core.js` | הלוגיקה המשותפת לכל הדפים: צלילים, קטלוג המבנים, בנייה מצליל נתון, זיהוי מרווחים, סימני מפתח וציור החמשה |
 
