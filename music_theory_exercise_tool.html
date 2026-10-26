@@ -1380,9 +1380,13 @@ function playCurrentExercise() {
   }
 
   let mode = currentExercise.playMode || document.getElementById('playMode').value;
-  if (mode === 'random') {
-    const modes = ['harmonic', 'ascending', 'descending'];
-    mode = modes[Math.floor(Math.random() * modes.length)];
+  // באקראי מגרילים סוג נגינה פעם אחת לתרגיל, וכל השמעה חוזרת שלו נשמעת אותו דבר
+  if (mode === 'random' || Array.isArray(mode)) {
+    const modes = Array.isArray(mode) ? mode : ['harmonic', 'ascending', 'descending'];
+    if (!modes.includes(currentExercise.randomPlay)) {
+      currentExercise.randomPlay = modes[Math.floor(Math.random() * modes.length)];
+    }
+    mode = currentExercise.randomPlay;
   }
 
   currentPlayDirection = mode;
@@ -1856,27 +1860,33 @@ function structsById(type, ids) {
 }
 
 const EAR_INTERVALS = ['m2', 'M2', 'm3', 'M3', 'P4', 'A4', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8'];
+// נגינה מלמעלה למטה קשה יותר לשמיעה, אז היא מגיעה רק אחרי שהעולה וההרמוני כבר מוכרים
+const UP_PLAY = ['harmonic', 'ascending'];
 const EAR_LEVELS = [
   { name: 'רמה 1', desc: 'טרצות, קווינטה ואוקטבה, עולים', cats: [
     { label: 'מרווחים עולים', type: 'intervals', ids: ['m3', 'M3', 'P5', 'P8'], play: 'ascending' }
   ]},
-  { name: 'רמה 2', desc: 'כל המרווחים, עולים ויורדים', cats: [
-    { label: 'מרווחים עולים', type: 'intervals', ids: EAR_INTERVALS, play: 'ascending' },
-    { label: 'מרווחים יורדים', type: 'intervals', ids: EAR_INTERVALS, play: 'descending' }
+  { name: 'רמה 2', desc: 'כל המרווחים, עולים', cats: [
+    { label: 'מרווחים עולים', type: 'intervals', ids: EAR_INTERVALS, play: 'ascending' }
   ]},
   { name: 'רמה 3', desc: 'מרווחים הרמוניים, משולשים מז׳ור ומינור', cats: [
     { label: 'מרווחים הרמוניים', type: 'intervals', ids: EAR_INTERVALS, play: 'harmonic' },
     { label: 'משולשים', type: 'chords', ids: ['major', 'minor'], inversions: [0], play: 'harmonic' }
   ]},
-  { name: 'רמה 4', desc: 'כל המשולשים והיפוכים, מז׳ור ומינור טבעי', cats: [
-    { label: 'משולשים', type: 'chords', ids: ['major', 'minor', 'diminished', 'augmented'], inversions: [0, 1, 2], play: 'random' },
+  { name: 'רמה 4', desc: 'מרווחים יורדים, כל המשולשים וההיפוכים', cats: [
+    { label: 'מרווחים יורדים', type: 'intervals', ids: EAR_INTERVALS, play: 'descending' },
+    { label: 'משולשים', type: 'chords', ids: ['major', 'minor', 'diminished', 'augmented'], inversions: [0, 1, 2], play: UP_PLAY }
+  ]},
+  { name: 'רמה 5', desc: 'ספטאקורדים עיקריים, מז׳ור ומינור טבעי', cats: [
+    { label: 'ספטאקורדים', type: 'septachords', ids: ['major7', 'dominant7', 'minor7', 'half_diminished'], inversions: [0], play: UP_PLAY },
     { label: 'סולמות', type: 'scales', ids: ['major', 'minor_natural'] }
   ]},
-  { name: 'רמה 5', desc: 'ספטאקורדים עיקריים, כל סוגי המינור', cats: [
+  { name: 'רמה 6', desc: 'אקורדים גם מלמעלה למטה, כל סוגי המינור', cats: [
+    { label: 'משולשים', type: 'chords', ids: ['major', 'minor', 'diminished', 'augmented'], inversions: [0, 1, 2], play: 'random' },
     { label: 'ספטאקורדים', type: 'septachords', ids: ['major7', 'dominant7', 'minor7', 'half_diminished'], inversions: [0], play: 'random' },
     { label: 'סולמות', type: 'scales', ids: ['major', 'minor_natural', 'minor_harmonic', 'minor_melodic'] }
   ]},
-  { name: 'רמה 6', desc: 'כל הספטאקורדים וההיפוכים, מודוסים', cats: [
+  { name: 'רמה 7', desc: 'כל הספטאקורדים וההיפוכים, מודוסים', cats: [
     { label: 'ספטאקורדים', type: 'septachords', ids: T.CATALOG.septachords.map(x => x.id), inversions: [0, 1, 2, 3], play: 'random' },
     { label: 'מודוסים', type: 'modes', ids: T.CATALOG.modes.map(x => x.id) }
   ]}
