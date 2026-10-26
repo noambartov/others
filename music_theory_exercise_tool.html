@@ -203,6 +203,17 @@
     .report-row .num { color: var(--text-muted); text-align: left; font-size: 13px; }
     .report-list { margin: 0; padding: 0 18px 0 0; font-size: 14px; line-height: 1.8; }
     .report-advice { font-size: 15px; line-height: 1.6; }
+    .shared-note { text-align: center; font-size: 14px; color: var(--text-muted); margin: 4px 0 0; }
+    .share-dialog { position: fixed; inset: 0; background: rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+    .share-dialog[hidden] { display: none; }
+    .share-box { background: #ffffff; color: #222222; border-radius: 8px; padding: 22px; width: 100%; max-width: 420px; box-sizing: border-box; }
+    .share-box h3 { margin: 0 0 6px; font-size: 18px; font-weight: 600; }
+    .share-desc { margin: 0 0 12px; font-size: 14px; color: #777777; }
+    .share-summary { margin: 0 0 12px; font-size: 15px; }
+    .share-box input { width: 100%; box-sizing: border-box; font: inherit; font-size: 13px; padding: 10px; border: 1px solid #e2e2e2; border-radius: 6px; color: #555555; background: #fafafa; }
+    .share-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    .share-actions button, .share-actions a { border: none; border-radius: 6px; padding: 10px 16px; font: inherit; font-size: 14px; cursor: pointer; background: #efefef; color: #222222; text-decoration: none; }
+    .share-actions .primary { background: #222222; color: #ffffff; }
     .report-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
     .report-actions button { border: none; border-radius: 6px; padding: 12px 18px; font: inherit; cursor: pointer; background: var(--btn-bg); color: var(--text-dark); }
     .report-actions button.primary { background: #222222; color: #ffffff; }
@@ -805,6 +816,8 @@
     <button data-type="modes" onclick="setExType('modes')">מודוסים</button>
   </nav>
 
+  <div class="shared-note no-train" id="sharedNote" hidden></div>
+
   <div class="card training-panel" id="trainingPanel" style="display: none;"></div>
 
   <div class="card practice-area" id="practiceArea">
@@ -877,6 +890,20 @@
   <footer>
     נעם ברטוב <a href="https://noambartov.com" target="_blank" rel="noopener noreferrer">noambartov.com</a>
   </footer>
+</div>
+
+<div class="share-dialog" id="shareDialog" hidden onclick="if (event.target === this) closeShareDialog()">
+  <div class="share-box" role="dialog" aria-labelledby="shareTitle">
+    <h3 id="shareTitle">שליחת התרגיל</h3>
+    <p class="share-desc">מי שיפתח את הקישור יתרגל עם אותן הגדרות. השאלות עצמן משתנות.</p>
+    <p class="share-summary" id="shareSummary"></p>
+    <input id="shareLink" readonly onclick="this.select()" dir="ltr">
+    <div class="share-actions">
+      <button class="primary" id="shareCopy" onclick="copyShareLink()">העתק קישור</button>
+      <a id="shareWhatsapp" target="_blank" rel="noopener">שליחה בוואטסאפ</a>
+      <button onclick="closeShareDialog()">סגירה</button>
+    </div>
+  </div>
 </div>
 
 <script src="site-nav.js"></script>
@@ -974,6 +1001,7 @@ function buildSegmentedSettings() {
 buildSegmentedSettings();
 
 function setExType(type) {
+  document.getElementById('sharedNote').hidden = true;
   document.getElementById('exType').value = type;
   onExerciseTypeChange();
   closeSettings();
@@ -1364,17 +1392,118 @@ function generateExercise(cfg = null) {
   };
 }
 
-function shareCurrentExercise() {
-  if (!currentExercise) return;
-  const params = new URLSearchParams();
-  params.set('exData', JSON.stringify(currentExercise));
-  const shareableUrl = window.location.origin + window.location.pathname + '?' + params.toString();
+// שליחת תרגיל לתלמיד: הקישור נושא את המצב, סוג התרגיל וההגדרות, והשאלות עצמן אקראיות אצל התלמיד
+const MODE_LABELS = { read: 'קריאה', ear: 'שמיעה' };
 
-  navigator.clipboard.writeText(shareableUrl).then(() => {
-    alert("הקישור לתרגיל הועתק ללוח!");
-  }).catch(() => {
-    prompt("העתק את הקישור:", shareableUrl);
+function buildShareParams() {
+  const type = document.getElementById('exType').value;
+  const params = new URLSearchParams();
+  params.set('mode', appMode);
+  params.set('type', type);
+  if (appMode === 'read') params.set('clef', document.getElementById('clefSelect').value);
+  else {
+    params.set('instr', document.getElementById('instrumentSelect').value);
+    if (type === 'intervals' || type === 'chords' || type === 'septachords') params.set('play', document.getElementById('playMode').value);
+  }
+  if (type === 'note_id') params.set('acc', document.getElementById('accidentalSelect').value);
+  if (type === 'intervals') params.set('fmt', document.getElementById('intervalFormatSelect').value);
+  if (type === 'chords' || type === 'septachords') {
+    const pills = Array.from(document.querySelectorAll('#inversionsTags .tag-pill'));
+    const on = pills.filter(el => el.classList.contains('active'));
+    if (on.length && on.length < pills.length) params.set('inv', on.map(el => el.dataset.value).join(','));
+  }
+  if (type !== 'note_id') {
+    const pills = Array.from(document.querySelectorAll('#optionsTags .tag-pill'));
+    const on = pills.filter(el => el.classList.contains('active'));
+    if (on.length && on.length < pills.length) {
+      const ids = on.map(el => (optionStructures(type).find(st => st.name === el.dataset.value) || {}).id).filter(Boolean);
+      params.set('opts', ids.join(','));
+    }
+  }
+  return params;
+}
+
+function shareSummary() {
+  const type = document.getElementById('exType').value;
+  const typeName = document.querySelector(`#exType option[value="${type}"]`).textContent;
+  let text = `${MODE_LABELS[appMode] || ''} · ${typeName}`;
+  if (type !== 'note_id') {
+    const pills = Array.from(document.querySelectorAll('#optionsTags .tag-pill'));
+    const on = pills.filter(el => el.classList.contains('active'));
+    if (on.length < pills.length) text += ': ' + on.map(el => el.textContent).join(', ');
+  }
+  return text;
+}
+
+function shareCurrentExercise() {
+  const type = document.getElementById('exType').value;
+  if (type !== 'note_id' && !document.querySelector('#optionsTags .tag-pill.active')) {
+    alert('יש לבחור לפחות אפשרות אחת לתרגול!');
+    return;
+  }
+  const url = location.origin + location.pathname + '?' + buildShareParams().toString().replace(/%2C/g, ',');
+  const summary = shareSummary();
+  document.getElementById('shareSummary').textContent = summary;
+  document.getElementById('shareLink').value = url;
+  document.getElementById('shareWhatsapp').href = 'https://wa.me/?text=' + encodeURIComponent('תרגיל ' + summary + '\n' + url);
+  document.getElementById('shareCopy').textContent = 'העתק קישור';
+  document.getElementById('shareDialog').hidden = false;
+}
+
+function closeShareDialog() {
+  document.getElementById('shareDialog').hidden = true;
+}
+
+function copyShareLink() {
+  const input = document.getElementById('shareLink');
+  const done = () => { document.getElementById('shareCopy').textContent = 'הועתק'; };
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(input.value).then(done).catch(() => { input.select(); document.execCommand('copy'); done(); });
+  } else {
+    input.select();
+    document.execCommand('copy');
+    done();
+  }
+}
+
+// עדכון כפתורי ההגדרה אחרי שינוי של ה-select המוסתר
+function setSettingValue(id, value) {
+  const sel = document.getElementById(id);
+  if (!sel || !Array.from(sel.options).some(o => o.value === value)) return false;
+  sel.value = value;
+  const seg = sel.nextElementSibling;
+  if (seg && seg.classList.contains('seg')) seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.value === value));
+  return true;
+}
+
+// קישור שהמורה שלח: מחילים את ההגדרות שבו. מחזיר true אם היה בקישור תרגיל
+function applySharedSettings() {
+  const params = new URLSearchParams(location.search);
+  const type = params.get('type');
+  if (!type || !BASE_STRUCTURES[type] || appMode === 'train') return false;
+  if (type === 'note_id' && appMode !== 'read') return false;
+  document.getElementById('exType').value = type;
+  if (params.has('fmt')) setSettingValue('intervalFormatSelect', params.get('fmt'));
+  onExerciseTypeChange();
+  ['clef:clefSelect', 'acc:accidentalSelect', 'play:playMode'].forEach(pair => {
+    const [key, id] = pair.split(':');
+    if (params.has(key)) setSettingValue(id, params.get(key));
   });
+  if (params.has('instr') && setSettingValue('instrumentSelect', params.get('instr'))) loadSamples(params.get('instr'));
+  if (params.has('inv')) {
+    const inv = params.get('inv').split(',');
+    const pills = document.querySelectorAll('#inversionsTags .tag-pill');
+    if (Array.from(pills).some(el => inv.includes(el.dataset.value))) pills.forEach(el => el.classList.toggle('active', inv.includes(el.dataset.value)));
+  }
+  if (params.has('opts')) {
+    const ids = params.get('opts').split(',');
+    const names = optionStructures(type).filter(st => ids.includes(st.id)).map(st => st.name);
+    if (names.length) document.querySelectorAll('#optionsTags .tag-pill').forEach(el => el.classList.toggle('active', names.includes(el.dataset.value)));
+  }
+  const note = document.getElementById('sharedNote');
+  note.textContent = 'תרגיל שנשלח אליך: ' + shareSummary();
+  note.hidden = false;
+  return true;
 }
 
 function loadExerciseFromUrl() {
@@ -2044,7 +2173,10 @@ function setAppMode(mode, initial = false) {
   document.getElementById('trainingPanel').style.display = 'none';
   document.getElementById('practiceArea').style.display = 'flex';
   updateTopbarProgress();
-  if (!initial) goToNextExercise();
+  if (!initial) {
+    document.getElementById('sharedNote').hidden = true;
+    goToNextExercise();
+  }
 }
 
 function showLevelPicker() {
@@ -2274,6 +2406,7 @@ loadSamples(document.getElementById('instrumentSelect').value);
 initSilentTip();
 const fromLink = new URLSearchParams(location.search).has('exData');
 setAppMode(fromLink ? 'read' : initialAppMode(), true);
+applySharedSettings();
 if (!loadExerciseFromUrl() && appMode !== 'train') {
   startPractice();
 }
