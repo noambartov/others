@@ -140,18 +140,19 @@
     .staff-system { margin-bottom: 16px; page-break-inside: avoid; }
     .exercise-title { font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #222; direction: rtl; }
 
-    .staff-svg { width: 100%; height: 95px; display: block; }
+    .staff-svg { width: 100%; height: auto; display: block; }
     
     .answer-row { 
       display: flex; 
       flex-direction: row; 
-      justify-style: space-around; 
+      justify-content: space-around; 
       font-size: 9.5px; 
       color: #333; 
       margin-top: 4px; 
       direction: ltr; 
     }
     .answer-cell { text-align: center; font-weight: bold; direction: rtl; }
+    .answer-line { display: inline-block; width: 70%; height: 16px; border-bottom: 1px solid #555; }
     .solution-text { color: #8e44ad; font-size: 10.5px; font-weight: bold; line-height: 1.2; }
     .read-text { color: #8e44ad; font-size: 9.5px; margin-bottom: 2px; font-weight: bold; }
   </style>
@@ -430,21 +431,27 @@ function getClefSVG(clef) {
   return T.svg.clef(clef, 35, STAFF, INK);
 }
 
-function renderNoteGraphic(x, absLine, acc, shiftNoteHead = false, accShiftLeft = false) {
-  let noteX = shiftNoteHead ? (x + 11) : x;
+// accColumn: עמודת סימן ההיתק משמאל לתו (0 = הכי קרובה), לפי T.chordLayout
+function renderNoteGraphic(x, absLine, acc, shiftNoteHead = false, accColumn = 0) {
+  let noteX = shiftNoteHead ? (x + 10) : x;
   let y = T.svg.lineY(STAFF, absLine);
   let svg = T.svg.ledgerLines(noteX, absLine, STAFF, 9, INK);
 
   if (acc !== 0) {
-    let accCenterX = shiftNoteHead ? (x - 24) : (x - 14);
-    if (accShiftLeft) {
-      accCenterX -= 12;
-    }
-    svg += T.svg.accidental(acc, accCenterX + 4, y, STAFF.space, INK);
+    svg += T.svg.accidental(acc, x - 7 - (accColumn || 0) * 11, y, STAFF.space, INK);
   }
 
   svg += T.svg.notehead(noteX, y, STAFF.space, INK);
   return svg;
+}
+
+// כל הצלילים של תרגיל אחד: סולם בשורה, או אקורד/מרווח בעמודה אחת
+function renderNotes(notes, x, isScale) {
+  if (isScale) {
+    return notes.map((n, i) => renderNoteGraphic(x + i * 26, n.absLine, n.acc)).join('');
+  }
+  const layout = T.chordLayout(notes);
+  return notes.map((n, i) => renderNoteGraphic(x, n.absLine, n.acc, layout[i].shifted, layout[i].accColumn)).join('');
 }
 
 function renderKeyAccidental(measureX, idx, accType, clef) {
@@ -482,8 +489,8 @@ function generateSheet() {
     let voiceNoteStr = (skill === 'write' && (type === 'chords' || type === 'septachords' || type === 'intervals')) ? ` (מצליל ה${givenVoice === 'bass' ? 'בס' : 'סופרן'})` : '';
     let fullInstructionTitle = `${idx + 1}. ${instructionPrefix} ${categoryName}${voiceNoteStr} הבאים`;
 
-    let studentSVG = `<svg class="staff-svg" viewBox="0 0 750 95">`;
-    let answerSVG = `<svg class="staff-svg" viewBox="0 0 750 95">`;
+    let studentSVG = `<svg class="staff-svg" viewBox="0 0 750 75">`;
+    let answerSVG = `<svg class="staff-svg" viewBox="0 0 750 75">`;
 
     for (let l = 0; l < 5; l++) {
       let lineY = 51 - l * 8;
@@ -527,11 +534,12 @@ function generateSheet() {
 
         for (let k = 0; k < keySig.accCount; k++) {
           let accSvg = renderKeyAccidental(measureX, k, keySig.accType, clef);
-          studentSVG += accSvg; answerSVG += accSvg;
+          if (skill !== 'write') studentSVG += accSvg;
+          answerSVG += accSvg;
         }
 
         let solutionText = keySig.name;
-        let promptText = (skill === 'write') ? keySig.name : '________';
+        let promptText = (skill === 'write') ? keySig.name : '';
         exercises.push({ solutionText, promptText, readPitchesText: 'סימני מפתח' });
       } else {
         let chordData = null;
@@ -589,7 +597,7 @@ function generateSheet() {
                            (type === 'intervals') ? `${chosenStruct.name}` :
                            `${rootNoteName} ${chosenStruct.name}`;
 
-        let promptText = (skill === 'write') ? (type === 'scales' ? `סולם ${parsedNotes[0].name} ${chosenStruct.name}` : `${chosenStruct.name}`) : '________';
+        let promptText = (skill === 'write') ? (type === 'scales' ? `סולם ${parsedNotes[0].name} ${chosenStruct.name}` : `${chosenStruct.name}`) : '';
         exercises.push({ solutionText, promptText, readPitchesText });
 
         let noteX = measureX + (type === 'scales' ? 55 : 70);
@@ -606,20 +614,10 @@ function generateSheet() {
             studentSVG += g;
           }
 
-          parsedNotes.forEach((n, nIdx) => {
-            let scaleX = measureX + 45 + (nIdx * 23);
-            let isSecond = (nIdx > 0 && Math.abs(n.absLine - parsedNotes[nIdx - 1].absLine) === 1);
-            let isAccShift = (type !== 'scales' && nIdx > 0 && n.acc !== 0 && parsedNotes[nIdx - 1].acc !== 0 && Math.abs(n.absLine - parsedNotes[nIdx - 1].absLine) <= 2);
-            answerSVG += renderNoteGraphic(type === 'scales' ? scaleX : noteX, n.absLine, n.acc, (type !== 'scales' && isSecond), isAccShift);
-          });
+          answerSVG += renderNotes(parsedNotes, type === 'scales' ? measureX + 45 : noteX, type === 'scales');
         } else {
-          parsedNotes.forEach((n, nIdx) => {
-            let scaleX = measureX + 45 + (nIdx * 23);
-            let isSecond = (nIdx > 0 && Math.abs(n.absLine - parsedNotes[nIdx - 1].absLine) === 1);
-            let isAccShift = (type !== 'scales' && nIdx > 0 && n.acc !== 0 && parsedNotes[nIdx - 1].acc !== 0 && Math.abs(n.absLine - parsedNotes[nIdx - 1].absLine) <= 2);
-            let g = renderNoteGraphic(type === 'scales' ? scaleX : noteX, n.absLine, n.acc, (type !== 'scales' && isSecond), isAccShift);
-            studentSVG += g; answerSVG += g;
-          });
+          let g = renderNotes(parsedNotes, type === 'scales' ? measureX + 45 : noteX, type === 'scales');
+          studentSVG += g; answerSVG += g;
         }
       }
     }
@@ -628,7 +626,7 @@ function generateSheet() {
     answerSVG += `</svg>`;
 
     let cellWidth = (100 / exerciseCount).toFixed(2);
-    let studentAnsHTML = `<div class="answer-row">${exercises.map(e => `<div class="answer-cell" style="width: ${cellWidth}%;">${e.promptText}</div>`).join('')}</div>`;
+    let studentAnsHTML = `<div class="answer-row">${exercises.map(e => `<div class="answer-cell" style="width: ${cellWidth}%;">${e.promptText || '<span class="answer-line"></span>'}</div>`).join('')}</div>`;
     let answerAnsHTML = `<div class="answer-row">${exercises.map(e => `
       <div class="answer-cell" style="width: ${cellWidth}%;">
         <div class="read-text">${e.readPitchesText}</div>

@@ -281,10 +281,30 @@
     return out;
   }
 
+  // סידור אקורד על החמשה (צלילים מהנמוך לגבוה):
+  // shifted — ראש תו שזז ימינה כי הוא סקונדה מעל תו שלא זז
+  // accColumn — עמודת סימן ההיתק משמאל (0 = הכי קרוב לתו), או null כשאין היתק.
+  // סימנים בטווח של פחות מספטימה זה מזה לא חולקים עמודה; מתחילים מהצליל העליון.
+  function chordLayout(notes) {
+    const layout = notes.map(() => ({ shifted: false, accColumn: null }));
+    for (let i = 1; i < notes.length; i++) {
+      layout[i].shifted = notes[i].absLine - notes[i - 1].absLine === 1 && !layout[i - 1].shifted;
+    }
+    const columns = [];
+    for (let i = notes.length - 1; i >= 0; i--) {
+      if (notes[i].acc === 0) continue;
+      let col = 0;
+      while ((columns[col] || []).some(line => Math.abs(line - notes[i].absLine) < 6)) col++;
+      (columns[col] = columns[col] || []).push(notes[i].absLine);
+      layout[i].accColumn = col;
+    }
+    return layout;
+  }
+
   const TheoryCore = {
     LETTERS, CATALOG, INVERSIONS, KEYS,
     mod, isSpellable, noteName, note, lineForLetter, findStructure, build,
-    intervalQuality, identifyInterval, keySignatureLines,
+    intervalQuality, identifyInterval, keySignatureLines, chordLayout,
     svg: { GLYPHS, glyph, glyphWidth, lineY, clef: clefSvg, accidental: accidentalSvg, notehead: noteheadSvg, ledgerLines: ledgerLinesSvg }
   };
 

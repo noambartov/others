@@ -149,4 +149,16 @@ test('svg helpers return paths', () => {
   assert.strictEqual(T.svg.ledgerLines(50, -4, staff, 8).split('<line').length - 1, 2);
 });
 
+test('chordLayout shifts seconds and stacks close accidentals', () => {
+  const n = (absLine, acc) => ({ absLine, acc });
+  // סקונדאקורד: ספטימה בבס ושורש מעליה בסקונדה
+  const l = T.chordLayout([n(0, 1), n(1, 1), n(3, 1), n(5, 0)]);
+  assert.deepStrictEqual(l.map(x => x.shifted), [false, true, false, false]);
+  assert.deepStrictEqual(l.map(x => x.accColumn), [2, 1, 0, null]);
+  // סימנים רחוקים מספטימה ומעלה חולקים עמודה
+  assert.deepStrictEqual(T.chordLayout([n(0, -1), n(6, -1)]).map(x => x.accColumn), [0, 0]);
+  // שלוש סקונדות ברצף: רק השני זז
+  assert.deepStrictEqual(T.chordLayout([n(0, 0), n(1, 0), n(2, 0)]).map(x => x.shifted), [false, true, false]);
+});
+
 console.log(`all ${passed} tests passed`);
