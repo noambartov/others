@@ -802,7 +802,7 @@ const NOTE_NAMES = T.LETTERS.map(l => ({ name: l.he, eng: l.en, pc: l.pc }));
 
 const BASE_STRUCTURES = {};
 Object.keys(T.CATALOG).forEach(type => {
-  BASE_STRUCTURES[type] = T.CATALOG[type].map(s => ({ name: s.name, abbr: s.abbr, stepOffsets: s.steps, semitones: s.semitones }));
+  BASE_STRUCTURES[type] = T.CATALOG[type].map(s => ({ id: s.id, name: s.name, abbr: s.abbr, stepOffsets: s.steps, semitones: s.semitones }));
 });
 
 const INVERSIONS_DATA = {
@@ -1042,7 +1042,9 @@ function generateExercise() {
 
   const poolStructs = BASE_STRUCTURES[type].filter(s => activeOptionPills.includes(s.name));
   const chosenStruct = poolStructs[Math.floor(Math.random() * poolStructs.length)];
-  const chosenInversion = activeInvPills[Math.floor(Math.random() * activeInvPills.length)];
+  let chosenInversion = activeInvPills[Math.floor(Math.random() * activeInvPills.length)];
+  // למשולש מוגדל אין משמעות להיפוך: תמיד במצב יסודי, ושאלת ההיפוך נופלת
+  if (inversionIrrelevant(type, chosenStruct)) chosenInversion = 0;
 
   // במושמע בלבד מרווחים ואקורדים נשארים ברגיסטר נעים: מלה בחלל התחתון של מפתח פה (A2) ועד לה מעל מפתח סול (A5)
   const audioRange = document.getElementById('displayMode').value === 'audio_only' && AUDIO_RANGE_TYPES.includes(type);
@@ -1362,6 +1364,10 @@ function setupChordUI() {
   });
 }
 
+function inversionIrrelevant(type, struct) {
+  return type === 'chords' && struct.id === 'augmented';
+}
+
 function checkChordType(typeName, btn) {
   if (exerciseSolved) return;
   clearWrongButtons();
@@ -1377,6 +1383,7 @@ function checkChordType(typeName, btn) {
     }
     document.getElementById('feedback').innerText = 'טיפוס נכון';
     document.getElementById('feedback').className = 'feedback success';
+    if (inversionIrrelevant(currentExercise.type, currentExercise.struct)) selectedChordInv = currentExercise.inversion;
     checkChordComplete();
   } else {
     btn.classList.add('wrong');
