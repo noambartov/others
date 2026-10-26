@@ -47,13 +47,14 @@
     .app-container { max-width: 900px; margin: 0 auto; }
     .app-header { text-align: center; margin: 40px 0 28px; }
     .app-header h1 { font-weight: 300; font-size: 36px; color: #111111; margin: 0; }
+    .app-intro { color: var(--muted); font-size: 16px; margin: 10px auto 0; max-width: 560px; line-height: 1.5; }
 
     .controls-panel { border-top: 1px solid var(--rule); margin-bottom: 8px; }
 
     .row-control {
       display: flex;
       flex-wrap: wrap;
-      align-items: center;
+      align-items: flex-end;
       gap: 10px;
       padding: 12px 0;
       border-bottom: 1px solid var(--rule);
@@ -73,7 +74,12 @@
       cursor: grabbing;
     }
 
-    .row-label { font-weight: 400; color: var(--muted); font-size: 14px; white-space: nowrap; min-width: 56px; }
+    .row-label { font-weight: 400; color: var(--muted); font-size: 14px; white-space: nowrap; min-width: 56px; padding-bottom: 9px; }
+    .drag-handle { padding-bottom: 6px; }
+
+    /* כותרת קטנה מעל כל תפריט בשורה */
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field-label { font-size: 12px; color: var(--muted); }
 
     select, .custom-select-btn {
       padding: 8px 12px;
@@ -114,9 +120,14 @@
       cursor: pointer;
       font-size: 18px;
       margin-right: auto;
+      padding-bottom: 8px;
       flex-shrink: 0;
     }
     .btn-remove:hover { color: #222222; }
+    @media (max-width: 600px) {
+      .row-control { position: relative; padding-left: 28px; }
+      .btn-remove { position: absolute; left: 0; top: 10px; }
+    }
     .btn-add-row { background: none; color: #777777; border: none; padding: 10px 0; font: inherit; font-size: 14px; cursor: pointer; }
     .btn-add-row:hover { color: #222222; }
 
@@ -187,6 +198,7 @@
 <div class="app-container">
   <div class="app-header">
     <h1>דפי תרגול להדפסה</h1>
+    <p class="app-intro">בוחרים מה יופיע בכל חמשה, לוחצים "צור תרגילים", ומורידים PDF עם דף תשובות.</p>
   </div>
 
   <div class="controls-panel">
@@ -301,29 +313,41 @@ function addRow() {
   row.draggable = true;
 
   row.innerHTML = `
-    <div class="drag-handle" title="לחץ וגרור לשרירות סדר החמשות">⋮⋮</div>
+    <div class="drag-handle" title="גוררים כדי לשנות את סדר החמשות">⋮⋮</div>
     <div class="row-label">חמשה <span class="row-num"></span></div>
-    <div class="multi-select-container">
-      <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, 'clefs_${id}')">מפתחות</div>
-      <div class="multi-select-dropdown" id="clefs_${id}">
-        <span class="select-all-btn" onclick="toggleAll('clefs_${id}')">סמן הכל / הסר הכל</span>
-        ${CLEFS_LIST.map(c => `<label><input type="checkbox" value="${c.val}" checked> ${c.label}</label>`).join('')}
+    <div class="field">
+      <span class="field-label">מפתח</span>
+      <div class="multi-select-container">
+        <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, 'clefs_${id}')">סול, פה</div>
+        <div class="multi-select-dropdown" id="clefs_${id}">
+          <span class="select-all-btn" onclick="toggleAll('clefs_${id}')">סמן הכל / הסר הכל</span>
+          ${CLEFS_LIST.map(c => `<label><input type="checkbox" value="${c.val}" checked> ${c.label}</label>`).join('')}
+        </div>
       </div>
     </div>
-    <select id="skill_${id}" onchange="onSkillOrTypeChange(${id})">
-      <option value="id">זיהוי</option>
-      <option value="write">כתיבה</option>
-    </select>
-    <select id="type_${id}" onchange="onSkillOrTypeChange(${id})">
-      <option value="intervals" selected>מרווחים</option>
-      <option value="chords">אקורדים משולשים</option>
-      <option value="septachords">ספטאקורדים</option>
-      <option value="scales">סולמות</option>
-    </select>
-    <select id="given_voice_${id}" title="צליל נתון לבנייה" style="display:none;">
-      <option value="bass" selected>צליל בס</option>
-      <option value="soprano">צליל סופרן</option>
-    </select>
+    <div class="field">
+      <span class="field-label">משימה</span>
+      <select id="skill_${id}" onchange="onSkillOrTypeChange(${id})">
+        <option value="id">זיהוי</option>
+        <option value="write">כתיבה</option>
+      </select>
+    </div>
+    <div class="field">
+      <span class="field-label">נושא</span>
+      <select id="type_${id}" onchange="onSkillOrTypeChange(${id})">
+        <option value="intervals" selected>מרווחים</option>
+        <option value="chords">אקורדים משולשים</option>
+        <option value="septachords">ספטאקורדים</option>
+        <option value="scales">סולמות</option>
+      </select>
+    </div>
+    <div class="field" id="given_voice_field_${id}" style="display:none;">
+      <span class="field-label">צליל נתון</span>
+      <select id="given_voice_${id}">
+        <option value="bass" selected>צליל בס</option>
+        <option value="soprano">צליל סופרן</option>
+      </select>
+    </div>
     <div id="sub_container_${id}"></div>
     <button class="btn-remove" title="הסרת החמשה" onclick="removeRow(${id})">×</button>
   `;
@@ -390,13 +414,13 @@ function updateRowNumbers() {
 function onSkillOrTypeChange(i) {
   const type = document.getElementById(`type_${i}`).value;
   const skill = document.getElementById(`skill_${i}`).value;
-  const voiceSelect = document.getElementById(`given_voice_${i}`);
+  const voiceField = document.getElementById(`given_voice_field_${i}`);
   const container = document.getElementById(`sub_container_${i}`);
 
   if (skill === 'write' && (type === 'chords' || type === 'septachords' || type === 'intervals')) {
-    voiceSelect.style.display = 'inline-block';
+    voiceField.style.display = '';
   } else {
-    voiceSelect.style.display = 'none';
+    voiceField.style.display = 'none';
   }
   
   if (type === 'scales') {
@@ -407,33 +431,43 @@ function onSkillOrTypeChange(i) {
 
     container.innerHTML = `
       <div class="scale-controls-wrapper">
-        <div class="multi-select-container">
-          <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, '${type}_${i}')">סינון תרגילים</div>
-          <div class="multi-select-dropdown" id="${type}_${i}">
-            <span class="select-all-btn" onclick="toggleAll('${type}_${i}')">סמן הכל / הסר הכל</span>
-            ${scalesList.map(item => `<label><input type="checkbox" value="${item}" checked> ${item}</label>`).join('')}
+        <div class="field">
+          <span class="field-label">אילו סולמות</span>
+          <div class="multi-select-container">
+            <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, '${type}_${i}')">הכל</div>
+            <div class="multi-select-dropdown" id="${type}_${i}">
+              <span class="select-all-btn" onclick="toggleAll('${type}_${i}')">סמן הכל / הסר הכל</span>
+              ${scalesList.map(item => `<label><input type="checkbox" value="${item}" checked> ${item}</label>`).join('')}
+            </div>
           </div>
         </div>
-        <select id="max_acc_${i}" title="מקסימום סימני היתק בסולם">
-          <option value="6" selected>עד 6 היתקים</option>
-          <option value="0">0 היתקים</option>
-          <option value="1">עד 1 היתק</option>
-          <option value="2">עד 2 היתקים</option>
-          <option value="3">עד 3 היתקים</option>
-          <option value="4">עד 4 היתקים</option>
-          <option value="5">עד 5 היתקים</option>
-        </select>
+        <div class="field">
+          <span class="field-label">סימני היתק</span>
+          <select id="max_acc_${i}">
+            <option value="6" selected>עד 6 היתקים</option>
+            <option value="0">0 היתקים</option>
+            <option value="1">עד 1 היתק</option>
+            <option value="2">עד 2 היתקים</option>
+            <option value="3">עד 3 היתקים</option>
+            <option value="4">עד 4 היתקים</option>
+            <option value="5">עד 5 היתקים</option>
+          </select>
+        </div>
       </div>`;
   } else {
     let itemsList = (type === 'intervals') ? INTERVALS_LIST : 
                     (type === 'chords' ? CHORDS_LIST : SEPTACHORDS_LIST);
 
+    const what = { intervals: 'אילו מרווחים', chords: 'אילו אקורדים', septachords: 'אילו ספטאקורדים' }[type];
     container.innerHTML = `
-      <div class="multi-select-container">
-        <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, '${type}_${i}')">סינון תרגילים</div>
-        <div class="multi-select-dropdown" id="${type}_${i}">
-          <span class="select-all-btn" onclick="toggleAll('${type}_${i}')">סמן הכל / הסר הכל</span>
-          ${itemsList.map(item => `<label><input type="checkbox" value="${item}" checked> ${item}</label>`).join('')}
+      <div class="field">
+        <span class="field-label">${what}</span>
+        <div class="multi-select-container">
+          <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, '${type}_${i}')">הכל</div>
+          <div class="multi-select-dropdown" id="${type}_${i}">
+            <span class="select-all-btn" onclick="toggleAll('${type}_${i}')">סמן הכל / הסר הכל</span>
+            ${itemsList.map(item => `<label><input type="checkbox" value="${item}" checked> ${item}</label>`).join('')}
+          </div>
         </div>
       </div>`;
   }
@@ -457,7 +491,27 @@ function toggleAll(dropdownId) {
   const checkboxes = document.querySelectorAll(`#${dropdownId} input[type="checkbox"]`);
   const allChecked = Array.from(checkboxes).every(cb => cb.checked);
   checkboxes.forEach(cb => cb.checked = !allChecked);
+  updateSelectSummary(dropdownId);
 }
+
+// הכפתור של בחירה מרובה מראה מה נבחר: "הכל", שמות (עד שניים) או מספר
+function updateSelectSummary(dropdownId) {
+  const dropdown = document.getElementById(dropdownId);
+  const boxes = Array.from(dropdown.querySelectorAll('input[type="checkbox"]'));
+  const chosen = boxes.filter(cb => cb.checked).map(cb => cb.parentElement.textContent.trim().replace(/^מפתח /, ''));
+  let text;
+  if (dropdownId.startsWith('clefs_')) text = chosen.length ? chosen.join(', ') : 'לא נבחר';
+  else if (chosen.length === boxes.length) text = 'הכל';
+  else if (chosen.length === 0) text = 'לא נבחר';
+  else if (chosen.length <= 2) text = chosen.join(', ');
+  else text = `${chosen.length} נבחרו`;
+  dropdown.previousElementSibling.textContent = text;
+}
+
+document.addEventListener('change', e => {
+  const dropdown = e.target.closest('.multi-select-dropdown');
+  if (dropdown) updateSelectSummary(dropdown.id);
+});
 
 function getClefSVG(clef) {
   return T.svg.clef(clef, 35, STAFF, INK);
