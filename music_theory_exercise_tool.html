@@ -147,6 +147,16 @@
       .mode-tabs { gap: 12px; }
       .mode-tabs button { font-size: 14px; }
     }
+    .ex-types { display: flex; justify-content: center; gap: 16px; padding: 10px 0 4px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+    .ex-types::-webkit-scrollbar { display: none; }
+    .ex-types button { background: none; border: none; padding: 2px 0; font: inherit; font-size: 14px; color: var(--text-muted); cursor: pointer; border-bottom: 1px solid transparent; flex: none; }
+    .ex-types button.active { color: var(--text-dark); border-bottom-color: var(--text-dark); }
+    @media (max-width: 480px) {
+      .ex-types { gap: 12px; justify-content: flex-start; }
+      .ex-types button { font-size: 13px; }
+    }
+    body.mode-read .ear-only-setting { display: none !important; }
+    body.mode-train #intervalFormatGroup { display: flex !important; }
     body.mode-ear .read-only-setting,
     body.mode-train .read-only-setting,
     body.mode-ear .read-only-opt,
@@ -683,18 +693,6 @@
     <details id="settingsCollapse">
       <summary>הגדרות</summary>
       <div class="controls-grid">
-        <div class="control-group no-train">
-          <label>סוג התרגיל:</label>
-          <select id="exType" onchange="onExerciseTypeChange()">
-            <option value="note_id" class="read-only-opt">זיהוי תווים</option>
-            <option value="intervals" selected>מרווחים</option>
-            <option value="chords">אקורדים משולשים</option>
-            <option value="septachords">ספטאקורדים</option>
-            <option value="scales">סולמות</option>
-            <option value="modes">מודוסים יווניים</option>
-          </select>
-        </div>
-
         <div class="control-group" id="intervalFormatGroup">
           <label>תצוגת מרווחים:</label>
           <select id="intervalFormatSelect" onchange="updateOptionsList()">
@@ -711,7 +709,7 @@
           </select>
         </div>
 
-        <div class="control-group">
+        <div class="control-group ear-only-setting">
           <label>כלי נגינה:</label>
           <select id="instrumentSelect" onchange="loadSamples(this.value)">
             <option value="vibraphone" selected>ויברפון</option>
@@ -736,7 +734,7 @@
           </select>
         </div>
 
-        <div class="control-group no-train" id="playModeGroup">
+        <div class="control-group no-train ear-only-setting" id="playModeGroup">
           <label>נגינה:</label>
           <select id="playMode">
             <option value="random" selected>אקראי</option>
@@ -760,7 +758,7 @@
 
       <div class="control-group no-train" id="optionsGroup" style="margin-top:4px;">
         <div class="tag-selector-header">
-          <label id="optionsListLabel">סינון סוגים:</label>
+          <label id="optionsListLabel">מה לתרגל:</label>
           <div>
             <button onclick="selectAllOptions(true)">הכל</button>
             <button onclick="selectAllOptions(false)">נקה</button>
@@ -768,9 +766,25 @@
         </div>
         <div class="tag-container" id="optionsTags"></div>
       </div>
-      <button class="btn-main no-train" onclick="goToNextExercise(); closeSettings();">תרגיל חדש</button>
     </details>
   </div>
+
+  <nav class="ex-types no-train" id="exTypeRow">
+    <select id="exType" onchange="onExerciseTypeChange()" style="display: none;">
+      <option value="note_id" class="read-only-opt">זיהוי תווים</option>
+      <option value="intervals" selected>מרווחים</option>
+      <option value="chords">אקורדים משולשים</option>
+      <option value="septachords">ספטאקורדים</option>
+      <option value="scales">סולמות</option>
+      <option value="modes">מודוסים יווניים</option>
+    </select>
+    <button data-type="note_id" class="read-only-opt" onclick="setExType('note_id')">תווים</button>
+    <button data-type="intervals" onclick="setExType('intervals')">מרווחים</button>
+    <button data-type="chords" onclick="setExType('chords')">משולשים</button>
+    <button data-type="septachords" onclick="setExType('septachords')">ספטאקורדים</button>
+    <button data-type="scales" onclick="setExType('scales')">סולמות</button>
+    <button data-type="modes" onclick="setExType('modes')">מודוסים</button>
+  </nav>
 
   <div class="card training-panel" id="trainingPanel" style="display: none;"></div>
 
@@ -891,7 +905,28 @@ function clearWrongButtons() {
 
 function closeSettings() {
   const settings = document.getElementById('settingsCollapse');
+  settingsDirty = false;
   if (settings) settings.removeAttribute('open');
+}
+
+// שינוי בהגדרות נכנס לתוקף כשסוגרים אותן, בלי כפתור "תרגיל חדש"
+let settingsDirty = false;
+(function watchSettings() {
+  const settings = document.getElementById('settingsCollapse');
+  settings.addEventListener('change', e => { if (e.target.id !== 'instrumentSelect') settingsDirty = true; });
+  settings.addEventListener('click', e => { if (e.target.closest('.tag-pill, .tag-selector-header button')) settingsDirty = true; });
+  settings.addEventListener('toggle', () => {
+    if (settings.open || !settingsDirty) return;
+    settingsDirty = false;
+    if (appMode !== 'train') goToNextExercise();
+  });
+})();
+
+function setExType(type) {
+  document.getElementById('exType').value = type;
+  onExerciseTypeChange();
+  closeSettings();
+  goToNextExercise();
 }
 
 function getAudioContext() {
@@ -1118,6 +1153,7 @@ function onExerciseTypeChange() {
     intervalFmtGroup.style.display = 'flex';
     updateOptionsList();
   }
+  document.querySelectorAll('#exTypeRow button').forEach(b => b.classList.toggle('active', b.dataset.type === type));
 }
 
 function updateInversionsList(type) {
