@@ -723,7 +723,7 @@
         </div>
         <div class="tag-container" id="optionsTags"></div>
       </div>
-      <button class="btn-main" onclick="startPractice(); closeSettings();">תרגיל חדש</button>
+      <button class="btn-main" onclick="goToNextExercise(); closeSettings();">תרגיל חדש</button>
     </details>
   </div>
 
@@ -731,7 +731,7 @@
     <div class="action-bar">
       <button class="play-btn" id="playAudioBtn" onclick="playCurrentExercise()">השמע</button>
       <button class="play-btn" id="playFirstNoteBtn" onclick="playFirstNoteOnly()" style="display:none;">צליל ראשון</button>
-      <button class="next-btn" onclick="startPractice()">לתרגיל הבא</button>
+      <button class="next-btn" onclick="goToNextExercise()">לתרגיל הבא</button>
       <button class="share-btn" onclick="shareCurrentExercise()">שתף</button>
       <div class="help-wrapper">
         <button class="help-btn" onclick="revealAnswer()">עזרה</button>
@@ -1004,6 +1004,9 @@ function generateExercise() {
   const type = document.getElementById('exType').value;
   let clefSelectVal = document.getElementById('clefSelect').value;
   let clef = clefSelectVal === 'rand' ? (Math.random() < 0.5 ? 'sol' : 'fa') : clefSelectVal;
+  // סולמות ומודוסים במושמע בלבד: רק מפתח סול, עד שני קווי עזר מעל החמשה (דו6)
+  const audioScale = document.getElementById('displayMode').value === 'audio_only' && (type === 'scales' || type === 'modes');
+  if (audioScale) clef = 'sol';
 
   if (type === 'note_id') {
     const accOption = document.getElementById('accidentalSelect').value;
@@ -1047,6 +1050,7 @@ function generateExercise() {
 
   let isValid = notes.every(n => Math.abs(n.acc) <= 2 && n.absLine >= -4 && n.absLine <= 14);
   if (audioRange) isValid = isValid && notes.every(n => n.midiNum >= AUDIO_RANGE.low && n.midiNum <= AUDIO_RANGE.high);
+  if (audioScale) isValid = isValid && notes.every(n => n.absLine <= 12);
   if (!isValid) {
     return generateExercise();
   }
@@ -1188,7 +1192,7 @@ function playCurrentExercise() {
     freqs.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.3, 0.7));
     const scaleDesc = [...freqs].reverse().slice(1);
     scaleDesc.forEach((f, idx) => playInstrumentNote(f, now + (freqs.length + idx) * 0.3, 0.7));
-    return;
+    return (freqs.length + scaleDesc.length) * 0.3 + 0.4;
   }
 
   const modeSelect = document.getElementById('playMode').value;
@@ -1209,6 +1213,7 @@ function playCurrentExercise() {
   } else if (mode === 'descending') {
     [...freqs].reverse().forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, 0.9));
   }
+  return mode === 'harmonic' ? 1.2 : freqs.length * 0.35 + 0.5;
 }
 
 function playFirstNoteOnly() {
@@ -1228,8 +1233,19 @@ function playFirstNoteOnly() {
 
 function triggerSuccessAndNext() {
   exerciseSolved = true;
-  playCurrentExercise();
-  setTimeout(startPractice, 1200);
+  const isScale = currentExercise.type === 'scales' || currentExercise.type === 'modes';
+  // סולם ארוך מדי להשמעה חוזרת; מרווח ואקורד מושמעים שוב ועוברים כשההשמעה נגמרת
+  if (isScale) {
+    setTimeout(goToNextExercise, 800);
+  } else {
+    const seconds = playCurrentExercise();
+    setTimeout(goToNextExercise, Math.max(1000, seconds * 1000));
+  }
+}
+
+function goToNextExercise() {
+  startPractice();
+  if (document.getElementById('displayMode').value === 'audio_only') playCurrentExercise();
 }
 
 function startPractice() {
