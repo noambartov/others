@@ -17,14 +17,14 @@
       --tile-hover: #e4e4e4;
       --rule: #eeeeee;
 
-      /* דף התרגול */
-      --sheet-ink: #0f172a;
-      --sheet-text: #334155;
-      --sheet-muted: #94a3b8;
-      --sheet-accent: #2563eb;
-      --sheet-band: #f1f5f9;
-      --sheet-rule: #e2e8f0;
-      --sheet-line: #cbd5e1;
+      /* דף התרגול: שחור ואפורים, בלי צבע */
+      --sheet-ink: #111111;
+      --sheet-text: #333333;
+      --sheet-muted: #aaaaaa;
+      --sheet-accent: #222222;
+      --sheet-band: #f6f6f6;
+      --sheet-rule: #e6e6e6;
+      --sheet-line: #cccccc;
     }
 
     body {
@@ -114,8 +114,8 @@
 
     .btn-group { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 28px; }
     .btn { padding: 11px 22px; font: inherit; font-size: 15px; border: none; border-radius: 6px; cursor: pointer; }
-    .btn-generate { background: #222222; color: #ffffff; }
-    .btn-generate:hover { background: #000000; }
+    .btn-generate { background: #555555; color: #ffffff; }
+    .btn-generate:hover { background: #444444; }
     .btn-answers, .btn-pdf { background: var(--tile); color: var(--text-color); }
     .btn-answers:hover, .btn-pdf:hover { background: var(--tile-hover); }
 
@@ -133,9 +133,9 @@
       display: flex; justify-content: space-between; align-items: center;
       background: var(--sheet-band); margin: 0 -15mm 9mm; padding: 13mm 15mm 7mm;
     }
-    .sheet-eyebrow { font-size: 11px; font-weight: 600; color: var(--sheet-accent); letter-spacing: 1px; margin-bottom: 2px; }
-    .sheet-title { font-size: 24px; font-weight: 700; color: var(--sheet-ink); line-height: 1.1; }
-    .sheet-fields { display: flex; gap: 12px; font-size: 12px; color: #475569; }
+    .sheet-eyebrow { font-size: 11px; font-weight: 400; color: var(--sheet-muted); letter-spacing: 1px; margin-bottom: 2px; }
+    .sheet-title { font-size: 24px; font-weight: 400; color: var(--sheet-ink); line-height: 1.1; }
+    .sheet-fields { display: flex; gap: 12px; font-size: 12px; color: var(--sheet-text); }
     .sheet-fields > div { background: #fff; border: 1px solid var(--sheet-rule); border-radius: 8px; padding: 6px 10px; }
     .field-line { display: inline-block; width: 110px; }
     .field-line.short { width: 70px; }
@@ -150,11 +150,11 @@
     }
 
     .staff-system { margin-bottom: 18px; padding-bottom: 10px; border-bottom: 1px solid var(--sheet-band); page-break-inside: avoid; }
-    .exercise-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: var(--sheet-ink); direction: rtl; }
+    .exercise-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 400; margin-bottom: 6px; color: var(--sheet-ink); direction: rtl; }
     .exercise-num {
       display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
       width: 22px; height: 22px; border-radius: 50%;
-      background: var(--sheet-accent); color: #fff; font-size: 12px; font-weight: 700;
+      border: 1px solid #c8c8c8; color: var(--sheet-text); font-size: 12px; font-weight: 400; box-sizing: border-box;
     }
 
     .staff-svg { width: 100%; height: auto; display: block; }
@@ -237,7 +237,7 @@
 const T = window.TheoryCore;
 const STAFF = { bottomY: 51, space: 8 };
 const INK = '#111';
-const STAFF_INK = '#94a3b8';
+const STAFF_INK = '#aaaaaa';
 
 const INVERSION_NAMES_TRIADS = ['יסודי', 'היפוך ראשון', 'היפוך שני'];
 const INVERSION_NAMES_SEPTS  = ['יסודי', 'היפוך ראשון', 'היפוך שני', 'היפוך שלישי'];
