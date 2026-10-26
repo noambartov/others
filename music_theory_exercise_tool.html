@@ -1138,8 +1138,8 @@ function updateOptionsList() {
   if (!BASE_STRUCTURES[type]) return;
   const container = document.getElementById('optionsTags');
   container.innerHTML = '';
-  
-  BASE_STRUCTURES[type].forEach(item => {
+
+  optionStructures(type).forEach(item => {
     const pill = document.createElement('div');
     pill.className = 'tag-pill active';
     pill.dataset.value = item.name;
@@ -1214,7 +1214,7 @@ function generateExercise(cfg = null) {
     }
   }
 
-  const poolStructs = cfg ? cfg.pool : BASE_STRUCTURES[type].filter(s => activeOptionPills.includes(s.name));
+  const poolStructs = cfg ? cfg.pool : optionStructures(type).filter(s => activeOptionPills.includes(s.name));
   const chosenStruct = poolStructs[Math.floor(Math.random() * poolStructs.length)];
   let chosenInversion = activeInvPills[Math.floor(Math.random() * activeInvPills.length)];
   // למשולש מוגדל אין משמעות להיפוך: תמיד במצב יסודי, ושאלת ההיפוך נופלת
@@ -1836,12 +1836,23 @@ function checkNoteAnswerByPc(pc, el) {
 const TRAINING_LENGTH = 20;
 const HISTORY_KEY = 'mt_training_history';
 
+// באוזן אין הבדל בין מרווחים אנהרמוניים: סקונדה מוגדלת נשמעת כטרצה קטנה, קווינטה מוגדלת כסקסטה קטנה,
+// וקוורטה מוגדלת וקווינטה מוקטנת הן טריטון אחד. בשמיעה נשאר כפתור אחד לכל מרחק, ורק בקריאה הכתיב חשוב.
+const EAR_HIDDEN_INTERVALS = ['A2', 'd5', 'A5'];
+
+function earStructures(type) {
+  if (type !== 'intervals') return BASE_STRUCTURES[type];
+  return BASE_STRUCTURES[type]
+    .filter(st => !EAR_HIDDEN_INTERVALS.includes(st.id))
+    .map(st => st.id === 'A4' ? { ...st, name: 'טריטון', abbr: 'טריטון' } : st);
+}
+
+function optionStructures(type) {
+  return appMode === 'read' ? BASE_STRUCTURES[type] : earStructures(type);
+}
+
 function structsById(type, ids) {
-  return ids.map(id => {
-    const st = BASE_STRUCTURES[type].find(x => x.id === id);
-    // באוזן קוורטה מוגדלת וקווינטה מוקטנת זהות, אז מציגים אותן כטריטון אחד
-    return (type === 'intervals' && id === 'A4') ? { ...st, name: 'טריטון', abbr: 'טריטון' } : st;
-  });
+  return ids.map(id => earStructures(type).find(x => x.id === id));
 }
 
 const EAR_INTERVALS = ['m2', 'M2', 'm3', 'M3', 'P4', 'A4', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8'];
@@ -1892,6 +1903,7 @@ function saveHistory(entry) {
 }
 
 function setAppMode(mode, initial = false) {
+  const spellingChanged = (appMode === 'read') !== (mode === 'read');
   appMode = mode;
   try { localStorage.setItem('mt_app_mode', mode); } catch (e) {}
   document.body.classList.remove('mode-read', 'mode-ear', 'mode-train', 'in-session');
@@ -1903,6 +1915,8 @@ function setAppMode(mode, initial = false) {
   if (mode !== 'read' && exType.value === 'note_id') {
     exType.value = 'intervals';
     onExerciseTypeChange();
+  } else if (spellingChanged && exType.value === 'intervals') {
+    updateOptionsList();
   }
   closeSettings();
   if (mode === 'train') {
