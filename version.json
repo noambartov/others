@@ -1,0 +1,4 @@
+---
+# GitHub Pages מריץ Jekyll, שממלא כאן את זמן הבנייה בכל פרסום. update-check.js משווה אליו.
+---
+{"version": "{{ site.time | date: '%s' }}"}
