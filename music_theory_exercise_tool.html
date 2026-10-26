@@ -794,6 +794,7 @@
       <button class="play-btn" id="playFirstNoteBtn" onclick="playFirstNoteOnly()" style="display:none;">צליל ראשון</button>
       <button class="next-btn" onclick="skipExercise()">לתרגיל הבא</button>
       <button class="share-btn no-train" onclick="shareCurrentExercise()">שתף</button>
+      <button class="next-btn train-only" onclick="showTrainingReport(true)">דוח עד כה</button>
       <button class="next-btn train-only" onclick="endTraining()">סיום אימון</button>
       <div class="help-wrapper no-train">
         <button class="help-btn" onclick="revealAnswer()">עזרה</button>
@@ -2075,13 +2076,20 @@ function statRow(g) {
   return `<div class="report-row"><div>${g.key}</div><div class="report-bar"><span style="width:${pct}%"></span></div><div class="num">${g.correct}/${g.total}</div></div>`;
 }
 
-function showTrainingReport() {
+function resumeTraining() {
+  document.getElementById('trainingPanel').style.display = 'none';
+  document.getElementById('practiceArea').style.display = 'flex';
+  window.scrollTo(0, 0);
+}
+
+// partial: דוח ביניים באמצע אימון. האימון נשאר פתוח ולא נשמר בהיסטוריה
+function showTrainingReport(partial = false) {
   const t = training;
   const results = t.results;
   const total = results.length;
   const correct = results.filter(r => r.correct).length;
   const pct = total ? Math.round(100 * correct / total) : 0;
-  saveHistory({ t: Date.now(), level: t.level, correct, total });
+  if (!partial) saveHistory({ t: Date.now(), level: t.level, correct, total });
 
   const byCat = groupStats(results, r => r.category);
   const byItem = groupStats(results, r => r.item).sort((a, b) => a.correct / a.total - b.correct / b.total);
@@ -2100,7 +2108,9 @@ function showTrainingReport() {
   const weak = byItem.filter(g => g.correct / g.total < 0.7).map(g => g.key);
   const hasNext = t.level < EAR_LEVELS.length - 1;
   let advice;
-  if (pct >= 85) {
+  if (partial) {
+    advice = total ? `ענית על ${total} מתוך ${t.plan.length} תרגילים. ההמלצה לרמה הבאה תופיע בסוף האימון.` : 'עוד לא ענית על אף תרגיל.';
+  } else if (pct >= 85) {
     advice = hasNext ? 'מצוין. אפשר לעבור לרמה הבאה.' : 'מצוין. סיימת את הרמה הגבוהה ביותר.';
   } else if (weak.length) {
     advice = 'כדאי לחזור על הרמה הזו, עם דגש על מה שמופיע למטה בחיזוק.';
@@ -2108,26 +2118,32 @@ function showTrainingReport() {
     advice = 'כמעט שם. עוד סבב אחד ברמה הזו ואפשר להתקדם.';
   }
 
-  training = null;
-  document.body.classList.remove('in-session');
+  if (!partial) {
+    training = null;
+    document.body.classList.remove('in-session');
+  }
   document.getElementById('practiceArea').style.display = 'none';
   const panel = document.getElementById('trainingPanel');
   panel.style.display = 'block';
   updateTopbarProgress();
-  panel.innerHTML = `<h2>${EAR_LEVELS[t.level].name}: סיכום</h2>
-    <div class="report-score">${pct}%</div>
-    <p class="sub">${correct} נכונות מתוך ${total} בניסיון הראשון</p>
+  const actions = partial
+    ? `<button class="primary" onclick="resumeTraining()">המשך אימון</button>
+      <button onclick="endTraining()">סיום אימון</button>`
+    : `${hasNext && pct >= 85 ? `<button class="primary" onclick="startTraining(${t.level + 1})">לרמה הבאה</button>` : ''}
+      <button class="${hasNext && pct >= 85 ? '' : 'primary'}" onclick="startTraining(${t.level})">שוב ברמה הזו</button>
+      <button onclick="showLevelPicker()">כל הרמות</button>`;
+  panel.innerHTML = `<h2>${EAR_LEVELS[t.level].name}: ${partial ? 'דוח עד כה' : 'סיכום'}</h2>
+    ${total ? `<div class="report-score">${pct}%</div>
+    <p class="sub">${correct} נכונות מתוך ${total} בניסיון הראשון</p>` : ''}
     <div class="report-section"><p class="report-advice">${advice}</p></div>
     ${byCat.length > 1 ? `<div class="report-section"><h3>לפי קטגוריה</h3>${byCat.map(statRow).join('')}</div>` : ''}
-    <div class="report-section"><h3>לפי סוג</h3>${byItem.map(statRow).join('')}</div>
+    ${total ? `<div class="report-section"><h3>לפי סוג</h3>${byItem.map(statRow).join('')}</div>` : ''}
     ${byInv.length ? `<div class="report-section"><h3>היפוכים</h3>${byInv.map(statRow).join('')}</div>` : ''}
     ${strong.length ? `<div class="report-section"><h3>חזק</h3><p class="report-advice">${strong.join(', ')}</p></div>` : ''}
     ${weak.length ? `<div class="report-section"><h3>לחיזוק</h3><p class="report-advice">${weak.join(', ')}</p></div>` : ''}
     ${confList ? `<div class="report-section"><h3>בלבולים נפוצים</h3><ul class="report-list">${confList}</ul></div>` : ''}
     <div class="report-actions">
-      ${hasNext && pct >= 85 ? `<button class="primary" onclick="startTraining(${t.level + 1})">לרמה הבאה</button>` : ''}
-      <button class="${hasNext && pct >= 85 ? '' : 'primary'}" onclick="startTraining(${t.level})">שוב ברמה הזו</button>
-      <button onclick="showLevelPicker()">כל הרמות</button>
+      ${actions}
     </div>`;
   window.scrollTo(0, 0);
 }
