@@ -1001,6 +1001,7 @@ function buildNotes(baseLine, baseAcc, struct, clef, inversionShift = 0) {
 }
 
 const AUDIO_RANGE = { low: 45, high: 81 }; // A2..A5
+const AUDIO_CHORD_LOW = 48; // אקורדים לא יורדים מתחת לדו שמתחת לדו האמצעי (C3)
 const AUDIO_RANGE_TYPES = ['intervals', 'chords', 'septachords'];
 
 function generateExercise() {
@@ -1054,7 +1055,10 @@ function generateExercise() {
   let notes = buildNotes(baseLine, baseAcc, chosenStruct, clef, chosenInversion);
 
   let isValid = notes.every(n => Math.abs(n.acc) <= 2 && n.absLine >= -4 && n.absLine <= 14);
-  if (audioRange) isValid = isValid && notes.every(n => n.midiNum >= AUDIO_RANGE.low && n.midiNum <= AUDIO_RANGE.high);
+  if (audioRange) {
+    const low = type === 'intervals' ? AUDIO_RANGE.low : AUDIO_CHORD_LOW;
+    isValid = isValid && notes.every(n => n.midiNum >= low && n.midiNum <= AUDIO_RANGE.high);
+  }
   if (audioScale) isValid = isValid && notes.every(n => n.absLine <= 12);
   if (!isValid) {
     return generateExercise();
