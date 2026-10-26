@@ -669,7 +669,7 @@
         <div class="control-group">
           <label>כלי נגינה:</label>
           <select id="instrumentSelect">
-            <option value="marimba" selected>מרימבה</option>
+            <option value="xylophone" selected>קסילופון</option>
             <option value="piano">פסנתר</option>
           </select>
         </div>
@@ -863,38 +863,121 @@ function midiToFreq(midi) {
 function playInstrumentNote(freq, startTime, duration = 1.2) {
   const ctx = getAudioContext();
   const inst = document.getElementById('instrumentSelect').value;
+  if (inst === 'xylophone') playXylophoneNote(ctx, freq, startTime);
+  else playPianoNote(ctx, freq, startTime);
+}
 
-  if (inst === 'marimba') {
-    const partials = [
-      { ratio: 1.0, gain: 1.0, decay: duration },
-      { ratio: 3.9, gain: 0.4, decay: duration * 0.2 }
-    ];
-    partials.forEach(p => {
-      const osc = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq * p.ratio, startTime);
-      gainNode.gain.setValueAtTime(0, startTime);
-      gainNode.gain.linearRampToValueAtTime(p.gain * 0.35, startTime + 0.005);
-      gainNode.gain.exponentialRampToValueAtTime(0.00001, startTime + p.decay);
-      osc.connect(gainNode);
-      gainNode.connect(ctx.destination);
-      osc.start(startTime);
-      osc.stop(startTime + p.decay);
-    });
-  } else {
-    const osc1 = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-    osc1.type = 'triangle';
-    osc1.frequency.setValueAtTime(freq, startTime);
-    gainNode.gain.setValueAtTime(0, startTime);
-    gainNode.gain.linearRampToValueAtTime(0.4, startTime + 0.02);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration * 1.5);
-    osc1.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    osc1.start(startTime);
-    osc1.stop(startTime + duration * 1.5);
+// יציאה משותפת עם קומפרסור, כדי שאקורדים לא יתעוותו
+function masterOut(ctx) {
+  if (!ctx._master) {
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -10;
+    comp.knee.value = 8;
+    comp.ratio.value = 6;
+    comp.attack.value = 0.003;
+    comp.release.value = 0.25;
+    comp.connect(ctx.destination);
+    ctx._master = comp;
   }
+  return ctx._master;
+}
+
+// קסילופון: מכה קשה וקצרה, צליל יסוד עם עליון חזק בדואודצימה (פי 3) ונקישה קצרה של רעש
+function playXylophoneNote(ctx, freq, t) {
+  const out = ctx.createGain();
+  out.gain.value = 0.22;
+  out.connect(masterOut(ctx));
+  const partials = [
+    { ratio: 1, gain: 1.0, decay: 0.9 },
+    { ratio: 3.0, gain: 0.45, decay: 0.25 },
+    { ratio: 6.1, gain: 0.15, decay: 0.08 }
+  ];
+  partials.forEach(p => {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq * p.ratio, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(p.gain, t + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + p.decay);
+    osc.connect(g);
+    g.connect(out);
+    osc.start(t);
+    osc.stop(t + p.decay + 0.05);
+  });
+  // נקישת המקוש
+  const len = Math.floor(ctx.sampleRate * 0.02);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  const noise = ctx.createBufferSource();
+  noise.buffer = buf;
+  const hp = ctx.createBiquadFilter();
+  hp.type = 'bandpass';
+  hp.frequency.value = Math.min(freq * 4, 8000);
+  const ng = ctx.createGain();
+  ng.gain.value = 0.25;
+  noise.connect(hp);
+  hp.connect(ng);
+  ng.connect(out);
+  noise.start(t);
+}
+
+// פסנתר: שני מיתרים מעט לא מכוונים, עליונים עם אי-הרמוניות קלה, דעיכה דו-שלבית וסוסטיין ארוך,
+// ופילטר שמתכהה עם הזמן כמו מיתר אמיתי
+function playPianoNote(ctx, freq, t) {
+  const sustain = 7 * Math.min(1.6, Math.max(0.6, 440 / freq) ** 0.35);
+  const out = ctx.createGain();
+  out.gain.setValueAtTime(0, t);
+  out.gain.linearRampToValueAtTime(0.22, t + 0.004);
+  out.gain.exponentialRampToValueAtTime(0.1, t + 0.3);
+  out.gain.exponentialRampToValueAtTime(0.04, t + sustain * 0.5);
+  out.gain.exponentialRampToValueAtTime(0.0001, t + sustain);
+
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.Q.value = 0.5;
+  lp.frequency.setValueAtTime(Math.min(freq * 14, 12000), t);
+  lp.frequency.exponentialRampToValueAtTime(Math.max(freq * 2.5, 400), t + sustain * 0.7);
+  lp.connect(out);
+  out.connect(masterOut(ctx));
+
+  const B = 0.0004; // אי-הרמוניות של מיתר
+  const partials = [1, 0.55, 0.32, 0.22, 0.14, 0.09, 0.06, 0.04];
+  [-1.2, 1.2].forEach(cents => {
+    const detune = Math.pow(2, cents / 1200);
+    partials.forEach((amp, i) => {
+      const n = i + 1;
+      const f = freq * n * Math.sqrt(1 + B * n * n) * detune;
+      if (f > 16000) return;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(f, t);
+      g.gain.setValueAtTime(amp * 0.2, t);
+      g.gain.exponentialRampToValueAtTime(amp * 0.2 * 0.05, t + sustain / Math.sqrt(n));
+      osc.connect(g);
+      g.connect(lp);
+      osc.start(t);
+      osc.stop(t + sustain + 0.05);
+    });
+  });
+  // מכת הפטיש
+  const len = Math.floor(ctx.sampleRate * 0.012);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  const noise = ctx.createBufferSource();
+  noise.buffer = buf;
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = Math.min(freq * 3, 6000);
+  const ng = ctx.createGain();
+  ng.gain.value = 0.06;
+  noise.connect(bp);
+  bp.connect(ng);
+  ng.connect(out);
+  noise.start(t);
 }
 
 function changeTheme(themeClass) {
