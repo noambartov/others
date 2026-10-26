@@ -338,6 +338,8 @@
         <option value="major7">מז'ור גדול (טרצה גדולה, קווינטה זכה, ספטימה גדולה)</option>
         <option value="augmented_major7">מוגדל גדול (טרצה גדולה, קווינטה מוגדלת, ספטימה גדולה)</option>
         <option value="diminished7">מוקטן קטן (טרצה קטנה, קווינטה מוקטנת, ספטימה מוקטנת)</option>
+        <option value="minor_major7">מינור גדול (טרצה קטנה, קווינטה זכה, ספטימה גדולה)</option>
+        <option value="augmented7">מוגדל קטן (טרצה גדולה, קווינטה מוגדלת, ספטימה קטנה)</option>
       </select>
     </div>
 
@@ -360,10 +362,9 @@
   </div>
 </div>
 
+<script src="theory-core.js"></script>
 <script>
-const NOTE_NAMES_HE = ["דו", "רה", "מי", "פה", "סול", "לה", "סי"];
-const NOTE_BASE_PITCH = [0, 2, 4, 5, 7, 9, 11];
-const NUMBER_NAMES = ["פרימה", "סקונדה", "טרצה", "קוורטה", "קווינטה", "סקסטה", "ספטימה", "אוקטבה"];
+const T = window.TheoryCore;
 
 function switchTab(tabId, evt) {
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -373,111 +374,75 @@ function switchTab(tabId, evt) {
   document.getElementById(tabId).classList.add('active');
 }
 
-function accToString(acc) {
-  switch(acc) {
-    case 2: return " דיאז כפול";
-    case 1: return " דיאז";
-    case -1: return " במול";
-    case -2: return " במול כפול";
-    default: return "";
-  }
+function readNote(prefix) {
+  return {
+    letter: parseInt(document.getElementById(prefix + 'Name').value),
+    acc: parseInt(document.getElementById(prefix + 'Acc').value)
+  };
+}
+
+// בונה מבנה מהקטלוג המשותף ומחזיר את שמות הצלילים במילים
+function spellStructure(type, id, rootNote, inversion) {
+  const struct = T.findStructure(type, id);
+  const line = T.lineForLetter(rootNote.letter, 'sol', -2);
+  const { notes } = T.build(struct, { line, acc: rootNote.acc, clef: 'sol', inversion: inversion || 0 });
+  return notes.map(n => T.noteName(n.letter, n.acc, 'word'));
+}
+
+function hasUnspellable(names) {
+  return names.some(n => n.includes('(?)'));
+}
+
+const UNSPELLABLE_NOTE = '<div class="result-title">שימו לב: חלק מהצלילים דורשים יותר מהיתק כפול, ולכן הסולם או האקורד לא מעשיים. צלילים כאלה מסומנים ב-(?).</div>';
+
+function renderBadges(container, names) {
+  container.innerHTML = '';
+  names.forEach(name => {
+    const badge = document.createElement('div');
+    badge.className = 'scale-note-badge';
+    badge.innerText = name;
+    container.appendChild(badge);
+  });
 }
 
 // === 1. חישוב מרווחים ===
 function calculateInterval() {
-  const n1 = parseInt(document.getElementById('note1Name').value);
-  const acc1 = parseInt(document.getElementById('note1Acc').value);
-  const n2 = parseInt(document.getElementById('note2Name').value);
-  const acc2 = parseInt(document.getElementById('note2Acc').value);
+  const n1 = readNote('note1');
+  const n2 = readNote('note2');
   const dir = document.getElementById('direction').value;
 
-  let nameDist = (dir === 'up') ? (n2 - n1 + 7) % 7 + 1 : (n1 - n2 + 7) % 7 + 1;
-  if (nameDist === 1 && (n1 !== n2 || acc1 !== acc2)) {
-    if (dir === 'up' && (NOTE_BASE_PITCH[n2]+acc2 < NOTE_BASE_PITCH[n1]+acc1)) nameDist = 8;
-  }
+  const result = T.identifyInterval(n1.letter, n1.acc, n2.letter, n2.acc, dir);
 
-  let pitch1 = NOTE_BASE_PITCH[n1] + acc1;
-  let pitch2 = NOTE_BASE_PITCH[n2] + acc2;
-
-  let semitones = (dir === 'up') ? pitch2 - pitch1 : pitch1 - pitch2;
-  while (semitones < 0) semitones += 12;
-  if (nameDist === 8 && semitones < 6) semitones += 12;
-
-  const perfectOrMajorSemitones = {1:0, 2:2, 3:4, 4:5, 5:7, 6:9, 7:11, 8:12};
-  const isPerfectType = [1, 4, 5, 8].includes(nameDist);
-  const diff = semitones - perfectOrMajorSemitones[nameDist];
-
-  let quality = "";
-  if (isPerfectType) {
-    if (diff === 0) quality = "זכה";
-    else if (diff === 1) quality = "מוגדלת";
-    else if (diff === 2) quality = "מוגדלת כפולה";
-    else if (diff === -1) quality = "מוקטנת";
-    else if (diff === -2) quality = "מוקטנת כפולה";
-  } else {
-    if (diff === 0) quality = "גדולה";
-    else if (diff === -1) quality = "קטנה";
-    else if (diff === 1) quality = "מוגדלת";
-    else if (diff === 2) quality = "מוגדלת כפולה";
-    else if (diff === -2) quality = "מוקטנת";
-    else if (diff === -3) quality = "מוקטנת כפולה";
-  }
-
-  document.getElementById('intervalName').innerText = `${NUMBER_NAMES[nameDist - 1]} ${quality}`;
-  document.getElementById('intervalTones').innerText = `מרחק: ${semitones} חצאי טונים (${semitones / 2} טונים)`;
+  document.getElementById('intervalName').innerText = result.name;
+  document.getElementById('intervalTones').innerText = `מרחק: ${result.semitones} חצאי טונים (${result.semitones / 2} טונים)`;
   document.getElementById('intervalResultBox').style.display = 'block';
-}
-
-// === פונקציית עזר לבניית מערך צלילים לפי תבנית ===
-function buildScaleFromPattern(rootName, rootAcc, pattern) {
-  let scaleNotes = [];
-  for (let i = 0; i < pattern.length; i++) {
-    let currentNameIndex = (rootName + (i * 2)) % 7; 
-    if (pattern.length === 8) currentNameIndex = (rootName + i) % 7; 
-
-    let targetPitch = (NOTE_BASE_PITCH[rootName] + rootAcc + pattern[i]);
-    let basePitch = NOTE_BASE_PITCH[currentNameIndex];
-    while (basePitch < NOTE_BASE_PITCH[rootName]) basePitch += 12;
-    if (i === 7 && pattern.length === 8) basePitch = NOTE_BASE_PITCH[rootName] + 12;
-
-    let requiredAcc = targetPitch - basePitch;
-    let noteString = NOTE_NAMES_HE[currentNameIndex] + accToString(requiredAcc);
-    scaleNotes.push(noteString);
-  }
-  return scaleNotes;
 }
 
 // === 2. חישוב סולמות ===
 function calculateScale() {
-  const rootName = parseInt(document.getElementById('scaleRootName').value);
-  const rootAcc = parseInt(document.getElementById('scaleRootAcc').value);
+  const rootNote = readNote('scaleRoot');
   const scaleType = document.getElementById('scaleType').value;
-
-  const patterns = {
-    major: [0, 2, 4, 5, 7, 9, 11, 12],
-    minor_natural: [0, 2, 3, 5, 7, 8, 10, 12],
-    minor_harmonic: [0, 2, 3, 5, 7, 8, 11, 12],
-    minor_melodic_up: [0, 2, 3, 5, 7, 9, 11, 12]
-  };
+  const badges = names => names.map(n => `<div class="scale-note-badge">${n}</div>`).join('');
 
   const displayContainer = document.getElementById('scaleNotesDisplay');
-  displayContainer.innerHTML = '';
 
   if (scaleType === 'minor_melodic') {
-    const notesUp = buildScaleFromPattern(rootName, rootAcc, patterns.minor_melodic_up);
-    const notesDown = buildScaleFromPattern(rootName, rootAcc, patterns.minor_natural).reverse();
+    const notesUp = spellStructure('scales', 'minor_melodic', rootNote);
+    const notesDown = spellStructure('scales', 'minor_natural', rootNote).reverse();
 
     displayContainer.innerHTML = `
       <div class="scale-section-title">בעלייה (דרגות 6 ו-7 מועלות):</div>
-      <div class="scale-notes-list">${notesUp.map(n => `<div class="scale-note-badge">${n}</div>`).join('')}</div>
+      <div class="scale-notes-list">${badges(notesUp)}</div>
       <div class="scale-section-title">בירידה (כמו מינור טבעי):</div>
-      <div class="scale-notes-list">${notesDown.map(n => `<div class="scale-note-badge">${n}</div>`).join('')}</div>
+      <div class="scale-notes-list">${badges(notesDown)}</div>
+      ${hasUnspellable(notesUp.concat(notesDown)) ? UNSPELLABLE_NOTE : ''}
     `;
   } else {
-    const notes = buildScaleFromPattern(rootName, rootAcc, patterns[scaleType]);
+    const notes = spellStructure('scales', scaleType, rootNote);
     displayContainer.innerHTML = `
       <div class="result-title">צלילי הסולם:</div>
-      <div class="scale-notes-list">${notes.map(n => `<div class="scale-note-badge">${n}</div>`).join('')}</div>
+      <div class="scale-notes-list">${badges(notes)}</div>
+      ${hasUnspellable(notes) ? UNSPELLABLE_NOTE : ''}
     `;
   }
 
@@ -486,26 +451,11 @@ function calculateScale() {
 
 // === 3. חישוב אקורדים משולשים ===
 function calculateTriad() {
-  const rootName = parseInt(document.getElementById('triadRootName').value);
-  const rootAcc = parseInt(document.getElementById('triadRootAcc').value);
+  const rootNote = readNote('triadRoot');
   const chordType = document.getElementById('triadType').value;
   const inversion = parseInt(document.getElementById('triadInversion').value);
 
-  const chordPatterns = {
-    major: [0, 4, 7],
-    minor: [0, 3, 7],
-    diminished: [0, 3, 6],
-    augmented: [0, 4, 8]
-  };
-
-  const pattern = chordPatterns[chordType];
-  let chordNotes = buildScaleFromPattern(rootName, rootAcc, pattern);
-
-  if (inversion === 1) {
-    chordNotes = [chordNotes[1], chordNotes[2], chordNotes[0]];
-  } else if (inversion === 2) {
-    chordNotes = [chordNotes[2], chordNotes[0], chordNotes[1]];
-  }
+  const chordNotes = spellStructure('chords', chordType, rootNote, inversion);
 
   const inversionTitles = [
     "צלילי האקורד במצב יסודי (שורש - טרצה - קווינטה):",
@@ -513,51 +463,18 @@ function calculateTriad() {
     "צלילי האקורד בהיפוך שני / קוורטסקסטאקורד (בס - אמצע - סופרן):"
   ];
 
-  document.getElementById('triadResultTitle').innerText = inversionTitles[inversion];
-
-  const container = document.getElementById('triadNotesContainer');
-  container.innerHTML = '';
-  chordNotes.forEach(note => {
-    const badge = document.createElement('div');
-    badge.className = 'scale-note-badge';
-    badge.innerText = note;
-    container.appendChild(badge);
-  });
-
+  document.getElementById('triadResultTitle').innerText = inversionTitles[inversion] + (hasUnspellable(chordNotes) ? ' (כולל צליל לא מעשי)' : '');
+  renderBadges(document.getElementById('triadNotesContainer'), chordNotes);
   document.getElementById('triadResultBox').style.display = 'block';
 }
 
 // === 4. חישוב אקורדים מרובעים (ספט-אקורדים) ===
 function calculateTetrad() {
-  const rootName = parseInt(document.getElementById('tetradRootName').value);
-  const rootAcc = parseInt(document.getElementById('tetradRootAcc').value);
+  const rootNote = readNote('tetradRoot');
   const chordType = document.getElementById('tetradType').value;
   const inversion = parseInt(document.getElementById('tetradInversion').value);
 
-  // תבניות חצאי טונים [שורש, טרצה, קווינטה, ספטימה]
-  const chordPatterns = {
-    half_diminished: [0, 3, 6, 10],   // טרצה קטנה, קווינטה מוקטנת, ספטימה קטנה
-    minor7: [0, 3, 7, 10],            // טרצה קטנה, קווינטה זכה, ספטימה קטנה
-    dominant7: [0, 4, 7, 10],         // טרצה גדולה, קווינטה זכה, ספטימה קטנה
-    major7: [0, 4, 7, 11],            // טרצה גדולה, קווינטה זכה, ספטימה גדולה
-    augmented_major7: [0, 4, 8, 11],  // טרצה גדולה, קווינטה מוגדלת, ספטימה גדולה
-    diminished7: [0, 3, 6, 9]         // טרצה קטנה, קווינטה מוקטנת, ספטימה מוקטנת
-  };
-
-  const pattern = chordPatterns[chordType];
-  let chordNotes = buildScaleFromPattern(rootName, rootAcc, pattern);
-
-  // סידור ההיפוכים (4 צלילים)
-  if (inversion === 1) {
-    // היפוך 1 (קווינטסקסטאקורד): טרצה, קווינטה, ספטימה, שורש
-    chordNotes = [chordNotes[1], chordNotes[2], chordNotes[3], chordNotes[0]];
-  } else if (inversion === 2) {
-    // היפוך 2 (טרצקוורטאקורד): קווינטה, ספטימה, שורש, טרצה
-    chordNotes = [chordNotes[2], chordNotes[3], chordNotes[0], chordNotes[1]];
-  } else if (inversion === 3) {
-    // היפוך 3 (סקונדאקורד): ספטימה, שורש, טרצה, קווינטה
-    chordNotes = [chordNotes[3], chordNotes[0], chordNotes[1], chordNotes[2]];
-  }
+  const chordNotes = spellStructure('septachords', chordType, rootNote, inversion);
 
   const inversionTitles = [
     "צלילי האקורד במצב יסודי (שורש - טרצה - קווינטה - ספטימה):",
@@ -566,17 +483,8 @@ function calculateTetrad() {
     "צלילי האקורד בהיפוך שלישי / סקונדאקורד (ספטימה בבס):"
   ];
 
-  document.getElementById('tetradResultTitle').innerText = inversionTitles[inversion];
-
-  const container = document.getElementById('tetradNotesContainer');
-  container.innerHTML = '';
-  chordNotes.forEach(note => {
-    const badge = document.createElement('div');
-    badge.className = 'scale-note-badge';
-    badge.innerText = note;
-    container.appendChild(badge);
-  });
-
+  document.getElementById('tetradResultTitle').innerText = inversionTitles[inversion] + (hasUnspellable(chordNotes) ? ' (כולל צליל לא מעשי)' : '');
+  renderBadges(document.getElementById('tetradNotesContainer'), chordNotes);
   document.getElementById('tetradResultBox').style.display = 'block';
 }
 </script>
