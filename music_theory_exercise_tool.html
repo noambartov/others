@@ -7,11 +7,6 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap');
 
-    @font-face {
-      font-family: 'Bravura';
-      src: url('https://cdn.jsdelivr.net/npm/smufl-bravura-font@1.39.0/redist/woff/bravura.woff') format('woff');
-    }
-
     :root {
       --bg-gradient: #ffffff;
       --card-bg: #ffffff;
@@ -389,16 +384,6 @@
 
     .staff-svg { width: 100%; height: 110px; }
 
-    .music-clef {
-      font-family: 'Bravura', serif;
-      fill: currentColor;
-      text-anchor: middle;
-      dominant-baseline: central;
-    }
-
-    .g-clef-symbol { font-size: 82px; }
-    .f-clef-symbol { font-size: 43px; }
-
     .options-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(85px, 1fr));
@@ -684,77 +669,17 @@
   </footer>
 </div>
 
+<script src="theory-core.js"></script>
 <script>
-const NOTE_NAMES = [
-  { name: 'דו', eng: 'C', pc: 0 },
-  { name: 'רה', eng: 'D', pc: 2 },
-  { name: 'מי', eng: 'E', pc: 4 },
-  { name: 'פה', eng: 'F', pc: 5 },
-  { name: 'סול', eng: 'G', pc: 7 },
-  { name: 'לה', eng: 'A', pc: 9 },
-  { name: 'סי', eng: 'B', pc: 11 }
-];
+const T = window.TheoryCore;
+const STAFF = { bottomY: 66, space: 8 };
 
-const ROOT_NOTE_OPTIONS = [
-  { name: 'דו', acc: 0 }, { name: 'דו♯', acc: 1 }, { name: 'רה♭', acc: -1 },
-  { name: 'רה', acc: 0 }, { name: 'רה♯', acc: 1 }, { name: 'מי♭', acc: -1 },
-  { name: 'מי', acc: 0 },
-  { name: 'פה', acc: 0 }, { name: 'פה♯', acc: 1 }, { name: 'סול♭', acc: -1 },
-  { name: 'סול', acc: 0 }, { name: 'סול♯', acc: 1 }, { name: 'לה♭', acc: -1 },
-  { name: 'לה', acc: 0 }, { name: 'לה♯', acc: 1 }, { name: 'סי♭', acc: -1 },
-  { name: 'סי', acc: 0 }
-];
+const NOTE_NAMES = T.LETTERS.map(l => ({ name: l.he, eng: l.en, pc: l.pc }));
 
-const BASE_STRUCTURES = {
-  intervals: [
-    { name: 'פרימה זכה', abbr: '1.ז', stepOffsets: [0, 0], semitones: [0, 0] },
-    { name: 'סקונדה קטנה', abbr: '2.ק', stepOffsets: [0, 1], semitones: [0, 1] },
-    { name: 'סקונדה גדולה', abbr: '2.ג', stepOffsets: [0, 1], semitones: [0, 2] },
-    { name: 'סקונדה מוגדלת', abbr: '2.מוג', stepOffsets: [0, 1], semitones: [0, 3] },
-    { name: 'טרצה קטנה', abbr: '3.ק', stepOffsets: [0, 2], semitones: [0, 3] },
-    { name: 'טרצה גדולה', abbr: '3.ג', stepOffsets: [0, 2], semitones: [0, 4] },
-    { name: 'קוורטה זכה', abbr: '4.ז', stepOffsets: [0, 3], semitones: [0, 5] },
-    { name: 'קוורטה מוגדלת', abbr: '4.מוג', stepOffsets: [0, 3], semitones: [0, 6] },
-    { name: 'קווינטה מוקטנת', abbr: '5.מוק', stepOffsets: [0, 4], semitones: [0, 6] },
-    { name: 'קווינטה זכה', abbr: '5.ז', stepOffsets: [0, 4], semitones: [0, 7] },
-    { name: 'קווינטה מוגדלת', abbr: '5.מוג', stepOffsets: [0, 4], semitones: [0, 8] },
-    { name: 'סקסטה קטנה', abbr: '6.ק', stepOffsets: [0, 5], semitones: [0, 8] },
-    { name: 'סקסטה גדולה', abbr: '6.ג', stepOffsets: [0, 5], semitones: [0, 9] },
-    { name: 'ספטימה קטנה', abbr: '7.ק', stepOffsets: [0, 6], semitones: [0, 10] },
-    { name: 'ספטימה גדולה', abbr: '7.ג', stepOffsets: [0, 6], semitones: [0, 11] },
-    { name: 'אוקטבה זכה', abbr: '8.ז', stepOffsets: [0, 7], semitones: [0, 12] }
-  ],
-  chords: [
-    { name: 'מז׳ור', stepOffsets: [0, 2, 4], semitones: [0, 4, 7] },
-    { name: 'מינור', stepOffsets: [0, 2, 4], semitones: [0, 3, 7] },
-    { name: 'מוגדל', stepOffsets: [0, 2, 4], semitones: [0, 4, 8] },
-    { name: 'מוקטן', stepOffsets: [0, 2, 4], semitones: [0, 3, 6] }
-  ],
-  septachords: [
-    { name: 'מז׳ור גדול', stepOffsets: [0, 2, 4, 6], semitones: [0, 4, 7, 11] },
-    { name: 'מז׳ור דומיננטי', stepOffsets: [0, 2, 4, 6], semitones: [0, 4, 7, 10] },
-    { name: 'מינור שבע', stepOffsets: [0, 2, 4, 6], semitones: [0, 3, 7, 10] },
-    { name: 'חצי מוקטן שבע', stepOffsets: [0, 2, 4, 6], semitones: [0, 3, 6, 10] },
-    { name: 'מוקטן שבע', stepOffsets: [0, 2, 4, 6], semitones: [0, 3, 6, 9] },
-    { name: 'מוגדל שבע', stepOffsets: [0, 2, 4, 6], semitones: [0, 4, 8, 10] },
-    { name: 'מינור שבע גדול', stepOffsets: [0, 2, 4, 6], semitones: [0, 3, 7, 11] }
-  ],
-  scales: [
-    { name: 'מז׳ור', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,4,5,7,9,11,12] },
-    { name: 'מינור טבעי', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,3,5,7,8,10,12] },
-    { name: 'מינור הרמוני', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,3,5,7,8,11,12] },
-    { name: 'מינור מלודי', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,3,5,7,9,11,12] }
-  ],
-  modes: [
-    { name: 'יוני (מז׳ור)', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,4,5,7,9,11,12] },
-    { name: 'דורי', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,3,5,7,9,10,12] },
-    { name: 'פריגי', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,1,3,5,7,8,10,12] },
-    { name: 'לידי', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,4,6,7,9,11,12] },
-    { name: 'מיקסולידי', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,4,5,7,9,10,12] },
-    { name: 'אאולי (מינור טבעי)', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,2,3,5,7,8,10,12] },
-    { name: 'לוקרי', stepOffsets: [0,1,2,3,4,5,6,7], semitones: [0,1,3,5,6,8,10,12] }
-  ]
-};
+const BASE_STRUCTURES = {};
+Object.keys(T.CATALOG).forEach(type => {
+  BASE_STRUCTURES[type] = T.CATALOG[type].map(s => ({ name: s.name, abbr: s.abbr, stepOffsets: s.steps, semitones: s.semitones }));
+});
 
 const INVERSIONS_DATA = {
   chords: [
@@ -770,7 +695,6 @@ const INVERSIONS_DATA = {
   ]
 };
 
-const DIATONIC_SEMITONES = [0, 2, 4, 5, 7, 9, 11];
 
 let audioCtx = null;
 let currentExercise = null;
@@ -781,6 +705,7 @@ let selectedChordInv = null;
 let selectedNoteNameIdx = null;
 let selectedModeType = null;
 let typeAnsweredCorrectly = false;
+let exerciseSolved = false;
 let currentPlayDirection = 'ascending';
 
 function clearWrongButtons() {
@@ -940,41 +865,12 @@ function selectAllInversions(status) {
 }
 
 function getNoteDetails(absLine, acc, clef) {
-  let baseIndex = (clef === 'sol') ? 2 : 4; 
-  let diatonicIdx = baseIndex + absLine;
-  let nameIndex = (diatonicIdx % 7 + 7) % 7;
-  let octave = Math.floor(diatonicIdx / 7) + (clef === 'sol' ? 4 : 2);
-  let midiNum = (octave + 1) * 12 + DIATONIC_SEMITONES[nameIndex] + acc;
-  return { absLine, acc, diatonicIdx, midiNum, nameIndex };
+  return T.note(absLine, acc, clef);
 }
 
 function buildNotes(baseLine, baseAcc, struct, clef, inversionShift = 0) {
-  let baseDetails = getNoteDetails(baseLine, baseAcc, clef);
-  let rawNotes = [];
-  
-  struct.stepOffsets.forEach((step, idx) => {
-    let line = baseLine + step;
-    let diatonicIdx = ((clef === 'sol' ? 2 : 4) + line);
-    let nameIdx = (diatonicIdx % 7 + 7) % 7;
-    let octave = Math.floor(diatonicIdx / 7) + (clef === 'sol' ? 4 : 2);
-    
-    let targetSemitones = struct.semitones[idx];
-    let naturalSemitones = DIATONIC_SEMITONES[nameIdx] + (octave * 12);
-    let rootNatural = DIATONIC_SEMITONES[(baseDetails.diatonicIdx % 7 + 7) % 7] + (Math.floor(baseDetails.diatonicIdx / 7) + (clef === 'sol' ? 4 : 2)) * 12 + baseAcc;
-    
-    let requiredAcc = (rootNatural + targetSemitones) - naturalSemitones;
-    rawNotes.push({ line, acc: requiredAcc });
-  });
-
-  if (inversionShift > 0) {
-    for (let i = 0; i < inversionShift; i++) {
-      let shifted = rawNotes.shift();
-      shifted.line += 7;
-      rawNotes.push(shifted);
-    }
-  }
-
-  return rawNotes.map(n => getNoteDetails(n.line, n.acc, clef));
+  const shared = { steps: struct.stepOffsets, semitones: struct.semitones };
+  return T.build(shared, { line: baseLine, acc: baseAcc, clef, inversion: inversionShift, given: 'root' }).notes;
 }
 
 function generateExercise() {
@@ -1062,11 +958,17 @@ function loadExerciseFromUrl() {
   if (dataStr) {
     try {
       currentExercise = JSON.parse(dataStr);
+      const typeSelect = document.getElementById('exType');
+      if (Array.from(typeSelect.options).some(o => o.value === currentExercise.type)) {
+        typeSelect.value = currentExercise.type;
+        onExerciseTypeChange();
+      }
       document.getElementById('practiceArea').style.display = 'flex';
       document.getElementById('feedback').innerText = 'תרגיל הוטען מקישור!';
       document.getElementById('feedback').className = 'feedback info';
       renderStaff(currentExercise);
       setupAnswerUI();
+      updateFirstNoteButtonUI();
       return true;
     } catch(e) { console.error("URL Load Error", e); }
   }
@@ -1085,36 +987,7 @@ function renderStaff(ex) {
 
   const svg = document.getElementById('staffSvg');
   
-  let svgContent = `
-    <defs>
-      <g id="clef-treble">
-        <text x="0" y="-8.5" class="music-clef g-clef-symbol">&#x1D11E;</text>
-      </g>
-      <g id="clef-bass">
-        <text x="0" y="8.5" class="music-clef f-clef-symbol">&#x1D122;</text>
-      </g>
-
-      <g id="acc-flat" transform="scale(0.8)">
-        <path d="M -2.5 -18.3 L -1.2 -18.3 L -1.2 -3.3 C -0.2 -5.0 1.4 -5.7 3.0 -5.7 C 5.8 -5.7 7.8 -3.4 7.8 0 C 7.8 3.3 5.8 5.7 2.8 5.7 C 0.8 5.7 -0.5 4.8 -1.2 3.4 L -1.2 6.7 L -2.5 6.7 Z M -1.2 -1.6 L -1.2 2.0 C -0.7 3.1 0.2 3.6 1.2 3.6 C 3.1 3.6 4.8 2.0 4.8 0 C 4.8 -2.0 3.1 -3.7 1.2 -3.7 C 0.2 -3.7 -0.7 -3.0 -1.2 -1.6 Z" fill="currentColor"/>
-      </g>
-
-      <g id="acc-sharp" transform="scale(0.8)">
-        <path d="M -5.5 -1.2 L -3.2 -1.8 L -3.2 -12 L -1.8 -12 L -1.8 -2.2 L 1.8 -3.2 L 1.8 -12 L 3.2 -12 L 3.2 -3.6 L 5.5 -4.2 L 5.5 -2.8 L 3.2 -2.2 L 3.2 3.8 L 5.5 3.2 L 5.5 4.6 L 3.2 5.2 L 3.2 12 L 1.8 12 L 1.8 5.6 L -1.8 6.6 L -1.8 12 L -3.2 12 L -3.2 7.0 L -5.5 7.6 L -5.5 6.2 L -3.2 5.6 L -3.2 -0.4 L -5.5 0.2 Z M -1.8 -0.8 L -1.8 5.2 L 1.8 4.2 L 1.8 -1.8 Z" fill="currentColor"/>
-      </g>
-
-      <g id="acc-natural" transform="scale(0.8)">
-        <path d="M -3 -13 L -1.2 -13 L -1.2 3.5 L 3.5 2.2 L 3.5 -4.5 L 5.3 -4.5 L 5.3 13 L 3.5 13 L 3.5 3.8 L -1.2 5.1 L -1.2 11.5 L -3 11.5 Z M -1.2 1.8 L 3.5 0.5 L 3.5 2.2 L -1.2 3.5 Z" fill="currentColor"/>
-      </g>
-
-      <g id="acc-double-sharp" transform="scale(0.8)">
-        <path d="M -6.5 -6.5 L -2.5 -2.5 L -6.5 1.5 L -1.5 6.5 L 2.5 2.5 L 6.5 6.5 L 1.5 1.5 L 5.5 -2.5 L 1.5 -6.5 L -2.5 -2.5 Z" fill="currentColor"/>
-        <circle cx="-5.5" cy="-5.5" r="1.3" fill="currentColor"/>
-        <circle cx="5.5" cy="-5.5" r="1.3" fill="currentColor"/>
-        <circle cx="-5.5" cy="5.5" r="1.3" fill="currentColor"/>
-        <circle cx="5.5" cy="5.5" r="1.3" fill="currentColor"/>
-      </g>
-    </defs>
-  `;
+  let svgContent = '';
 
   const isScaleOrMode = (ex.type === 'scales' || ex.type === 'modes');
   const startX = isScaleOrMode ? 85 : 260;
@@ -1126,11 +999,7 @@ function renderStaff(ex) {
   }
   svgContent += `<line x1="20" y1="34" x2="20" y2="66" stroke="currentColor" stroke-width="1.5"/>`;
 
-  if (ex.clef === 'sol') {
-    svgContent += `<use href="#clef-treble" x="35" y="58" />`;
-  } else {
-    svgContent += `<use href="#clef-bass" x="35" y="42" />`;
-  }
+  svgContent += T.svg.clef(ex.clef === 'fa' ? 'fa' : 'sol', 35, STAFF);
 
   let accOffsets = [];
   if (!isScaleOrMode) {
@@ -1158,29 +1027,14 @@ function renderStaff(ex) {
       if (isSecond) noteX += 10;
     }
 
-    if (n.absLine < 0) {
-      for (let l = -2; l >= n.absLine; l -= 2) {
-        let ly = 66 - l * 4;
-        svgContent += `<line x1="${noteX-8}" y1="${ly}" x2="${noteX+8}" y2="${ly}" stroke="currentColor" stroke-width="1.2"/>`;
-      }
-    } else if (n.absLine > 8) {
-      for (let l = 10; l <= n.absLine; l += 2) {
-        let ly = 66 - l * 4;
-        svgContent += `<line x1="${noteX-8}" y1="${ly}" x2="${noteX+8}" y2="${ly}" stroke="currentColor" stroke-width="1.2"/>`;
-      }
-    }
+    svgContent += T.svg.ledgerLines(noteX, n.absLine, STAFF, 8);
 
     if (n.acc !== 0) {
-      let accHref = '#acc-natural';
-      if (n.acc === 1) accHref = '#acc-sharp';
-      else if (n.acc === -1) accHref = '#acc-flat';
-      else if (n.acc === 2) accHref = '#acc-double-sharp';
-
-      let accX = baseX - 15 - accOffsets[idx];
-      svgContent += `<use href="${accHref}" x="${accX}" y="${y}" />`;
+      let accRightX = baseX - 11 - accOffsets[idx];
+      svgContent += T.svg.accidental(n.acc, accRightX, y, STAFF.space);
     }
 
-    svgContent += `<ellipse cx="${noteX}" cy="${y}" rx="4.4" ry="3.2" fill="currentColor" transform="rotate(-20 ${noteX} ${y})"/>`;
+    svgContent += T.svg.notehead(noteX, y, STAFF.space);
   });
 
   svg.innerHTML = svgContent;
@@ -1252,6 +1106,7 @@ function playFirstNoteOnly() {
 }
 
 function triggerSuccessAndNext() {
+  exerciseSolved = true;
   playCurrentExercise();
   setTimeout(startPractice, 1200);
 }
@@ -1274,6 +1129,7 @@ function startPractice() {
   selectedNoteNameIdx = null;
   selectedModeType = null;
   typeAnsweredCorrectly = false;
+  exerciseSolved = false;
   currentPlayDirection = 'ascending';
 
   renderStaff(currentExercise);
@@ -1315,6 +1171,7 @@ function setupStandardUI() {
     btn.className = 'opt-btn';
     btn.innerText = getStructureLabel(opt);
     btn.onclick = () => {
+      if (exerciseSolved) return;
       clearWrongButtons();
       if (opt.name === currentExercise.struct.name) {
         btn.classList.add('correct');
@@ -1357,6 +1214,7 @@ function setupChordUI() {
 }
 
 function checkChordType(typeName, btn) {
+  if (exerciseSolved) return;
   clearWrongButtons();
   if (selectedChordType === typeName) return;
   
@@ -1379,6 +1237,7 @@ function checkChordType(typeName, btn) {
 }
 
 function checkChordInv(invId, btn) {
+  if (exerciseSolved) return;
   clearWrongButtons();
   if (invId === currentExercise.inversion) {
     btn.classList.add('correct');
@@ -1429,6 +1288,7 @@ function setupModeUI() {
 }
 
 function checkModeNoteName(nameIdx, btn) {
+  if (exerciseSolved) return;
   clearWrongButtons();
   const rootNote = currentExercise.notes[0];
   
@@ -1451,6 +1311,7 @@ function checkModeNoteName(nameIdx, btn) {
 }
 
 function checkModeType(typeName, btn) {
+  if (exerciseSolved) return;
   clearWrongButtons();
   if (typeName === currentExercise.struct.name) {
     btn.classList.add('correct');
@@ -1547,6 +1408,7 @@ function renderPianoKeyboard() {
 }
 
 function checkNoteAnswer(nameIdx, el) {
+  if (exerciseSolved) return;
   clearWrongButtons();
   const correctNote = currentExercise.correctNote;
   const userAcc = parseInt(selectedAccidental);
@@ -1566,9 +1428,10 @@ function checkNoteAnswer(nameIdx, el) {
 }
 
 function checkNoteAnswerByPc(pc, el) {
+  if (exerciseSolved) return;
   clearWrongButtons();
   const correctNote = currentExercise.correctNote;
-  let targetPc = (DIATONIC_SEMITONES[correctNote.nameIndex] + correctNote.acc + 12) % 12;
+  let targetPc = (T.LETTERS[correctNote.nameIndex].pc + correctNote.acc + 12) % 12;
 
   if (targetPc === pc) {
     el.classList.add('correct');
