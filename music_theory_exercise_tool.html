@@ -1248,8 +1248,16 @@ function goToNextExercise() {
   if (document.getElementById('displayMode').value === 'audio_only') playCurrentExercise();
 }
 
+function exerciseKey(ex) {
+  return ex.clef + ':' + (ex.struct ? ex.struct.name : '') + ':' + ex.inversion + ':' + ex.notes.map(n => n.absLine + '/' + n.acc).join(',');
+}
+
 function startPractice() {
-  currentExercise = generateExercise();
+  // לא חוזרים על אותו תרגיל פעמיים ברצף, כדי שיהיה ברור שהתחלף
+  const prevKey = currentExercise ? exerciseKey(currentExercise) : null;
+  let next = generateExercise();
+  for (let i = 0; next && prevKey && exerciseKey(next) === prevKey && i < 20; i++) next = generateExercise();
+  currentExercise = next;
   if (!currentExercise) return;
 
   document.getElementById('practiceArea').style.display = 'flex';
