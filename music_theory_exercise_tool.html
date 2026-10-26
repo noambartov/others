@@ -669,7 +669,7 @@
         <div class="control-group">
           <label>כלי נגינה:</label>
           <select id="instrumentSelect">
-            <option value="xylophone" selected>קסילופון</option>
+            <option value="glockenspiel" selected>גלוקנשפיל</option>
             <option value="piano">פסנתר</option>
           </select>
         </div>
@@ -860,11 +860,15 @@ function midiToFreq(midi) {
   return 440 * Math.pow(2, (midi - 69) / 12);
 }
 
-function playInstrumentNote(freq, startTime, duration = 1.2) {
+// stopAt: בנגינה מלודית הצליל משתתק כשמגיע הבא, כדי שהצלילים לא יערמו זה על זה
+function playInstrumentNote(freq, startTime, stopAt = null) {
   const ctx = getAudioContext();
   const inst = document.getElementById('instrumentSelect').value;
-  if (inst === 'xylophone') playXylophoneNote(ctx, freq, startTime);
-  else playPianoNote(ctx, freq, startTime);
+  const damper = ctx.createGain();
+  damper.connect(masterOut(ctx));
+  if (stopAt !== null) damper.gain.setTargetAtTime(0, stopAt, 0.04);
+  if (inst === 'glockenspiel') playGlockenspielNote(ctx, freq, startTime, damper);
+  else playPianoNote(ctx, freq, startTime, damper);
 }
 
 // יציאה משותפת עם קומפרסור, כדי שאקורדים לא יתעוותו
@@ -882,21 +886,24 @@ function masterOut(ctx) {
   return ctx._master;
 }
 
-// קסילופון: מכה קשה וקצרה, צליל יסוד עם עליון חזק בדואודצימה (פי 3) ונקישה קצרה של רעש
-function playXylophoneNote(ctx, freq, t) {
+// גלוקנשפיל: מוטות מתכת, עליונים לא הרמוניים חלשים שדועכים מהר וצליל יסוד מצלצל
+function playGlockenspielNote(ctx, freq, t, dest) {
   const out = ctx.createGain();
-  out.gain.value = 0.22;
-  out.connect(masterOut(ctx));
+  out.gain.value = 0.2;
+  out.connect(dest);
   const partials = [
-    { ratio: 1, gain: 1.0, decay: 0.9 },
-    { ratio: 3.0, gain: 0.45, decay: 0.25 },
-    { ratio: 6.1, gain: 0.15, decay: 0.08 }
+    { ratio: 1, gain: 1.0, decay: 2.2 },
+    { ratio: 2.76, gain: 0.18, decay: 0.35 },
+    { ratio: 5.4, gain: 0.08, decay: 0.12 },
+    { ratio: 8.93, gain: 0.04, decay: 0.06 }
   ];
   partials.forEach(p => {
+    const f = freq * p.ratio;
+    if (f > 16000) return;
     const osc = ctx.createOscillator();
     const g = ctx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq * p.ratio, t);
+    osc.frequency.setValueAtTime(f, t);
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(p.gain, t + 0.002);
     g.gain.exponentialRampToValueAtTime(0.0001, t + p.decay);
@@ -905,27 +912,11 @@ function playXylophoneNote(ctx, freq, t) {
     osc.start(t);
     osc.stop(t + p.decay + 0.05);
   });
-  // נקישת המקוש
-  const len = Math.floor(ctx.sampleRate * 0.02);
-  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
-  const noise = ctx.createBufferSource();
-  noise.buffer = buf;
-  const hp = ctx.createBiquadFilter();
-  hp.type = 'bandpass';
-  hp.frequency.value = Math.min(freq * 4, 8000);
-  const ng = ctx.createGain();
-  ng.gain.value = 0.25;
-  noise.connect(hp);
-  hp.connect(ng);
-  ng.connect(out);
-  noise.start(t);
 }
 
 // פסנתר: שני מיתרים מעט לא מכוונים, עליונים עם אי-הרמוניות קלה, דעיכה דו-שלבית וסוסטיין ארוך,
 // ופילטר שמתכהה עם הזמן כמו מיתר אמיתי
-function playPianoNote(ctx, freq, t) {
+function playPianoNote(ctx, freq, t, dest) {
   const sustain = 7 * Math.min(1.6, Math.max(0.6, 440 / freq) ** 0.35);
   const out = ctx.createGain();
   out.gain.setValueAtTime(0, t);
@@ -940,7 +931,7 @@ function playPianoNote(ctx, freq, t) {
   lp.frequency.setValueAtTime(Math.min(freq * 14, 12000), t);
   lp.frequency.exponentialRampToValueAtTime(Math.max(freq * 2.5, 400), t + sustain * 0.7);
   lp.connect(out);
-  out.connect(masterOut(ctx));
+  out.connect(dest);
 
   const B = 0.0004; // אי-הרמוניות של מיתר
   const partials = [1, 0.55, 0.32, 0.22, 0.14, 0.09, 0.06, 0.04];
@@ -1281,10 +1272,9 @@ function playCurrentExercise() {
     currentPlayDirection = 'ascending';
     updateFirstNoteButtonUI();
     const now = ctx.currentTime + 0.05;
-    freqs.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.3, 0.7));
-    const scaleDesc = [...freqs].reverse().slice(1);
-    scaleDesc.forEach((f, idx) => playInstrumentNote(f, now + (freqs.length + idx) * 0.3, 0.7));
-    return (freqs.length + scaleDesc.length) * 0.3 + 0.4;
+    const all = [...freqs, ...[...freqs].reverse().slice(1)];
+    all.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.3, idx < all.length - 1 ? now + (idx + 1) * 0.3 : null));
+    return all.length * 0.3 + 0.4;
   }
 
   const modeSelect = document.getElementById('playMode').value;
@@ -1299,11 +1289,12 @@ function playCurrentExercise() {
 
   const now = ctx.currentTime + 0.05;
   if (mode === 'harmonic') {
-    freqs.forEach(f => playInstrumentNote(f, now, 1.4));
+    freqs.forEach(f => playInstrumentNote(f, now));
   } else if (mode === 'ascending') {
-    freqs.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, 0.9));
+    freqs.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, idx < freqs.length - 1 ? now + (idx + 1) * 0.35 : null));
   } else if (mode === 'descending') {
-    [...freqs].reverse().forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, 0.9));
+    const rev = [...freqs].reverse();
+    rev.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, idx < rev.length - 1 ? now + (idx + 1) * 0.35 : null));
   }
   return mode === 'harmonic' ? 1.2 : freqs.length * 0.35 + 0.5;
 }
@@ -1320,7 +1311,7 @@ function playFirstNoteOnly() {
 
   const freq = midiToFreq(targetNote.midiNum);
   const ctx = getAudioContext();
-  playInstrumentNote(freq, ctx.currentTime + 0.05, 1.2);
+  playInstrumentNote(freq, ctx.currentTime + 0.05);
 }
 
 function triggerSuccessAndNext() {
