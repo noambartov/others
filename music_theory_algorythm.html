@@ -428,14 +428,14 @@ function calculateScale() {
 
   if (scaleType === 'minor_melodic') {
     const notesUp = spellStructure('scales', 'minor_melodic', rootNote);
-    const notesDown = spellStructure('scales', 'minor_natural', rootNote).reverse();
+    const notesDown = notesUp.slice().reverse();
 
     displayContainer.innerHTML = `
       <div class="scale-section-title">בעלייה (דרגות 6 ו-7 מועלות):</div>
       <div class="scale-notes-list">${badges(notesUp)}</div>
-      <div class="scale-section-title">בירידה (כמו מינור טבעי):</div>
+      <div class="scale-section-title">בירידה (גם כמלודי):</div>
       <div class="scale-notes-list">${badges(notesDown)}</div>
-      ${hasUnspellable(notesUp.concat(notesDown)) ? UNSPELLABLE_NOTE : ''}
+      ${hasUnspellable(notesUp) ? UNSPELLABLE_NOTE : ''}
     `;
   } else {
     const notes = spellStructure('scales', scaleType, rootNote);
