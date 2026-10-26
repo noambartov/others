@@ -140,6 +140,8 @@
     .big-play:hover { background: var(--primary-hover); }
     .big-play:active { transform: scale(0.96); }
     .big-play-label { font-size: 14px; color: var(--text-muted); }
+    .silent-tip { max-width: 300px; margin-top: 6px; font-size: 13px; line-height: 1.5; color: var(--text-muted); text-align: center; }
+    .silent-tip button { background: none; border: none; padding: 0 4px; font: inherit; color: var(--text-dark); text-decoration: underline; cursor: pointer; }
     .mode-tabs { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); display: flex; gap: 18px; white-space: nowrap; }
     .mode-tabs button { background: none; border: none; padding: 2px 0; font: inherit; font-size: 15px; color: var(--text-muted); cursor: pointer; transition: color .15s; }
     .mode-tabs button:hover, .mode-tabs button.active { color: var(--text-dark); }
@@ -816,6 +818,10 @@
         <svg viewBox="0 0 24 24" width="38" height="38"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>
       </button>
       <div class="big-play-label">השמע</div>
+      <div class="silent-tip" id="silentTip" hidden>
+        לא שומעים? בדקו שמתג השקט בצד הטלפון כבוי ושהעוצמה מופעלת.
+        <button type="button" onclick="dismissSilentTip()">הבנתי</button>
+      </div>
     </div>
 
     <div class="staff-container" id="staffContainer">
@@ -970,10 +976,29 @@ function getAudioContext() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
-  if (audioCtx.state === 'suspended') {
+  // ב-iOS ההקשר יכול להיות גם interrupted, למשל אחרי מעבר לאפליקציה אחרת
+  if (audioCtx.state !== 'running') {
     audioCtx.resume();
   }
   return audioCtx;
+}
+
+// iOS 17 ומעלה: השמעה גם כשמתג השקט מופעל, כמו נגן מוזיקה
+try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+
+// בטלפונים של אפל מתג השקט משתיק את הדף בגרסאות ישנות, ולכן מציגים פעם אחת הסבר קצר ליד כפתור ההשמעה
+const SILENT_TIP_KEY = 'mt_silent_tip_seen';
+function isAppleMobile() {
+  return /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+function initSilentTip() {
+  let seen = false;
+  try { seen = localStorage.getItem(SILENT_TIP_KEY) === '1'; } catch (e) {}
+  document.getElementById('silentTip').hidden = seen || !isAppleMobile();
+}
+function dismissSilentTip() {
+  document.getElementById('silentTip').hidden = true;
+  try { localStorage.setItem(SILENT_TIP_KEY, '1'); } catch (e) {}
 }
 
 function midiToFreq(midi) {
@@ -2238,6 +2263,7 @@ document.querySelectorAll('.options-grid').forEach(g => {
 
 onExerciseTypeChange();
 loadSamples(document.getElementById('instrumentSelect').value);
+initSilentTip();
 const fromLink = new URLSearchParams(location.search).has('exData');
 setAppMode(fromLink ? 'read' : initialAppMode(), true);
 if (!loadExerciseFromUrl() && appMode !== 'train') {
