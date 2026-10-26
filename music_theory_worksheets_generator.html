@@ -516,9 +516,9 @@ function generateSheet() {
                        (type === 'septachords' ? 'הספטאקורדים' : 'הסולמות'));
     
     let instructionPrefix = (skill === 'id') ? 'זהה/י את' : 'כתוב/י את';
-    let voiceNoteStr = (skill === 'write' && (type === 'chords' || type === 'septachords' || type === 'intervals')) ? ` (מצליל ה${givenVoice === 'bass' ? 'בס' : 'סופרן'})` : '';
+    let voiceNoteStr = (skill === 'write' && (type === 'chords' || type === 'septachords' || type === 'intervals')) ? `, מצליל ה${givenVoice === 'bass' ? 'בס' : 'סופרן'}` : '';
     let exerciseNum = `<span class="exercise-num">${idx + 1}</span>`;
-    let fullInstructionTitle = `${instructionPrefix} ${categoryName}${voiceNoteStr} הבאים`;
+    let fullInstructionTitle = `${instructionPrefix} ${categoryName} הבאים${voiceNoteStr}`;
 
     let studentSVG = `<svg class="staff-svg" viewBox="0 0 750 75">`;
     let answerSVG = `<svg class="staff-svg" viewBox="0 0 750 75">`;
@@ -667,12 +667,12 @@ function generateSheet() {
 
     const staffDiv = document.createElement('div');
     staffDiv.className = 'staff-system';
-    staffDiv.innerHTML = `<div class="exercise-title">${exerciseNum}${fullInstructionTitle}:</div>${studentSVG}${studentAnsHTML}`;
+    staffDiv.innerHTML = `<div class="exercise-title">${exerciseNum}<span dir="rtl">${fullInstructionTitle}:</span></div>${studentSVG}${studentAnsHTML}`;
     studentContainer.appendChild(staffDiv);
 
     const ansDiv = document.createElement('div');
     ansDiv.className = 'staff-system';
-    ansDiv.innerHTML = `<div class="exercise-title">${exerciseNum}${fullInstructionTitle}:</div>${answerSVG}${answerAnsHTML}`;
+    ansDiv.innerHTML = `<div class="exercise-title">${exerciseNum}<span dir="rtl">${fullInstructionTitle}:</span></div>${answerSVG}${answerAnsHTML}`;
     answersContainer.appendChild(ansDiv);
   });
 }
