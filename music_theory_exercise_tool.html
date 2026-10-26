@@ -157,6 +157,9 @@
       .ex-types { gap: 12px; justify-content: flex-start; }
       .ex-types button { font-size: 13px; }
     }
+    .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+    .seg button { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 6px; cursor: pointer; background: #ffffff; border: 1px solid #e6e6e6; color: #999999; }
+    .seg button.active { background: #e6e6e6; color: #222222; }
     body.mode-read .ear-only-setting { display: none !important; }
     body.mode-train #intervalFormatGroup { display: flex !important; }
     body.mode-ear .read-only-setting,
@@ -703,7 +706,7 @@
           <label>תצוגת מרווחים:</label>
           <select id="intervalFormatSelect" onchange="updateOptionsList()">
             <option value="full">מילים מלאות</option>
-            <option value="abbr" selected>קיצורים (2.מוג)</option>
+            <option value="abbr" selected>קיצורים</option>
           </select>
         </div>
 
@@ -745,8 +748,8 @@
           <select id="playMode">
             <option value="random" selected>אקראי</option>
             <option value="harmonic">הרמוני</option>
-            <option value="ascending">מלודי עולה</option>
-            <option value="descending">מלודי יורד</option>
+            <option value="ascending">עולה</option>
+            <option value="descending">יורד</option>
           </select>
         </div>
       </div>
@@ -929,6 +932,32 @@ let settingsDirty = false;
     if (appMode !== 'train') goToNextExercise();
   });
 })();
+
+// הגדרות עם מעט אפשרויות: כפתורים במקום תפריט נפתח. ה-select נשאר מוסתר ומקור האמת
+function buildSegmentedSettings() {
+  document.querySelectorAll('#settingsCollapse .controls-grid select').forEach(sel => {
+    if (sel.id === 'displayMode') return;
+    const seg = document.createElement('div');
+    seg.className = 'seg';
+    Array.from(sel.options).forEach(opt => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = opt.textContent;
+      b.dataset.value = opt.value;
+      b.onclick = () => {
+        if (sel.value === opt.value) return;
+        sel.value = opt.value;
+        seg.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+      b.classList.toggle('active', opt.value === sel.value);
+      seg.appendChild(b);
+    });
+    sel.style.display = 'none';
+    sel.after(seg);
+  });
+}
+buildSegmentedSettings();
 
 function setExType(type) {
   document.getElementById('exType').value = type;
