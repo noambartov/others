@@ -47,7 +47,13 @@
     .app-container { max-width: 900px; margin: 0 auto; }
     .app-header { text-align: center; margin: 40px 0 28px; }
     .app-header h1 { font-weight: 300; font-size: 36px; color: #111111; margin: 0; }
-    .app-intro { color: var(--muted); font-size: 16px; margin: 10px auto 0; max-width: 560px; line-height: 1.5; }
+    /* שלבי העבודה מתחת לכותרת, בניסוח שמתאים לכולם */
+    .app-steps { list-style: none; counter-reset: step; display: flex; justify-content: center; gap: 28px; margin: 14px 0 0; padding: 0; color: #777777; font-size: 15px; }
+    .app-steps li { counter-increment: step; display: flex; align-items: baseline; gap: 6px; }
+    .app-steps li::before { content: counter(step); color: var(--muted); font-size: 13px; }
+    @media (max-width: 600px) {
+      .app-steps { flex-direction: column; align-items: flex-start; gap: 6px; text-align: right; max-width: 340px; margin-inline: auto; }
+    }
 
     .controls-panel { border-top: 1px solid var(--rule); margin-bottom: 8px; }
 
@@ -198,7 +204,11 @@
 <div class="app-container">
   <div class="app-header">
     <h1>דפי תרגול להדפסה</h1>
-    <p class="app-intro">בוחרים מה יופיע בכל חמשה, לוחצים "צור תרגילים", ומורידים PDF עם דף תשובות.</p>
+    <ol class="app-steps">
+      <li>מוסיפים חמשות ובוחרים תרגיל לכל אחת</li>
+      <li>לוחצים על "דף תשובות" כדי לקבל מחוון</li>
+      <li>מורידים PDF ומדפיסים</li>
+    </ol>
   </div>
 
   <div class="controls-panel">
