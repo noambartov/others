@@ -1649,6 +1649,8 @@ function updateFirstNoteButtonUI() {
 
 function playCurrentExercise() {
   if (!currentExercise) return;
+  // אחרי רמז השמעה, כל השמעה חוזרת בתרגיל הזה נשמעת בדרך המקלה
+  if (currentExercise.hintPlay) { currentExercise.hintPlay(); return; }
   const freqs = currentExercise.notes.map(n => midiToFreq(n.midiNum));
   const ctx = getAudioContext();
   newPlayBus(ctx);
@@ -2506,21 +2508,24 @@ function buildHintSteps() {
   if (ex.type === 'note_id') {
     steps = [{ key: 'clef', text: ex.clef === 'fa' ? 'מפתח פה מסמן את פה על הקו הרביעי מלמטה, בין שתי הנקודות' : 'מפתח סול מסמן את סול על הקו השני מלמטה' }];
   } else if (ex.type === 'intervals') {
-    if (ear) steps.push({ key: 'play', text: 'הושמע שוב: יחד, ואז צליל אחר צליל מלמטה למעלה', play: playHintVersion });
+    if (ear) steps.push({ key: 'play', text: 'מעכשיו ההשמעה: יחד, ואז צליל אחר צליל מלמטה למעלה', play: playHintVersion });
     steps.push(intervalNumberStep(ear));
   } else if (ex.type === 'chords' || ex.type === 'septachords') {
-    if (ear) steps.push({ key: 'play', text: 'הושמע שוב: יחד, ואז צליל אחר צליל מלמטה למעלה', play: playHintVersion });
+    if (ear) steps.push({ key: 'play', text: 'מעכשיו ההשמעה: יחד, ואז צליל אחר צליל מלמטה למעלה', play: playHintVersion });
     else steps.push({ key: 'root', text: `השורש: ${noteLabel(ex.notes[(ex.notes.length - ex.inversion) % ex.notes.length])}` });
     steps.push(inversionStep(), chordFamilyStep());
   } else {
-    if (ear) steps.push({ key: 'play', text: 'הושמע שוב: רק עולה, לאט', play: playScaleSlow });
+    if (ear) steps.push({ key: 'play', text: 'מעכשיו ההשמעה: רק עולה, לאט', play: playScaleSlow });
     steps.push(scaleFamilyStep());
   }
   return steps.filter(Boolean);
 }
 
 function applyHint(step) {
-  if (step.play) step.play();
+  if (step.play) {
+    currentExercise.hintPlay = step.play;
+    step.play();
+  }
   if (step.keep) {
     document.querySelectorAll('#optionsButtons .opt-btn, #chordTypeButtons .opt-btn, #modeTypeButtons .opt-btn').forEach(btn => {
       const opt = currentExercise.optionsPool.find(o => o.name === btn.dataset.name);
