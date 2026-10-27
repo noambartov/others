@@ -1108,15 +1108,16 @@ function silenceAll(fade) {
 }
 
 // stopAt: בסולם כל צליל משתתק כשמגיע הבא. במרווח ובאקורד מלודי אין stopAt: הצלילים ממשיכים לצלצל, כמו עם פדל
-function playInstrumentNote(freq, startTime, stopAt = null) {
+// release: כמה מהר הצליל נדעך אחרי stopAt
+function playInstrumentNote(freq, startTime, stopAt = null, release = 0.04) {
   const ctx = getAudioContext();
   const inst = document.getElementById('instrumentSelect').value;
   if (!playBus) newPlayBus(ctx);
   const damper = ctx.createGain();
   damper.connect(playBus);
-  if (stopAt !== null) damper.gain.setTargetAtTime(0, stopAt, 0.04);
+  if (stopAt !== null) damper.gain.setTargetAtTime(0, stopAt, release);
   // עד שהדגימות נטענות (או כשהדף נפתח מקובץ מקומי) מנגנים פסנתר מסונתז
-  if (sampleBuffers[inst]) playSampleNote(ctx, inst, freq, startTime, stopAt, damper);
+  if (sampleBuffers[inst]) playSampleNote(ctx, inst, freq, startTime, stopAt === null ? null : stopAt + release * 10, damper);
   else {
     loadSamples(inst);
     playPianoNote(ctx, freq, startTime, damper);
@@ -1168,7 +1169,7 @@ function playSampleNote(ctx, inst, freq, t, stopAt, dest) {
   src.connect(g);
   g.connect(dest);
   src.start(t);
-  if (stopAt !== null) src.stop(stopAt + 0.4);
+  if (stopAt !== null) src.stop(stopAt);
 }
 
 // יציאה משותפת עם קומפרסור, כדי שאקורדים לא יתעוותו
@@ -1657,7 +1658,11 @@ function playCurrentExercise() {
     updateFirstNoteButtonUI();
     const now = ctx.currentTime + 0.05;
     const all = [...freqs, ...[...freqs].reverse().slice(1)];
-    all.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.3, idx < all.length - 1 ? now + (idx + 1) * 0.3 : null));
+    // הצליל האחרון מצלצל כחצי מהדגימה (כ-4 שניות) ונדעך בעדינות
+    all.forEach((f, idx) => {
+      const last = idx === all.length - 1;
+      playInstrumentNote(f, now + idx * 0.3, last ? now + idx * 0.3 + 3 : now + (idx + 1) * 0.3, last ? 0.3 : 0.04);
+    });
     return;
   }
 
