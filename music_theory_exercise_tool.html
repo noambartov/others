@@ -1659,19 +1659,18 @@ function updateFirstNoteButtonUI() {
 }
 
 // סוף ההשמעה, לפי כלי. ויברפון: דעיכה טבעית שמתחילה כבר באטק של הצליל האחרון (בהרמוני: של כולם).
-// פסנתר: הצליל מצלצל בטבעיות ובסוף המשך הבולם יורד על המיתרים
+// פסנתר: עם פדל, הצליל דועך לבד עד סוף הדגימה
 const ENDINGS = {
   vibraphone: { curve: 'exp', melodic: 3.5, harmonic: 4 },
-  piano: { curve: 'damper', melodic: 2.5, harmonic: 3 }
+  piano: { curve: 'natural', melodic: 6, harmonic: 6 }
 };
 function ending() {
   return ENDINGS[document.getElementById('instrumentSelect').value] || ENDINGS.piano;
 }
 function fadeOut(param, from, len) {
-  const curve = ending().curve;
+  if (ending().curve !== 'exp') return;
   param.setValueAtTime(1, from);
-  if (curve === 'exp') param.setTargetAtTime(0, from, len / 5);
-  else param.setTargetAtTime(0, from + len - 0.4, 0.08);
+  param.setTargetAtTime(0, from, len / 5);
 }
 
 function playCurrentExercise() {
