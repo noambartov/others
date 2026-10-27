@@ -1133,10 +1133,11 @@ function playInstrumentNote(freq, startTime, stopAt = null, release = 0.04, fade
 }
 
 // דגימות אמיתיות, כל אחת כ-8 שניות של צלצול טבעי. צלילים שביניהן מוזזים בגובה מהדגימה הקרובה.
-// פסנתר: Salamander Grand Piano (CC-BY 3.0). ויברפון בלי מנוע, מקושים קשים: VCSL (CC0). פרטים ב-sounds/README.md
+// פסנתר כנף Steinway B וויברפון בלי מנוע במקושים קשים, שניהם ממאגר VCSL (CC0). פרטים ב-sounds/README.md
 const SAMPLE_SETS = {
-  piano: { dir: 'sounds/piano/', gain: 0.3,
-    notes: ['A1', 'C2', 'Ds2', 'Fs2', 'A2', 'C3', 'Ds3', 'Fs3', 'A3', 'C4', 'Ds4', 'Fs4', 'A4', 'C5', 'Ds5', 'Fs5', 'A5', 'C6', 'Ds6', 'Fs6', 'A6', 'C7'] },
+  piano: { dir: 'sounds/piano/', gain: 0.4,
+    notes: ['As1', 'C2', 'D2', 'E2', 'Fs2', 'Gs2', 'As2', 'C3', 'D3', 'E3', 'Fs3', 'Gs3', 'As3', 'C4', 'D4', 'E4', 'Fs4', 'Gs4', 'As4',
+      'C5', 'D5', 'E5', 'Fs5', 'Gs5', 'As5', 'C6', 'D6', 'E6', 'Fs6', 'Gs6', 'As6', 'C7'] },
   vibraphone: { dir: 'sounds/vibraphone/', gain: 0.3,
     notes: ['A3', 'C4', 'E4', 'G4', 'B4', 'D5', 'F5', 'A5', 'C6', 'E6'] }
 };
@@ -1657,24 +1658,20 @@ function updateFirstNoteButtonUI() {
   }
 }
 
-// הדעיכה מתחילה כבר באטק של הצליל האחרון (בהרמוני: באטק של כולם) ויורדת בהדרגה עד שקט
-const ENDING = { melodic: 2.5, harmonic: 3.0, curve: 'soft' };
+// סוף ההשמעה, לפי כלי. ויברפון: דעיכה טבעית שמתחילה כבר באטק של הצליל האחרון (בהרמוני: של כולם).
+// פסנתר: הצליל מצלצל בטבעיות ובסוף המשך הבולם יורד על המיתרים
+const ENDINGS = {
+  vibraphone: { curve: 'exp', melodic: 3.5, harmonic: 4 },
+  piano: { curve: 'damper', melodic: 2.5, harmonic: 3 }
+};
+function ending() {
+  return ENDINGS[document.getElementById('instrumentSelect').value] || ENDINGS.piano;
+}
 function fadeOut(param, from, len) {
-  if (ENDING.curve === 'exp') {
-    param.setValueAtTime(1, from);
-    param.setTargetAtTime(0, from, len / 5);
-    return;
-  }
-  if (ENDING.curve === 'linear') {
-    param.setValueAtTime(1, from);
-    param.linearRampToValueAtTime(0, from + len);
-    return;
-  }
-  // soft: יורד לאט בהתחלה ומהר יותר לקראת הסוף, כמו מפתח שמשתחרר לאט
-  const n = 64;
-  const curve = new Float32Array(n);
-  for (let i = 0; i < n; i++) curve[i] = Math.pow(Math.cos((i / (n - 1)) * Math.PI / 2), 2);
-  param.setValueCurveAtTime(curve, from, len);
+  const curve = ending().curve;
+  param.setValueAtTime(1, from);
+  if (curve === 'exp') param.setTargetAtTime(0, from, len / 5);
+  else param.setTargetAtTime(0, from + len - 0.4, 0.08);
 }
 
 function playCurrentExercise() {
@@ -1692,7 +1689,7 @@ function playCurrentExercise() {
     const all = [...freqs, ...[...freqs].reverse().slice(1)];
     all.forEach((f, idx) => {
       const last = idx === all.length - 1;
-      if (last) playInstrumentNote(f, now + idx * 0.3, now + idx * 0.3, 0, ENDING.melodic);
+      if (last) playInstrumentNote(f, now + idx * 0.3, now + idx * 0.3, 0, ending().melodic);
       else playInstrumentNote(f, now + idx * 0.3, now + (idx + 1) * 0.3);
     });
     return;
@@ -1713,11 +1710,11 @@ function playCurrentExercise() {
 
   const now = ctx.currentTime + 0.05;
   if (mode === 'harmonic') {
-    freqs.forEach(f => playInstrumentNote(f, now, now, 0, ENDING.harmonic));
+    freqs.forEach(f => playInstrumentNote(f, now, now, 0, ending().harmonic));
   } else {
     const ordered = mode === 'descending' ? [...freqs].reverse() : freqs;
     const lastStart = now + (ordered.length - 1) * 0.35;
-    ordered.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, lastStart, 0, ENDING.melodic));
+    ordered.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, lastStart, 0, ending().melodic));
   }
 }
 
@@ -2468,7 +2465,7 @@ function playHintVersion() {
   freqs.forEach(f => playInstrumentNote(f, now, now + 1.4));
   const start = now + 1.7;
   const lastStart = start + (freqs.length - 1) * 0.55;
-  freqs.forEach((f, idx) => playInstrumentNote(f, start + idx * 0.55, lastStart, 0, ENDING.melodic));
+  freqs.forEach((f, idx) => playInstrumentNote(f, start + idx * 0.55, lastStart, 0, ending().melodic));
 }
 
 // סולם או מודוס: רק עולה, לאט, כל צליל לבד
@@ -2479,7 +2476,7 @@ function playScaleSlow() {
   const now = ctx.currentTime + 0.05;
   freqs.forEach((f, idx) => {
     const last = idx === freqs.length - 1;
-    if (last) playInstrumentNote(f, now + idx * 0.55, now + idx * 0.55, 0, ENDING.melodic);
+    if (last) playInstrumentNote(f, now + idx * 0.55, now + idx * 0.55, 0, ending().melodic);
     else playInstrumentNote(f, now + idx * 0.55, now + (idx + 1) * 0.55);
   });
 }

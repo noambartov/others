@@ -17,6 +17,6 @@
 node tests/theory-core.test.js
 ```
 
-דגימות הפסנתר והוויברפון: ראו `sounds/README.md` (Salamander Grand Piano ברישיון CC-BY 3.0, ‏VCSL ברישיון CC0).
+דגימות הפסנתר והוויברפון: ראו `sounds/README.md` (ממאגר VCSL, ברישיון CC0).
 
 צורות התווים (מפתחות, סימני היתק, ראשי תווים) לקוחות מהגופן Bravura, ברישיון SIL Open Font License.
