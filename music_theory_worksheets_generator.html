@@ -530,13 +530,16 @@ function getClefSVG(clef) {
 }
 
 // accColumn: עמודת סימן ההיתק משמאל לתו (0 = הכי קרובה), לפי T.chordLayout
-function renderNoteGraphic(x, absLine, acc, shiftNoteHead = false, accColumn = 0) {
+// accBeside: בפרימה, סימן ההיתק של התו הימני נכתב בין שני ראשי התווים
+function renderNoteGraphic(x, absLine, acc, shiftNoteHead = false, accColumn = 0, accBeside = false) {
   let noteX = shiftNoteHead ? (x + 10) : x;
+  if (accBeside) noteX += T.svg.accidentalWidth(acc, STAFF.space) + 4;
   let y = T.svg.lineY(STAFF, absLine);
   let svg = T.svg.ledgerLines(noteX, absLine, STAFF, 9, INK);
 
   if (acc !== 0) {
-    svg += T.svg.accidental(acc, x - 7 - (accColumn || 0) * 11, y, STAFF.space, INK);
+    let accRightX = accBeside ? noteX - 7 : x - 7 - (accColumn || 0) * 11;
+    svg += T.svg.accidental(acc, accRightX, y, STAFF.space, INK);
   }
 
   svg += T.svg.notehead(noteX, y, STAFF.space, INK);
@@ -549,7 +552,7 @@ function renderNotes(notes, x, isScale) {
     return notes.map((n, i) => renderNoteGraphic(x + i * 26, n.absLine, n.acc)).join('');
   }
   const layout = T.chordLayout(notes);
-  return notes.map((n, i) => renderNoteGraphic(x, n.absLine, n.acc, layout[i].shifted, layout[i].accColumn)).join('');
+  return notes.map((n, i) => renderNoteGraphic(x, n.absLine, n.acc, layout[i].shifted, layout[i].accColumn, layout[i].accBeside)).join('');
 }
 
 function renderKeyAccidental(measureX, idx, accType, clef) {

@@ -265,6 +265,11 @@
     return glyph(name, rightX - glyphWidth(name, space), y, space, fill);
   }
 
+  function accidentalWidth(acc, space) {
+    const name = ACC_GLYPHS[acc];
+    return name ? glyphWidth(name, space) : 0;
+  }
+
   function noteheadSvg(centerX, y, space, fill) {
     return glyph('noteheadBlack', centerX - glyphWidth('noteheadBlack', space) / 2, y, space, fill);
   }
@@ -282,17 +287,22 @@
   }
 
   // סידור אקורד על החמשה (צלילים מהנמוך לגבוה):
-  // shifted — ראש תו שזז ימינה כי הוא סקונדה מעל תו שלא זז
+  // shifted — ראש תו שזז ימינה כי הוא סקונדה או פרימה מעל תו שלא זז
+  // (בפרימה שני ראשי התווים באותו קו/רווח, זה ליד זה)
+  // accBeside — בפרימה, סימן ההיתק של התו הימני נכתב צמוד אליו (בין שני ראשי התווים),
+  // כדי שיהיה ברור לאיזה צליל הוא שייך; התו זז ימינה עוד ברוחב הסימן.
   // accColumn — עמודת סימן ההיתק משמאל (0 = הכי קרוב לתו), או null כשאין היתק.
   // סימנים בטווח של פחות מספטימה זה מזה לא חולקים עמודה; מתחילים מהצליל העליון.
   function chordLayout(notes) {
-    const layout = notes.map(() => ({ shifted: false, accColumn: null }));
+    const layout = notes.map(() => ({ shifted: false, accColumn: null, accBeside: false }));
     for (let i = 1; i < notes.length; i++) {
-      layout[i].shifted = notes[i].absLine - notes[i - 1].absLine === 1 && !layout[i - 1].shifted;
+      const gap = notes[i].absLine - notes[i - 1].absLine;
+      layout[i].shifted = (gap === 0 || gap === 1) && !layout[i - 1].shifted;
+      layout[i].accBeside = layout[i].shifted && gap === 0 && notes[i].acc !== 0;
     }
     const columns = [];
     for (let i = notes.length - 1; i >= 0; i--) {
-      if (notes[i].acc === 0) continue;
+      if (notes[i].acc === 0 || layout[i].accBeside) continue;
       let col = 0;
       while ((columns[col] || []).some(line => Math.abs(line - notes[i].absLine) < 6)) col++;
       (columns[col] = columns[col] || []).push(notes[i].absLine);
@@ -305,7 +315,7 @@
     LETTERS, CATALOG, INVERSIONS, KEYS,
     mod, isSpellable, noteName, note, lineForLetter, findStructure, build,
     intervalQuality, identifyInterval, keySignatureLines, chordLayout,
-    svg: { GLYPHS, glyph, glyphWidth, lineY, clef: clefSvg, accidental: accidentalSvg, notehead: noteheadSvg, ledgerLines: ledgerLinesSvg }
+    svg: { GLYPHS, glyph, glyphWidth, lineY, clef: clefSvg, accidental: accidentalSvg, accidentalWidth, notehead: noteheadSvg, ledgerLines: ledgerLinesSvg }
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = TheoryCore;
