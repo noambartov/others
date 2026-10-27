@@ -1580,6 +1580,8 @@ function renderStaff(ex) {
 
   // במצב מושמע בלבד: כפתור השמעה גדול במקום החמשה
   document.getElementById('bigPlayWrap').style.display = dispMode === 'audio_only' ? 'flex' : 'none';
+  // בשמיעה יש כפתור גדול, אז הכפתור הקטן בשורה נחוץ רק בקריאה
+  document.getElementById('playAudioBtn').style.display = dispMode === 'audio_only' ? 'none' : '';
   if (dispMode === 'audio_only') {
     container.style.display = 'none';
     return;
