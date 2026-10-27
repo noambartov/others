@@ -1647,6 +1647,15 @@ function updateFirstNoteButtonUI() {
   }
 }
 
+// משך הצלצול בסוף השמעה: בהרמוני כ-3 שניות לכל הצלילים יחד,
+// במלודי הצליל האחרון (והצלילים שמצלצלים איתו בפדל) כפעמיים המרווח בין צליל לצליל
+const HARMONIC_HOLD = 2.5;
+const HARMONIC_RELEASE = 0.2;
+const MELODIC_RELEASE = 0.12;
+function melodicEnd(lastStart, step) {
+  return lastStart + 2 * step;
+}
+
 function playCurrentExercise() {
   if (!currentExercise) return;
   // אחרי רמז השמעה, כל השמעה חוזרת בתרגיל הזה נשמעת בדרך המקלה
@@ -1660,10 +1669,9 @@ function playCurrentExercise() {
     updateFirstNoteButtonUI();
     const now = ctx.currentTime + 0.05;
     const all = [...freqs, ...[...freqs].reverse().slice(1)];
-    // הצליל האחרון מצלצל כחצי מהדגימה (כ-4 שניות) ונדעך בעדינות
     all.forEach((f, idx) => {
       const last = idx === all.length - 1;
-      playInstrumentNote(f, now + idx * 0.3, last ? now + idx * 0.3 + 3 : now + (idx + 1) * 0.3, last ? 0.3 : 0.04);
+      playInstrumentNote(f, now + idx * 0.3, last ? melodicEnd(now + idx * 0.3, 0.3) : now + (idx + 1) * 0.3, last ? MELODIC_RELEASE : 0.04);
     });
     return;
   }
@@ -1682,17 +1690,12 @@ function playCurrentExercise() {
   updateFirstNoteButtonUI();
 
   const now = ctx.currentTime + 0.05;
-  // באקורד כל הצלילים נעצרים יחד כ-3 שניות אחרי הצליל האחרון ונדעכים בעדינות, כמו סוף הסולם
-  const isChord = currentExercise.type === 'chords' || currentExercise.type === 'septachords';
-  const lastStart = mode === 'harmonic' ? now : now + (freqs.length - 1) * 0.35;
-  const stopAt = isChord ? lastStart + 3 : null;
-  const release = isChord ? 0.3 : 0.04;
   if (mode === 'harmonic') {
-    freqs.forEach(f => playInstrumentNote(f, now, stopAt, release));
-  } else if (mode === 'ascending') {
-    freqs.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, stopAt, release));
-  } else if (mode === 'descending') {
-    [...freqs].reverse().forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, stopAt, release));
+    freqs.forEach(f => playInstrumentNote(f, now, now + HARMONIC_HOLD, HARMONIC_RELEASE));
+  } else {
+    const ordered = mode === 'descending' ? [...freqs].reverse() : freqs;
+    const stopAt = melodicEnd(now + (ordered.length - 1) * 0.35, 0.35);
+    ordered.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, stopAt, MELODIC_RELEASE));
   }
 }
 
@@ -2442,7 +2445,8 @@ function playHintVersion() {
   const now = ctx.currentTime + 0.05;
   freqs.forEach(f => playInstrumentNote(f, now, now + 1.4));
   const start = now + 1.7;
-  freqs.forEach((f, idx) => playInstrumentNote(f, start + idx * 0.55));
+  const stopAt = melodicEnd(start + (freqs.length - 1) * 0.55, 0.55);
+  freqs.forEach((f, idx) => playInstrumentNote(f, start + idx * 0.55, stopAt, MELODIC_RELEASE));
 }
 
 // סולם או מודוס: רק עולה, לאט, כל צליל לבד
@@ -2451,7 +2455,10 @@ function playScaleSlow() {
   const ctx = getAudioContext();
   newPlayBus(ctx);
   const now = ctx.currentTime + 0.05;
-  freqs.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.55, idx < freqs.length - 1 ? now + (idx + 1) * 0.55 : null));
+  freqs.forEach((f, idx) => {
+    const last = idx === freqs.length - 1;
+    playInstrumentNote(f, now + idx * 0.55, last ? melodicEnd(now + idx * 0.55, 0.55) : now + (idx + 1) * 0.55, last ? MELODIC_RELEASE : 0.04);
+  });
 }
 
 // רמז שמצמצם את האפשרויות: keep מחליט אילו מבנים נשארים. אם נשארת אפשרות אחת זו כבר התשובה, אז לא מציעים אותו
