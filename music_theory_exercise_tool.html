@@ -1667,6 +1667,12 @@ const ENDINGS = {
 function ending() {
   return ENDINGS[document.getElementById('instrumentSelect').value] || ENDINGS.piano;
 }
+// סולם מתנגן בלי פדל: בפסנתר גם הצליל האחרון נעצר כשהאצבע עוזבת את הקליד (כפעמיים צעד), בוויברפון הוא דועך כרגיל
+function playScaleLastNote(f, t, step) {
+  if (ending().curve === 'natural') playInstrumentNote(f, t, t + 2 * step, 0.08);
+  else playInstrumentNote(f, t, t, 0, ending().melodic);
+}
+
 function fadeOut(param, from, len) {
   if (ending().curve !== 'exp') return;
   param.setValueAtTime(1, from);
@@ -1688,8 +1694,8 @@ function playCurrentExercise() {
     const all = [...freqs, ...[...freqs].reverse().slice(1)];
     all.forEach((f, idx) => {
       const last = idx === all.length - 1;
-      if (last) playInstrumentNote(f, now + idx * 0.3, now + idx * 0.3, 0, ending().melodic);
-      else playInstrumentNote(f, now + idx * 0.3, now + (idx + 1) * 0.3);
+      if (!last) playInstrumentNote(f, now + idx * 0.3, now + (idx + 1) * 0.3);
+      else playScaleLastNote(f, now + idx * 0.3, 0.3);
     });
     return;
   }
@@ -2475,8 +2481,8 @@ function playScaleSlow() {
   const now = ctx.currentTime + 0.05;
   freqs.forEach((f, idx) => {
     const last = idx === freqs.length - 1;
-    if (last) playInstrumentNote(f, now + idx * 0.55, now + idx * 0.55, 0, ending().melodic);
-    else playInstrumentNote(f, now + idx * 0.55, now + (idx + 1) * 0.55);
+    if (!last) playInstrumentNote(f, now + idx * 0.55, now + (idx + 1) * 0.55);
+    else playScaleLastNote(f, now + idx * 0.55, 0.55);
   });
 }
 
