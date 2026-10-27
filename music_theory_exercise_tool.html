@@ -1008,19 +1008,58 @@ function setExType(type) {
   goToNextExercise();
 }
 
+// אחרי יציאה מהאפליקציה באייפון ההקשר נתקע (interrupted, או "running" בלי צליל), ולכן בחזרה בונים הקשר חדש.
+// הדגימות נשמרות כ-AudioBuffer ומתאימות לכל הקשר, כך שאין טעינה מחדש.
+let audioStale = false;
+
+function setPlaybackSession() {
+  // iOS 17 ומעלה: השמעה גם כשמתג השקט מופעל, כמו נגן מוזיקה
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+}
+
 function getAudioContext() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx && (audioStale || audioCtx.state === 'closed')) {
+    const old = audioCtx;
+    audioCtx = null;
+    playBus = null;
+    try { old.close(); } catch (e) {}
   }
-  // ב-iOS ההקשר יכול להיות גם interrupted, למשל אחרי מעבר לאפליקציה אחרת
+  audioStale = false;
+  if (!audioCtx) {
+    setPlaybackSession();
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // באייפון הקשר חדש נפתח רק כשמשמיעים בו משהו בתוך לחיצה, אז משמיעים רגע שקט
+    try {
+      const src = audioCtx.createBufferSource();
+      src.buffer = audioCtx.createBuffer(1, 1, 22050);
+      src.connect(audioCtx.destination);
+      src.start(0);
+    } catch (e) {}
+  }
   if (audioCtx.state !== 'running') {
-    audioCtx.resume();
+    const p = audioCtx.resume();
+    if (p && p.catch) p.catch(() => {});
   }
   return audioCtx;
 }
 
-// iOS 17 ומעלה: השמעה גם כשמתג השקט מופעל, כמו נגן מוזיקה
-try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+setPlaybackSession();
+
+function markAudioStale() {
+  if (!audioCtx) return;
+  silenceAll(0);
+  audioStale = true;
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) markAudioStale();
+  else setPlaybackSession();
+});
+window.addEventListener('pagehide', markAudioStale);
+window.addEventListener('pageshow', setPlaybackSession);
+// הלחיצה הראשונה אחרי החזרה פותחת את הקשר החדש, גם אם ההשמעה עצמה תגיע מאוחר יותר (למשל אחרי תשובה נכונה)
+['touchend', 'click', 'keydown'].forEach(type => document.addEventListener(type, () => {
+  if (audioStale || (audioCtx && audioCtx.state !== 'running')) getAudioContext();
+}, true));
 
 // בטלפונים של אפל מתג השקט משתיק את הדף בגרסאות ישנות, ולכן מציגים פעם אחת הסבר קצר ליד כפתור ההשמעה
 const SILENT_TIP_KEY = 'mt_silent_tip_seen';
