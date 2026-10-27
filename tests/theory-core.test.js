@@ -159,6 +159,12 @@ test('chordLayout shifts seconds and stacks close accidentals', () => {
   assert.deepStrictEqual(T.chordLayout([n(0, -1), n(6, -1)]).map(x => x.accColumn), [0, 0]);
   // שלוש סקונדות ברצף: רק השני זז
   assert.deepStrictEqual(T.chordLayout([n(0, 0), n(1, 0), n(2, 0)]).map(x => x.shifted), [false, true, false]);
+  // פרימה: שני ראשי תווים זה ליד זה; סימן ההיתק של הימני צמוד אליו (בין הראשים)
+  const u = T.chordLayout([n(4, 0), n(4, 1)]);
+  assert.deepStrictEqual(u.map(x => x.shifted), [false, true]);
+  assert.deepStrictEqual(u.map(x => x.accBeside), [false, true]);
+  const a = T.chordLayout([n(4, -1), n(4, 1)]);
+  assert.deepStrictEqual(a.map(x => x.accColumn), [0, null]);
 });
 
 console.log(`all ${passed} tests passed`);

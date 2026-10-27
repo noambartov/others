@@ -1568,11 +1568,14 @@ function renderStaff(ex) {
     let noteX = baseX;
 
     if (layout && layout[idx].shifted) noteX += 10;
+    // פרימה: סימן ההיתק של התו הימני בין שני ראשי התווים
+    const accBeside = layout && layout[idx].accBeside;
+    if (accBeside) noteX += T.svg.accidentalWidth(n.acc, STAFF.space) + 4;
 
     svgContent += T.svg.ledgerLines(noteX, n.absLine, STAFF, 8);
 
     if (n.acc !== 0) {
-      let accRightX = baseX - 7 - (layout ? layout[idx].accColumn * 11 : 0);
+      let accRightX = accBeside ? noteX - 7 : baseX - 7 - (layout ? layout[idx].accColumn * 11 : 0);
       svgContent += T.svg.accidental(n.acc, accRightX, y, STAFF.space);
     }
 
