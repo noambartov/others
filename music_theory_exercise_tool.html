@@ -1680,12 +1680,17 @@ function playCurrentExercise() {
   updateFirstNoteButtonUI();
 
   const now = ctx.currentTime + 0.05;
+  // באקורד כל הצלילים נעצרים יחד כ-3 שניות אחרי הצליל האחרון ונדעכים בעדינות, כמו סוף הסולם
+  const isChord = currentExercise.type === 'chords' || currentExercise.type === 'septachords';
+  const lastStart = mode === 'harmonic' ? now : now + (freqs.length - 1) * 0.35;
+  const stopAt = isChord ? lastStart + 3 : null;
+  const release = isChord ? 0.3 : 0.04;
   if (mode === 'harmonic') {
-    freqs.forEach(f => playInstrumentNote(f, now));
+    freqs.forEach(f => playInstrumentNote(f, now, stopAt, release));
   } else if (mode === 'ascending') {
-    freqs.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35));
+    freqs.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, stopAt, release));
   } else if (mode === 'descending') {
-    [...freqs].reverse().forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35));
+    [...freqs].reverse().forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, stopAt, release));
   }
 }
 
