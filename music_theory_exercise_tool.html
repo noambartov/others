@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>תרגול תורת המוזיקה - מעודכן</title>
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-title" content="תורת המוזיקה">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#ffffff">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&display=swap');
 
@@ -123,7 +131,7 @@
     body.theme-clean .next-btn:hover,
     body.theme-clean .help-btn:hover,
     body.theme-clean .share-btn:hover { color: #222222; transform: none; }
-    body.theme-clean .help-popover { background: #ffffff; color: #222222; border: 1px solid #e2e2e2; box-shadow: none; }
+    body.theme-clean .help-popover { background: #ffffff; color: #222222; border: 1px solid #e2e2e2; box-shadow: none; font-size: 13px; font-weight: 400; }
     body.theme-clean .chord-answers-container,
     body.theme-clean .mode-answers-container { background: none; border: none; padding: 0; gap: 8px; }
     body.theme-clean .section-title { text-align: center; color: var(--text-muted); font-weight: 400; font-size: 13px; }
@@ -195,6 +203,17 @@
     .report-row .num { color: var(--text-muted); text-align: left; font-size: 13px; }
     .report-list { margin: 0; padding: 0 18px 0 0; font-size: 14px; line-height: 1.8; }
     .report-advice { font-size: 15px; line-height: 1.6; }
+    .shared-note { text-align: center; font-size: 14px; color: var(--text-muted); margin: 4px 0 0; }
+    .share-dialog { position: fixed; inset: 0; background: rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+    .share-dialog[hidden] { display: none; }
+    .share-box { background: #ffffff; color: #222222; border-radius: 8px; padding: 22px; width: 100%; max-width: 420px; box-sizing: border-box; }
+    .share-box h3 { margin: 0 0 6px; font-size: 18px; font-weight: 600; }
+    .share-desc { margin: 0 0 12px; font-size: 14px; color: #777777; }
+    .share-summary { margin: 0 0 12px; font-size: 15px; }
+    .share-box input { width: 100%; box-sizing: border-box; font: inherit; font-size: 13px; padding: 10px; border: 1px solid #e2e2e2; border-radius: 6px; color: #555555; background: #fafafa; }
+    .share-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    .share-actions button, .share-actions a { border: none; border-radius: 6px; padding: 10px 16px; font: inherit; font-size: 14px; cursor: pointer; background: #efefef; color: #222222; text-decoration: none; }
+    .share-actions .primary { background: #222222; color: #ffffff; }
     .report-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
     .report-actions button { border: none; border-radius: 6px; padding: 12px 18px; font: inherit; cursor: pointer; background: var(--btn-bg); color: var(--text-dark); }
     .report-actions button.primary { background: #222222; color: #ffffff; }
@@ -542,11 +561,14 @@
       border: var(--border);
       padding: 4px 8px;
       border-radius: 8px;
-      white-space: nowrap;
+      white-space: normal;
+      max-width: 260px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       animation: fadeIn 0.2s ease-in-out;
     }
     .help-popover.visible { display: inline-block; }
+    /* רמז שמצמצם: אפשרויות שנשללו נשארות במקומן, חיוורות ולא לחיצות */
+    .opt-btn.hint-out { opacity: 0.3; pointer-events: none; }
 
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-2px); }
@@ -797,6 +819,8 @@
     <button data-type="modes" onclick="setExType('modes')">מודוסים</button>
   </nav>
 
+  <div class="shared-note no-train" id="sharedNote" hidden></div>
+
   <div class="card training-panel" id="trainingPanel" style="display: none;"></div>
 
   <div class="card practice-area" id="practiceArea">
@@ -808,7 +832,7 @@
       <button class="next-btn train-only" onclick="showTrainingReport(true)">דוח עד כה</button>
       <button class="next-btn train-only" onclick="endTraining()">סיום אימון</button>
       <div class="help-wrapper no-train">
-        <button class="help-btn" onclick="revealAnswer()">עזרה</button>
+        <button class="help-btn" id="helpBtn" onclick="showHelp()">עזרה</button>
         <span class="help-popover" id="helpPopover"></span>
       </div>
     </div>
@@ -871,6 +895,20 @@
   </footer>
 </div>
 
+<div class="share-dialog" id="shareDialog" hidden onclick="if (event.target === this) closeShareDialog()">
+  <div class="share-box" role="dialog" aria-labelledby="shareTitle">
+    <h3 id="shareTitle">שליחת התרגיל</h3>
+    <p class="share-desc">מי שיפתח את הקישור יתרגל עם אותן הגדרות. השאלות עצמן משתנות.</p>
+    <p class="share-summary" id="shareSummary"></p>
+    <input id="shareLink" readonly onclick="this.select()" dir="ltr">
+    <div class="share-actions">
+      <button class="primary" id="shareCopy" onclick="copyShareLink()">העתק קישור</button>
+      <a id="shareWhatsapp" target="_blank" rel="noopener">שליחה בוואטסאפ</a>
+      <button onclick="closeShareDialog()">סגירה</button>
+    </div>
+  </div>
+</div>
+
 <script src="site-nav.js"></script>
 <script src="theory-core.js"></script>
 <script>
@@ -913,6 +951,8 @@ let selectedModeType = null;
 let typeAnsweredCorrectly = false;
 let exerciseSolved = false;
 let currentPlayDirection = 'ascending';
+// הרמזים שכבר הוצגו בתרגיל הנוכחי
+let shownHints = new Set();
 
 function clearWrongButtons() {
   document.querySelectorAll('.opt-btn.wrong').forEach(btn => {
@@ -966,25 +1006,65 @@ function buildSegmentedSettings() {
 buildSegmentedSettings();
 
 function setExType(type) {
+  document.getElementById('sharedNote').hidden = true;
   document.getElementById('exType').value = type;
   onExerciseTypeChange();
   closeSettings();
   goToNextExercise();
 }
 
+// אחרי יציאה מהאפליקציה באייפון ההקשר נתקע (interrupted, או "running" בלי צליל), ולכן בחזרה בונים הקשר חדש.
+// הדגימות נשמרות כ-AudioBuffer ומתאימות לכל הקשר, כך שאין טעינה מחדש.
+let audioStale = false;
+
+function setPlaybackSession() {
+  // iOS 17 ומעלה: השמעה גם כשמתג השקט מופעל, כמו נגן מוזיקה
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+}
+
 function getAudioContext() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx && (audioStale || audioCtx.state === 'closed')) {
+    const old = audioCtx;
+    audioCtx = null;
+    playBus = null;
+    try { old.close(); } catch (e) {}
   }
-  // ב-iOS ההקשר יכול להיות גם interrupted, למשל אחרי מעבר לאפליקציה אחרת
+  audioStale = false;
+  if (!audioCtx) {
+    setPlaybackSession();
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // באייפון הקשר חדש נפתח רק כשמשמיעים בו משהו בתוך לחיצה, אז משמיעים רגע שקט
+    try {
+      const src = audioCtx.createBufferSource();
+      src.buffer = audioCtx.createBuffer(1, 1, 22050);
+      src.connect(audioCtx.destination);
+      src.start(0);
+    } catch (e) {}
+  }
   if (audioCtx.state !== 'running') {
-    audioCtx.resume();
+    const p = audioCtx.resume();
+    if (p && p.catch) p.catch(() => {});
   }
   return audioCtx;
 }
 
-// iOS 17 ומעלה: השמעה גם כשמתג השקט מופעל, כמו נגן מוזיקה
-try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+setPlaybackSession();
+
+function markAudioStale() {
+  if (!audioCtx) return;
+  silenceAll(0);
+  audioStale = true;
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) markAudioStale();
+  else setPlaybackSession();
+});
+window.addEventListener('pagehide', markAudioStale);
+window.addEventListener('pageshow', setPlaybackSession);
+// הלחיצה הראשונה אחרי החזרה פותחת את הקשר החדש, גם אם ההשמעה עצמה תגיע מאוחר יותר (למשל אחרי תשובה נכונה)
+['touchend', 'click', 'keydown'].forEach(type => document.addEventListener(type, () => {
+  if (audioStale || (audioCtx && audioCtx.state !== 'running')) getAudioContext();
+}, true));
 
 // בטלפונים של אפל מתג השקט משתיק את הדף בגרסאות ישנות, ולכן מציגים פעם אחת הסבר קצר ליד כפתור ההשמעה
 const SILENT_TIP_KEY = 'mt_silent_tip_seen';
@@ -1356,17 +1436,118 @@ function generateExercise(cfg = null) {
   };
 }
 
-function shareCurrentExercise() {
-  if (!currentExercise) return;
-  const params = new URLSearchParams();
-  params.set('exData', JSON.stringify(currentExercise));
-  const shareableUrl = window.location.origin + window.location.pathname + '?' + params.toString();
+// שליחת תרגיל לתלמיד: הקישור נושא את המצב, סוג התרגיל וההגדרות, והשאלות עצמן אקראיות אצל התלמיד
+const MODE_LABELS = { read: 'קריאה', ear: 'שמיעה' };
 
-  navigator.clipboard.writeText(shareableUrl).then(() => {
-    alert("הקישור לתרגיל הועתק ללוח!");
-  }).catch(() => {
-    prompt("העתק את הקישור:", shareableUrl);
+function buildShareParams() {
+  const type = document.getElementById('exType').value;
+  const params = new URLSearchParams();
+  params.set('mode', appMode);
+  params.set('type', type);
+  if (appMode === 'read') params.set('clef', document.getElementById('clefSelect').value);
+  else {
+    params.set('instr', document.getElementById('instrumentSelect').value);
+    if (type === 'intervals' || type === 'chords' || type === 'septachords') params.set('play', document.getElementById('playMode').value);
+  }
+  if (type === 'note_id') params.set('acc', document.getElementById('accidentalSelect').value);
+  if (type === 'intervals') params.set('fmt', document.getElementById('intervalFormatSelect').value);
+  if (type === 'chords' || type === 'septachords') {
+    const pills = Array.from(document.querySelectorAll('#inversionsTags .tag-pill'));
+    const on = pills.filter(el => el.classList.contains('active'));
+    if (on.length && on.length < pills.length) params.set('inv', on.map(el => el.dataset.value).join(','));
+  }
+  if (type !== 'note_id') {
+    const pills = Array.from(document.querySelectorAll('#optionsTags .tag-pill'));
+    const on = pills.filter(el => el.classList.contains('active'));
+    if (on.length && on.length < pills.length) {
+      const ids = on.map(el => (optionStructures(type).find(st => st.name === el.dataset.value) || {}).id).filter(Boolean);
+      params.set('opts', ids.join(','));
+    }
+  }
+  return params;
+}
+
+function shareSummary() {
+  const type = document.getElementById('exType').value;
+  const typeName = document.querySelector(`#exType option[value="${type}"]`).textContent;
+  let text = `${MODE_LABELS[appMode] || ''} · ${typeName}`;
+  if (type !== 'note_id') {
+    const pills = Array.from(document.querySelectorAll('#optionsTags .tag-pill'));
+    const on = pills.filter(el => el.classList.contains('active'));
+    if (on.length < pills.length) text += ': ' + on.map(el => el.textContent).join(', ');
+  }
+  return text;
+}
+
+function shareCurrentExercise() {
+  const type = document.getElementById('exType').value;
+  if (type !== 'note_id' && !document.querySelector('#optionsTags .tag-pill.active')) {
+    alert('יש לבחור לפחות אפשרות אחת לתרגול!');
+    return;
+  }
+  const url = location.origin + location.pathname + '?' + buildShareParams().toString().replace(/%2C/g, ',');
+  const summary = shareSummary();
+  document.getElementById('shareSummary').textContent = summary;
+  document.getElementById('shareLink').value = url;
+  document.getElementById('shareWhatsapp').href = 'https://wa.me/?text=' + encodeURIComponent('תרגיל ' + summary + '\n' + url);
+  document.getElementById('shareCopy').textContent = 'העתק קישור';
+  document.getElementById('shareDialog').hidden = false;
+}
+
+function closeShareDialog() {
+  document.getElementById('shareDialog').hidden = true;
+}
+
+function copyShareLink() {
+  const input = document.getElementById('shareLink');
+  const done = () => { document.getElementById('shareCopy').textContent = 'הועתק'; };
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(input.value).then(done).catch(() => { input.select(); document.execCommand('copy'); done(); });
+  } else {
+    input.select();
+    document.execCommand('copy');
+    done();
+  }
+}
+
+// עדכון כפתורי ההגדרה אחרי שינוי של ה-select המוסתר
+function setSettingValue(id, value) {
+  const sel = document.getElementById(id);
+  if (!sel || !Array.from(sel.options).some(o => o.value === value)) return false;
+  sel.value = value;
+  const seg = sel.nextElementSibling;
+  if (seg && seg.classList.contains('seg')) seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.value === value));
+  return true;
+}
+
+// קישור שהמורה שלח: מחילים את ההגדרות שבו. מחזיר true אם היה בקישור תרגיל
+function applySharedSettings() {
+  const params = new URLSearchParams(location.search);
+  const type = params.get('type');
+  if (!type || !BASE_STRUCTURES[type] || appMode === 'train') return false;
+  if (type === 'note_id' && appMode !== 'read') return false;
+  document.getElementById('exType').value = type;
+  if (params.has('fmt')) setSettingValue('intervalFormatSelect', params.get('fmt'));
+  onExerciseTypeChange();
+  ['clef:clefSelect', 'acc:accidentalSelect', 'play:playMode'].forEach(pair => {
+    const [key, id] = pair.split(':');
+    if (params.has(key)) setSettingValue(id, params.get(key));
   });
+  if (params.has('instr') && setSettingValue('instrumentSelect', params.get('instr'))) loadSamples(params.get('instr'));
+  if (params.has('inv')) {
+    const inv = params.get('inv').split(',');
+    const pills = document.querySelectorAll('#inversionsTags .tag-pill');
+    if (Array.from(pills).some(el => inv.includes(el.dataset.value))) pills.forEach(el => el.classList.toggle('active', inv.includes(el.dataset.value)));
+  }
+  if (params.has('opts')) {
+    const ids = params.get('opts').split(',');
+    const names = optionStructures(type).filter(st => ids.includes(st.id)).map(st => st.name);
+    if (names.length) document.querySelectorAll('#optionsTags .tag-pill').forEach(el => el.classList.toggle('active', names.includes(el.dataset.value)));
+  }
+  const note = document.getElementById('sharedNote');
+  note.textContent = 'תרגיל שנשלח אליך: ' + shareSummary();
+  note.hidden = false;
+  return true;
 }
 
 function loadExerciseFromUrl() {
@@ -1431,11 +1612,14 @@ function renderStaff(ex) {
     let noteX = baseX;
 
     if (layout && layout[idx].shifted) noteX += 10;
+    // פרימה: סימן ההיתק של התו הימני בין שני ראשי התווים
+    const accBeside = layout && layout[idx].accBeside;
+    if (accBeside) noteX += T.svg.accidentalWidth(n.acc, STAFF.space) + 4;
 
     svgContent += T.svg.ledgerLines(noteX, n.absLine, STAFF, 8);
 
     if (n.acc !== 0) {
-      let accRightX = baseX - 7 - (layout ? layout[idx].accColumn * 11 : 0);
+      let accRightX = accBeside ? noteX - 7 : baseX - 7 - (layout ? layout[idx].accColumn * 11 : 0);
       svgContent += T.svg.accidental(n.acc, accRightX, y, STAFF.space);
     }
 
@@ -1556,6 +1740,8 @@ function startPractice() {
   const popover = document.getElementById('helpPopover');
   popover.classList.remove('visible');
   popover.innerText = '';
+  shownHints = new Set();
+  document.getElementById('helpBtn').innerText = 'עזרה';
 
   selectedAccidental = '0';
   selectedChordType = null;
@@ -1606,6 +1792,7 @@ function setupStandardUI() {
   currentExercise.optionsPool.forEach(opt => {
     const btn = document.createElement('button');
     btn.className = 'opt-btn';
+    btn.dataset.name = opt.name;
     btn.innerText = getStructureLabel(opt);
     btn.onclick = () => {
       if (exerciseSolved) return;
@@ -1637,6 +1824,7 @@ function setupChordUI() {
   currentExercise.optionsPool.forEach(opt => {
     const btn = document.createElement('button');
     btn.className = 'opt-btn';
+    btn.dataset.name = opt.name;
     btn.innerText = getStructureLabel(opt);
     btn.onclick = () => checkChordType(opt.name, btn);
     typeContainer.appendChild(btn);
@@ -1645,6 +1833,7 @@ function setupChordUI() {
   currentExercise.inversionsPool.forEach(inv => {
     const btn = document.createElement('button');
     btn.className = 'opt-btn';
+    btn.dataset.inv = inv.id;
     btn.innerText = inv.name;
     btn.onclick = () => checkChordInv(inv.id, btn);
     invContainer.appendChild(btn);
@@ -1734,6 +1923,7 @@ function setupModeUI() {
   currentExercise.optionsPool.forEach(opt => {
     const btn = document.createElement('button');
     btn.className = 'opt-btn';
+    btn.dataset.name = opt.name;
     btn.innerText = opt.name;
     btn.onclick = () => checkModeType(opt.name, btn);
     typeContainer.appendChild(btn);
@@ -2036,7 +2226,10 @@ function setAppMode(mode, initial = false) {
   document.getElementById('trainingPanel').style.display = 'none';
   document.getElementById('practiceArea').style.display = 'flex';
   updateTopbarProgress();
-  if (!initial) goToNextExercise();
+  if (!initial) {
+    document.getElementById('sharedNote').hidden = true;
+    goToNextExercise();
+  }
 }
 
 function showLevelPicker() {
@@ -2221,6 +2414,135 @@ function initialAppMode() {
   return 'read';
 }
 
+// ===== עזרה בשלבים: קודם רמז שמקל (השמעה נוחה יותר, היפוך, משפחת האקורד), ורק בסוף התשובה =====
+const INTERVAL_NUMBERS = ['פרימה', 'סקונדה', 'טרצה', 'קוורטה', 'קווינטה', 'סקסטה', 'ספטימה', 'אוקטבה'];
+const TRIAD_FAMILIES = { '0,4,7': 'מז׳ורי', '0,3,7': 'מינורי', '0,3,6': 'מוקטן', '0,4,8': 'מוגדל' };
+
+function noteLabel(n) {
+  return NOTE_NAMES[n.nameIndex].name + (n.acc === 1 ? '♯' : n.acc === -1 ? '♭' : n.acc === 2 ? '𝄪' : n.acc === -2 ? '𝄫' : '');
+}
+
+// השמעה מקלה: קודם יחד, ואז צליל אחר צליל מלמטה למעלה ולאט
+function playHintVersion() {
+  const freqs = currentExercise.notes.map(n => midiToFreq(n.midiNum));
+  const ctx = getAudioContext();
+  newPlayBus(ctx);
+  const now = ctx.currentTime + 0.05;
+  freqs.forEach(f => playInstrumentNote(f, now, now + 1.4));
+  const start = now + 1.7;
+  freqs.forEach((f, idx) => playInstrumentNote(f, start + idx * 0.55));
+}
+
+// סולם או מודוס: רק עולה, לאט, כל צליל לבד
+function playScaleSlow() {
+  const freqs = currentExercise.notes.map(n => midiToFreq(n.midiNum));
+  const ctx = getAudioContext();
+  newPlayBus(ctx);
+  const now = ctx.currentTime + 0.05;
+  freqs.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.55, idx < freqs.length - 1 ? now + (idx + 1) * 0.55 : null));
+}
+
+// רמז שמצמצם את האפשרויות: keep מחליט אילו מבנים נשארים. אם נשארת אפשרות אחת זו כבר התשובה, אז לא מציעים אותו
+function narrowStep(text, keep) {
+  const kept = currentExercise.optionsPool.filter(keep);
+  if (kept.length <= 1 || kept.length === currentExercise.optionsPool.length) return null;
+  return { key: 'narrow', text, keep };
+}
+
+function intervalNumberStep(ear) {
+  const ex = currentExercise;
+  const num = ex.struct.stepOffsets[1];
+  if (ear && ex.struct.id === 'A4') {
+    return narrowStep('בין קוורטה לקווינטה', o => o.stepOffsets[1] === 3 || o.stepOffsets[1] === 4);
+  }
+  // בשמיעה הטריטון הוא גם קוורטה מוגדלת, אז הוא נשאר ברמז של קוורטה
+  return narrowStep(`זו ${INTERVAL_NUMBERS[num]}${ear ? '' : ' (ספרו קווים ורווחים)'}`,
+    o => o.stepOffsets[1] === num || (ear && num === 3 && o.id === 'A4'));
+}
+
+function chordFamilyStep() {
+  const ex = currentExercise;
+  if (typeAnsweredCorrectly) return null;
+  if (ex.type === 'chords') {
+    const third = ex.struct.semitones[1];
+    return narrowStep(`הטרצה מעל השורש ${third === 4 ? 'גדולה' : 'קטנה'}`, o => o.semitones[1] === third);
+  }
+  const triad = ex.struct.semitones.slice(0, 3).join(',');
+  return narrowStep(`המשולש שבבסיס ${TRIAD_FAMILIES[triad]}`, o => o.semitones.slice(0, 3).join(',') === triad);
+}
+
+function inversionStep() {
+  const ex = currentExercise;
+  if (inversionIrrelevant(ex.type, ex.struct) || ex.inversionsPool.length < 2 || selectedChordInv === ex.inversion) return null;
+  return { key: 'inv', text: `היפוך: ${INVERSIONS_DATA[ex.type].find(i => i.id === ex.inversion).name}`, keepInv: ex.inversion };
+}
+
+function scaleFamilyStep() {
+  const ex = currentExercise;
+  if (ex.type === 'scales') {
+    const minor = ex.struct.semitones[2] === 3;
+    return narrowStep(minor ? 'זה אחד מסוגי המינור' : 'הטרצה גדולה', o => (o.semitones[2] === 3) === minor);
+  }
+  const sig = st => st.semitones[4] === 6 ? 'dim' : st.semitones[2] === 4 ? 'maj' : 'min';
+  const fam = sig(ex.struct);
+  const text = { maj: 'מודוס מז׳ורי (טרצה גדולה)', min: 'מודוס מינורי (טרצה קטנה)', dim: 'קווינטה מוקטנת מעל הטוניקה' }[fam];
+  return narrowStep(text, o => sig(o) === fam);
+}
+
+function buildHintSteps() {
+  const ex = currentExercise;
+  const ear = document.getElementById('displayMode').value === 'audio_only';
+  let steps = [];
+  if (ex.type === 'note_id') {
+    steps = [{ key: 'clef', text: ex.clef === 'fa' ? 'מפתח פה מסמן את פה על הקו הרביעי מלמטה, בין שתי הנקודות' : 'מפתח סול מסמן את סול על הקו השני מלמטה' }];
+  } else if (ex.type === 'intervals') {
+    if (ear) steps.push({ key: 'play', text: 'הושמע שוב: יחד, ואז צליל אחר צליל מלמטה למעלה', play: playHintVersion });
+    steps.push(intervalNumberStep(ear));
+  } else if (ex.type === 'chords' || ex.type === 'septachords') {
+    if (ear) steps.push({ key: 'play', text: 'הושמע שוב: יחד, ואז צליל אחר צליל מלמטה למעלה', play: playHintVersion });
+    else steps.push({ key: 'root', text: `השורש: ${noteLabel(ex.notes[(ex.notes.length - ex.inversion) % ex.notes.length])}` });
+    steps.push(inversionStep(), chordFamilyStep());
+  } else {
+    if (ear) steps.push({ key: 'play', text: 'הושמע שוב: רק עולה, לאט', play: playScaleSlow });
+    steps.push(scaleFamilyStep());
+  }
+  return steps.filter(Boolean);
+}
+
+function applyHint(step) {
+  if (step.play) step.play();
+  if (step.keep) {
+    document.querySelectorAll('#optionsButtons .opt-btn, #chordTypeButtons .opt-btn, #modeTypeButtons .opt-btn').forEach(btn => {
+      const opt = currentExercise.optionsPool.find(o => o.name === btn.dataset.name);
+      if (opt && !step.keep(opt)) btn.classList.add('hint-out');
+    });
+  }
+  if (step.keepInv !== undefined) {
+    document.querySelectorAll('#chordInvButtons .opt-btn').forEach(btn => {
+      if (Number(btn.dataset.inv) !== step.keepInv) btn.classList.add('hint-out');
+    });
+  }
+}
+
+function showHelp() {
+  if (!currentExercise) return;
+  // הרמזים נבנים מחדש בכל לחיצה, כדי לדלג על חלק שהתלמיד כבר ענה עליו נכון
+  const steps = buildHintSteps().filter(st => !shownHints.has(st.key));
+  const btn = document.getElementById('helpBtn');
+  if (steps.length) {
+    const step = steps[0];
+    applyHint(step);
+    const popover = document.getElementById('helpPopover');
+    popover.innerText = step.text;
+    popover.classList.add('visible');
+    shownHints.add(step.key);
+    btn.innerText = steps.length > 1 ? 'רמז נוסף' : 'תשובה';
+    return;
+  }
+  revealAnswer();
+  btn.innerText = 'עזרה';
+}
+
 function revealAnswer() {
   if (!currentExercise) return;
   const popover = document.getElementById('helpPopover');
@@ -2266,9 +2588,11 @@ loadSamples(document.getElementById('instrumentSelect').value);
 initSilentTip();
 const fromLink = new URLSearchParams(location.search).has('exData');
 setAppMode(fromLink ? 'read' : initialAppMode(), true);
+applySharedSettings();
 if (!loadExerciseFromUrl() && appMode !== 'train') {
   startPractice();
 }
 </script>
+<script src="update-check.js"></script>
 </body>
 </html>

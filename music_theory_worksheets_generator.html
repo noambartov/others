@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>דפי תרגול להדפסה - תורת המוזיקה</title>
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-title" content="תורת המוזיקה">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#ffffff">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,14 +25,14 @@
       --tile-hover: #e4e4e4;
       --rule: #eeeeee;
 
-      /* דף התרגול */
-      --sheet-ink: #0f172a;
-      --sheet-text: #334155;
-      --sheet-muted: #94a3b8;
-      --sheet-accent: #2563eb;
-      --sheet-band: #f1f5f9;
-      --sheet-rule: #e2e8f0;
-      --sheet-line: #cbd5e1;
+      /* דף התרגול: שחור ואפורים, בלי צבע */
+      --sheet-ink: #111111;
+      --sheet-text: #333333;
+      --sheet-muted: #aaaaaa;
+      --sheet-accent: #222222;
+      --sheet-band: #f6f6f6;
+      --sheet-rule: #e6e6e6;
+      --sheet-line: #cccccc;
     }
 
     body {
@@ -39,13 +47,20 @@
     .app-container { max-width: 900px; margin: 0 auto; }
     .app-header { text-align: center; margin: 40px 0 28px; }
     .app-header h1 { font-weight: 300; font-size: 36px; color: #111111; margin: 0; }
+    /* שלבי העבודה מתחת לכותרת, בניסוח שמתאים לכולם */
+    .app-steps { list-style: none; counter-reset: step; display: flex; justify-content: center; gap: 28px; margin: 14px 0 0; padding: 0; color: #777777; font-size: 15px; }
+    .app-steps li { counter-increment: step; display: flex; align-items: baseline; gap: 6px; }
+    .app-steps li::before { content: counter(step); color: var(--muted); font-size: 13px; }
+    @media (max-width: 600px) {
+      .app-steps { flex-direction: column; align-items: flex-start; gap: 6px; text-align: right; max-width: 340px; margin-inline: auto; }
+    }
 
     .controls-panel { border-top: 1px solid var(--rule); margin-bottom: 8px; }
 
     .row-control {
       display: flex;
       flex-wrap: wrap;
-      align-items: center;
+      align-items: flex-end;
       gap: 10px;
       padding: 12px 0;
       border-bottom: 1px solid var(--rule);
@@ -65,7 +80,12 @@
       cursor: grabbing;
     }
 
-    .row-label { font-weight: 400; color: var(--muted); font-size: 14px; white-space: nowrap; min-width: 56px; }
+    .row-label { font-weight: 400; color: var(--muted); font-size: 14px; white-space: nowrap; min-width: 56px; padding-bottom: 9px; }
+    .drag-handle { padding-bottom: 6px; }
+
+    /* כותרת קטנה מעל כל תפריט בשורה */
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field-label { font-size: 12px; color: var(--muted); }
 
     select, .custom-select-btn {
       padding: 8px 12px;
@@ -106,16 +126,21 @@
       cursor: pointer;
       font-size: 18px;
       margin-right: auto;
+      padding-bottom: 8px;
       flex-shrink: 0;
     }
     .btn-remove:hover { color: #222222; }
+    @media (max-width: 600px) {
+      .row-control { position: relative; padding-left: 28px; }
+      .btn-remove { position: absolute; left: 0; top: 10px; }
+    }
     .btn-add-row { background: none; color: #777777; border: none; padding: 10px 0; font: inherit; font-size: 14px; cursor: pointer; }
     .btn-add-row:hover { color: #222222; }
 
     .btn-group { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 28px; }
     .btn { padding: 11px 22px; font: inherit; font-size: 15px; border: none; border-radius: 6px; cursor: pointer; }
-    .btn-generate { background: #222222; color: #ffffff; }
-    .btn-generate:hover { background: #000000; }
+    .btn-generate { background: #555555; color: #ffffff; }
+    .btn-generate:hover { background: #444444; }
     .btn-answers, .btn-pdf { background: var(--tile); color: var(--text-color); }
     .btn-answers:hover, .btn-pdf:hover { background: var(--tile-hover); }
 
@@ -133,12 +158,14 @@
       display: flex; justify-content: space-between; align-items: center;
       background: var(--sheet-band); margin: 0 -15mm 9mm; padding: 13mm 15mm 7mm;
     }
-    .sheet-eyebrow { font-size: 11px; font-weight: 600; color: var(--sheet-accent); letter-spacing: 1px; margin-bottom: 2px; }
-    .sheet-title { font-size: 24px; font-weight: 700; color: var(--sheet-ink); line-height: 1.1; }
-    .sheet-fields { display: flex; gap: 12px; font-size: 12px; color: #475569; }
+    .sheet-eyebrow { font-size: 11px; font-weight: 400; color: var(--sheet-muted); letter-spacing: 1px; margin-bottom: 2px; }
+    .sheet-title { font-size: 24px; font-weight: 400; color: var(--sheet-ink); line-height: 1.1; }
+    .sheet-fields { display: flex; gap: 12px; font-size: 12px; color: var(--sheet-text); }
     .sheet-fields > div { background: #fff; border: 1px solid var(--sheet-rule); border-radius: 8px; padding: 6px 10px; }
     .field-line { display: inline-block; width: 110px; }
     .field-line.short { width: 70px; }
+
+    .sheet-footer a { color: inherit; text-decoration: none; }
 
     .sheet-footer {
       font-size: 10px;
@@ -150,11 +177,11 @@
     }
 
     .staff-system { margin-bottom: 18px; padding-bottom: 10px; border-bottom: 1px solid var(--sheet-band); page-break-inside: avoid; }
-    .exercise-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: var(--sheet-ink); direction: rtl; }
+    .exercise-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 400; margin-bottom: 6px; color: var(--sheet-ink); direction: rtl; }
     .exercise-num {
       display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
       width: 22px; height: 22px; border-radius: 50%;
-      background: var(--sheet-accent); color: #fff; font-size: 12px; font-weight: 700;
+      border: 1px solid #c8c8c8; color: var(--sheet-text); font-size: 12px; font-weight: 400; box-sizing: border-box;
     }
 
     .staff-svg { width: 100%; height: auto; display: block; }
@@ -179,6 +206,11 @@
 <div class="app-container">
   <div class="app-header">
     <h1>דפי תרגול להדפסה</h1>
+    <ol class="app-steps">
+      <li>מוסיפים חמשות ובוחרים תרגיל לכל אחת</li>
+      <li>לוחצים על "דף תשובות" כדי לקבל מחוון</li>
+      <li>מורידים PDF ומדפיסים</li>
+    </ol>
   </div>
 
   <div class="controls-panel">
@@ -208,7 +240,7 @@
         <div id="stavesContainer"></div>
       </div>
       <div class="sheet-footer">
-        © נוצר על ידי נעם ברטוב · noambt@gmail.com
+        נעם ברטוב · <a href="https://noambartov.com" target="_blank" rel="noopener noreferrer">noambartov.com</a>
       </div>
     </div>
 
@@ -226,7 +258,7 @@
         <div id="answersStavesContainer"></div>
       </div>
       <div class="sheet-footer">
-        © נוצר על ידי נעם ברטוב · noambt@gmail.com
+        נעם ברטוב · <a href="https://noambartov.com" target="_blank" rel="noopener noreferrer">noambartov.com</a>
       </div>
     </div>
   </div>
@@ -237,7 +269,7 @@
 const T = window.TheoryCore;
 const STAFF = { bottomY: 51, space: 8 };
 const INK = '#111';
-const STAFF_INK = '#94a3b8';
+const STAFF_INK = '#aaaaaa';
 
 const INVERSION_NAMES_TRIADS = ['יסודי', 'היפוך ראשון', 'היפוך שני'];
 const INVERSION_NAMES_SEPTS  = ['יסודי', 'היפוך ראשון', 'היפוך שני', 'היפוך שלישי'];
@@ -293,29 +325,41 @@ function addRow() {
   row.draggable = true;
 
   row.innerHTML = `
-    <div class="drag-handle" title="לחץ וגרור לשרירות סדר החמשות">⋮⋮</div>
+    <div class="drag-handle" title="גוררים כדי לשנות את סדר החמשות">⋮⋮</div>
     <div class="row-label">חמשה <span class="row-num"></span></div>
-    <div class="multi-select-container">
-      <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, 'clefs_${id}')">מפתחות</div>
-      <div class="multi-select-dropdown" id="clefs_${id}">
-        <span class="select-all-btn" onclick="toggleAll('clefs_${id}')">סמן הכל / הסר הכל</span>
-        ${CLEFS_LIST.map(c => `<label><input type="checkbox" value="${c.val}" checked> ${c.label}</label>`).join('')}
+    <div class="field">
+      <span class="field-label">מפתח</span>
+      <div class="multi-select-container">
+        <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, 'clefs_${id}')">סול, פה</div>
+        <div class="multi-select-dropdown" id="clefs_${id}">
+          <span class="select-all-btn" onclick="toggleAll('clefs_${id}')">סמן הכל / הסר הכל</span>
+          ${CLEFS_LIST.map(c => `<label><input type="checkbox" value="${c.val}" checked> ${c.label}</label>`).join('')}
+        </div>
       </div>
     </div>
-    <select id="skill_${id}" onchange="onSkillOrTypeChange(${id})">
-      <option value="id">זיהוי</option>
-      <option value="write">כתיבה</option>
-    </select>
-    <select id="type_${id}" onchange="onSkillOrTypeChange(${id})">
-      <option value="intervals" selected>מרווחים</option>
-      <option value="chords">אקורדים משולשים</option>
-      <option value="septachords">ספטאקורדים</option>
-      <option value="scales">סולמות</option>
-    </select>
-    <select id="given_voice_${id}" title="צליל נתון לבנייה" style="display:none;">
-      <option value="bass" selected>צליל בס</option>
-      <option value="soprano">צליל סופרן</option>
-    </select>
+    <div class="field">
+      <span class="field-label">משימה</span>
+      <select id="skill_${id}" onchange="onSkillOrTypeChange(${id})">
+        <option value="id">זיהוי</option>
+        <option value="write">כתיבה</option>
+      </select>
+    </div>
+    <div class="field">
+      <span class="field-label">נושא</span>
+      <select id="type_${id}" onchange="onSkillOrTypeChange(${id})">
+        <option value="intervals" selected>מרווחים</option>
+        <option value="chords">אקורדים משולשים</option>
+        <option value="septachords">ספטאקורדים</option>
+        <option value="scales">סולמות</option>
+      </select>
+    </div>
+    <div class="field" id="given_voice_field_${id}" style="display:none;">
+      <span class="field-label">צליל נתון</span>
+      <select id="given_voice_${id}">
+        <option value="bass" selected>צליל בס</option>
+        <option value="soprano">צליל סופרן</option>
+      </select>
+    </div>
     <div id="sub_container_${id}"></div>
     <button class="btn-remove" title="הסרת החמשה" onclick="removeRow(${id})">×</button>
   `;
@@ -382,13 +426,13 @@ function updateRowNumbers() {
 function onSkillOrTypeChange(i) {
   const type = document.getElementById(`type_${i}`).value;
   const skill = document.getElementById(`skill_${i}`).value;
-  const voiceSelect = document.getElementById(`given_voice_${i}`);
+  const voiceField = document.getElementById(`given_voice_field_${i}`);
   const container = document.getElementById(`sub_container_${i}`);
 
   if (skill === 'write' && (type === 'chords' || type === 'septachords' || type === 'intervals')) {
-    voiceSelect.style.display = 'inline-block';
+    voiceField.style.display = '';
   } else {
-    voiceSelect.style.display = 'none';
+    voiceField.style.display = 'none';
   }
   
   if (type === 'scales') {
@@ -399,33 +443,43 @@ function onSkillOrTypeChange(i) {
 
     container.innerHTML = `
       <div class="scale-controls-wrapper">
-        <div class="multi-select-container">
-          <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, '${type}_${i}')">סינון תרגילים</div>
-          <div class="multi-select-dropdown" id="${type}_${i}">
-            <span class="select-all-btn" onclick="toggleAll('${type}_${i}')">סמן הכל / הסר הכל</span>
-            ${scalesList.map(item => `<label><input type="checkbox" value="${item}" checked> ${item}</label>`).join('')}
+        <div class="field">
+          <span class="field-label">אילו סולמות</span>
+          <div class="multi-select-container">
+            <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, '${type}_${i}')">הכל</div>
+            <div class="multi-select-dropdown" id="${type}_${i}">
+              <span class="select-all-btn" onclick="toggleAll('${type}_${i}')">סמן הכל / הסר הכל</span>
+              ${scalesList.map(item => `<label><input type="checkbox" value="${item}" checked> ${item}</label>`).join('')}
+            </div>
           </div>
         </div>
-        <select id="max_acc_${i}" title="מקסימום סימני היתק בסולם">
-          <option value="6" selected>עד 6 היתקים</option>
-          <option value="0">0 היתקים</option>
-          <option value="1">עד 1 היתק</option>
-          <option value="2">עד 2 היתקים</option>
-          <option value="3">עד 3 היתקים</option>
-          <option value="4">עד 4 היתקים</option>
-          <option value="5">עד 5 היתקים</option>
-        </select>
+        <div class="field">
+          <span class="field-label">סימני היתק</span>
+          <select id="max_acc_${i}">
+            <option value="6" selected>עד 6 היתקים</option>
+            <option value="0">0 היתקים</option>
+            <option value="1">עד 1 היתק</option>
+            <option value="2">עד 2 היתקים</option>
+            <option value="3">עד 3 היתקים</option>
+            <option value="4">עד 4 היתקים</option>
+            <option value="5">עד 5 היתקים</option>
+          </select>
+        </div>
       </div>`;
   } else {
     let itemsList = (type === 'intervals') ? INTERVALS_LIST : 
                     (type === 'chords' ? CHORDS_LIST : SEPTACHORDS_LIST);
 
+    const what = { intervals: 'אילו מרווחים', chords: 'אילו אקורדים', septachords: 'אילו ספטאקורדים' }[type];
     container.innerHTML = `
-      <div class="multi-select-container">
-        <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, '${type}_${i}')">סינון תרגילים</div>
-        <div class="multi-select-dropdown" id="${type}_${i}">
-          <span class="select-all-btn" onclick="toggleAll('${type}_${i}')">סמן הכל / הסר הכל</span>
-          ${itemsList.map(item => `<label><input type="checkbox" value="${item}" checked> ${item}</label>`).join('')}
+      <div class="field">
+        <span class="field-label">${what}</span>
+        <div class="multi-select-container">
+          <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, '${type}_${i}')">הכל</div>
+          <div class="multi-select-dropdown" id="${type}_${i}">
+            <span class="select-all-btn" onclick="toggleAll('${type}_${i}')">סמן הכל / הסר הכל</span>
+            ${itemsList.map(item => `<label><input type="checkbox" value="${item}" checked> ${item}</label>`).join('')}
+          </div>
         </div>
       </div>`;
   }
@@ -449,20 +503,43 @@ function toggleAll(dropdownId) {
   const checkboxes = document.querySelectorAll(`#${dropdownId} input[type="checkbox"]`);
   const allChecked = Array.from(checkboxes).every(cb => cb.checked);
   checkboxes.forEach(cb => cb.checked = !allChecked);
+  updateSelectSummary(dropdownId);
 }
+
+// הכפתור של בחירה מרובה מראה מה נבחר: "הכל", שמות (עד שניים) או מספר
+function updateSelectSummary(dropdownId) {
+  const dropdown = document.getElementById(dropdownId);
+  const boxes = Array.from(dropdown.querySelectorAll('input[type="checkbox"]'));
+  const chosen = boxes.filter(cb => cb.checked).map(cb => cb.parentElement.textContent.trim().replace(/^מפתח /, ''));
+  let text;
+  if (dropdownId.startsWith('clefs_')) text = chosen.length ? chosen.join(', ') : 'לא נבחר';
+  else if (chosen.length === boxes.length) text = 'הכל';
+  else if (chosen.length === 0) text = 'לא נבחר';
+  else if (chosen.length <= 2) text = chosen.join(', ');
+  else text = `${chosen.length} נבחרו`;
+  dropdown.previousElementSibling.textContent = text;
+}
+
+document.addEventListener('change', e => {
+  const dropdown = e.target.closest('.multi-select-dropdown');
+  if (dropdown) updateSelectSummary(dropdown.id);
+});
 
 function getClefSVG(clef) {
   return T.svg.clef(clef, 35, STAFF, INK);
 }
 
 // accColumn: עמודת סימן ההיתק משמאל לתו (0 = הכי קרובה), לפי T.chordLayout
-function renderNoteGraphic(x, absLine, acc, shiftNoteHead = false, accColumn = 0) {
+// accBeside: בפרימה, סימן ההיתק של התו הימני נכתב בין שני ראשי התווים
+function renderNoteGraphic(x, absLine, acc, shiftNoteHead = false, accColumn = 0, accBeside = false) {
   let noteX = shiftNoteHead ? (x + 10) : x;
+  if (accBeside) noteX += T.svg.accidentalWidth(acc, STAFF.space) + 4;
   let y = T.svg.lineY(STAFF, absLine);
   let svg = T.svg.ledgerLines(noteX, absLine, STAFF, 9, INK);
 
   if (acc !== 0) {
-    svg += T.svg.accidental(acc, x - 7 - (accColumn || 0) * 11, y, STAFF.space, INK);
+    let accRightX = accBeside ? noteX - 7 : x - 7 - (accColumn || 0) * 11;
+    svg += T.svg.accidental(acc, accRightX, y, STAFF.space, INK);
   }
 
   svg += T.svg.notehead(noteX, y, STAFF.space, INK);
@@ -475,7 +552,7 @@ function renderNotes(notes, x, isScale) {
     return notes.map((n, i) => renderNoteGraphic(x + i * 26, n.absLine, n.acc)).join('');
   }
   const layout = T.chordLayout(notes);
-  return notes.map((n, i) => renderNoteGraphic(x, n.absLine, n.acc, layout[i].shifted, layout[i].accColumn)).join('');
+  return notes.map((n, i) => renderNoteGraphic(x, n.absLine, n.acc, layout[i].shifted, layout[i].accColumn, layout[i].accBeside)).join('');
 }
 
 function renderKeyAccidental(measureX, idx, accType, clef) {
@@ -718,5 +795,6 @@ window.onload = () => { addRow(); generateSheet(); fitSheets(); };
 </script>
 
 <script src="site-nav.js"></script>
+<script src="update-check.js"></script>
 </body>
 </html>
