@@ -1109,15 +1109,23 @@ function silenceAll(fade) {
 
 // stopAt: בסולם כל צליל משתתק כשמגיע הבא. במרווח ובאקורד מלודי אין stopAt: הצלילים ממשיכים לצלצל, כמו עם פדל
 // release: כמה מהר הצליל נדעך אחרי stopAt
-function playInstrumentNote(freq, startTime, stopAt = null, release = 0.04) {
+// fadeLen: במקום עצירה, דעיכה הדרגתית שמתחילה ב-stopAt ומגיעה לשקט אחרי fadeLen שניות
+function playInstrumentNote(freq, startTime, stopAt = null, release = 0.04, fadeLen = 0) {
   const ctx = getAudioContext();
   const inst = document.getElementById('instrumentSelect').value;
   if (!playBus) newPlayBus(ctx);
   const damper = ctx.createGain();
   damper.connect(playBus);
-  if (stopAt !== null) damper.gain.setTargetAtTime(0, stopAt, release);
+  let srcStop = null;
+  if (stopAt !== null && fadeLen > 0) {
+    fadeOut(damper.gain, stopAt, fadeLen);
+    srcStop = stopAt + fadeLen + 0.1;
+  } else if (stopAt !== null) {
+    damper.gain.setTargetAtTime(0, stopAt, release);
+    srcStop = stopAt + release * 10;
+  }
   // עד שהדגימות נטענות (או כשהדף נפתח מקובץ מקומי) מנגנים פסנתר מסונתז
-  if (sampleBuffers[inst]) playSampleNote(ctx, inst, freq, startTime, stopAt === null ? null : stopAt + release * 10, damper);
+  if (sampleBuffers[inst]) playSampleNote(ctx, inst, freq, startTime, srcStop, damper);
   else {
     loadSamples(inst);
     playPianoNote(ctx, freq, startTime, damper);
@@ -1649,14 +1657,24 @@ function updateFirstNoteButtonUI() {
   }
 }
 
-// משך הצלצול בסוף השמעה: בהרמוני כ-3 שניות לכל הצלילים יחד,
-// במלודי הצליל האחרון (והצלילים שמצלצלים איתו בפדל) כשנייה וחצי ודעיכה רכה
-const HARMONIC_HOLD = 2.5;
-const HARMONIC_RELEASE = 0.2;
-const MELODIC_HOLD = 1.5;
-const MELODIC_RELEASE = 0.2;
-function melodicEnd(lastStart) {
-  return lastStart + MELODIC_HOLD;
+// הדעיכה מתחילה כבר באטק של הצליל האחרון (בהרמוני: באטק של כולם) ויורדת בהדרגה עד שקט
+const ENDING = { melodic: 2.5, harmonic: 3.0, curve: 'soft' };
+function fadeOut(param, from, len) {
+  if (ENDING.curve === 'exp') {
+    param.setValueAtTime(1, from);
+    param.setTargetAtTime(0, from, len / 5);
+    return;
+  }
+  if (ENDING.curve === 'linear') {
+    param.setValueAtTime(1, from);
+    param.linearRampToValueAtTime(0, from + len);
+    return;
+  }
+  // soft: יורד לאט בהתחלה ומהר יותר לקראת הסוף, כמו מפתח שמשתחרר לאט
+  const n = 64;
+  const curve = new Float32Array(n);
+  for (let i = 0; i < n; i++) curve[i] = Math.pow(Math.cos((i / (n - 1)) * Math.PI / 2), 2);
+  param.setValueCurveAtTime(curve, from, len);
 }
 
 function playCurrentExercise() {
@@ -1674,7 +1692,8 @@ function playCurrentExercise() {
     const all = [...freqs, ...[...freqs].reverse().slice(1)];
     all.forEach((f, idx) => {
       const last = idx === all.length - 1;
-      playInstrumentNote(f, now + idx * 0.3, last ? melodicEnd(now + idx * 0.3) : now + (idx + 1) * 0.3, last ? MELODIC_RELEASE : 0.04);
+      if (last) playInstrumentNote(f, now + idx * 0.3, now + idx * 0.3, 0, ENDING.melodic);
+      else playInstrumentNote(f, now + idx * 0.3, now + (idx + 1) * 0.3);
     });
     return;
   }
@@ -1694,11 +1713,11 @@ function playCurrentExercise() {
 
   const now = ctx.currentTime + 0.05;
   if (mode === 'harmonic') {
-    freqs.forEach(f => playInstrumentNote(f, now, now + HARMONIC_HOLD, HARMONIC_RELEASE));
+    freqs.forEach(f => playInstrumentNote(f, now, now, 0, ENDING.harmonic));
   } else {
     const ordered = mode === 'descending' ? [...freqs].reverse() : freqs;
-    const stopAt = melodicEnd(now + (ordered.length - 1) * 0.35);
-    ordered.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, stopAt, MELODIC_RELEASE));
+    const lastStart = now + (ordered.length - 1) * 0.35;
+    ordered.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, lastStart, 0, ENDING.melodic));
   }
 }
 
@@ -2448,8 +2467,8 @@ function playHintVersion() {
   const now = ctx.currentTime + 0.05;
   freqs.forEach(f => playInstrumentNote(f, now, now + 1.4));
   const start = now + 1.7;
-  const stopAt = melodicEnd(start + (freqs.length - 1) * 0.55);
-  freqs.forEach((f, idx) => playInstrumentNote(f, start + idx * 0.55, stopAt, MELODIC_RELEASE));
+  const lastStart = start + (freqs.length - 1) * 0.55;
+  freqs.forEach((f, idx) => playInstrumentNote(f, start + idx * 0.55, lastStart, 0, ENDING.melodic));
 }
 
 // סולם או מודוס: רק עולה, לאט, כל צליל לבד
@@ -2460,7 +2479,8 @@ function playScaleSlow() {
   const now = ctx.currentTime + 0.05;
   freqs.forEach((f, idx) => {
     const last = idx === freqs.length - 1;
-    playInstrumentNote(f, now + idx * 0.55, last ? melodicEnd(now + idx * 0.55) : now + (idx + 1) * 0.55, last ? MELODIC_RELEASE : 0.04);
+    if (last) playInstrumentNote(f, now + idx * 0.55, now + idx * 0.55, 0, ENDING.melodic);
+    else playInstrumentNote(f, now + idx * 0.55, now + (idx + 1) * 0.55);
   });
 }
 
