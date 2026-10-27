@@ -1650,12 +1650,13 @@ function updateFirstNoteButtonUI() {
 }
 
 // משך הצלצול בסוף השמעה: בהרמוני כ-3 שניות לכל הצלילים יחד,
-// במלודי הצליל האחרון (והצלילים שמצלצלים איתו בפדל) כפעמיים המרווח בין צליל לצליל
+// במלודי הצליל האחרון (והצלילים שמצלצלים איתו בפדל) כשנייה וחצי ודעיכה רכה
 const HARMONIC_HOLD = 2.5;
 const HARMONIC_RELEASE = 0.2;
-const MELODIC_RELEASE = 0.12;
-function melodicEnd(lastStart, step) {
-  return lastStart + 2 * step;
+const MELODIC_HOLD = 1.5;
+const MELODIC_RELEASE = 0.2;
+function melodicEnd(lastStart) {
+  return lastStart + MELODIC_HOLD;
 }
 
 function playCurrentExercise() {
@@ -1673,7 +1674,7 @@ function playCurrentExercise() {
     const all = [...freqs, ...[...freqs].reverse().slice(1)];
     all.forEach((f, idx) => {
       const last = idx === all.length - 1;
-      playInstrumentNote(f, now + idx * 0.3, last ? melodicEnd(now + idx * 0.3, 0.3) : now + (idx + 1) * 0.3, last ? MELODIC_RELEASE : 0.04);
+      playInstrumentNote(f, now + idx * 0.3, last ? melodicEnd(now + idx * 0.3) : now + (idx + 1) * 0.3, last ? MELODIC_RELEASE : 0.04);
     });
     return;
   }
@@ -1696,7 +1697,7 @@ function playCurrentExercise() {
     freqs.forEach(f => playInstrumentNote(f, now, now + HARMONIC_HOLD, HARMONIC_RELEASE));
   } else {
     const ordered = mode === 'descending' ? [...freqs].reverse() : freqs;
-    const stopAt = melodicEnd(now + (ordered.length - 1) * 0.35, 0.35);
+    const stopAt = melodicEnd(now + (ordered.length - 1) * 0.35);
     ordered.forEach((f, idx) => playInstrumentNote(f, now + idx * 0.35, stopAt, MELODIC_RELEASE));
   }
 }
@@ -2447,7 +2448,7 @@ function playHintVersion() {
   const now = ctx.currentTime + 0.05;
   freqs.forEach(f => playInstrumentNote(f, now, now + 1.4));
   const start = now + 1.7;
-  const stopAt = melodicEnd(start + (freqs.length - 1) * 0.55, 0.55);
+  const stopAt = melodicEnd(start + (freqs.length - 1) * 0.55);
   freqs.forEach((f, idx) => playInstrumentNote(f, start + idx * 0.55, stopAt, MELODIC_RELEASE));
 }
 
@@ -2459,7 +2460,7 @@ function playScaleSlow() {
   const now = ctx.currentTime + 0.05;
   freqs.forEach((f, idx) => {
     const last = idx === freqs.length - 1;
-    playInstrumentNote(f, now + idx * 0.55, last ? melodicEnd(now + idx * 0.55, 0.55) : now + (idx + 1) * 0.55, last ? MELODIC_RELEASE : 0.04);
+    playInstrumentNote(f, now + idx * 0.55, last ? melodicEnd(now + idx * 0.55) : now + (idx + 1) * 0.55, last ? MELODIC_RELEASE : 0.04);
   });
 }
 
