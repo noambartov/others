@@ -8,4 +8,4 @@
 | `harp/` | Versilian Community Sample Library, נבל קונצרטים, mf ([sgossner/VCSL](https://github.com/sgossner/VCSL)) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) |
 | `vibraphone/` | Versilian Community Sample Library, ויברפון במקושים קשים ([sgossner/VCSL](https://github.com/sgossner/VCSL)) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) |
 
-שמות הקבצים הם הגובה הנשמע בכתיב מדעי (C4 = דו אמצעי, `s` = דיאז). בקובצי המקור של VCSL הדו האמצעי נקרא C3, ולכן השמות הוזזו באוקטבה.
+שמות הקבצים הם הגובה הנשמע בכתיב מדעי (C4 = דו אמצעי, `s` = דיאז). בקובצי המקור של הוויברפון ב-VCSL הדו האמצעי נקרא C3, ולכן השמות הוזזו באוקטבה.
