@@ -14,7 +14,11 @@
     @media print { .update-bar { display: none; } }
   `;
 
-  let loaded = null;
+  // הגרסה שהדף עצמו נבנה בה (Jekyll ממלא את התגית). כך גם דף ישן שנפתח מהמטמון,
+  // למשל באפליקציה באייפד, מזהה מיד שיש גרסה חדשה יותר.
+  const meta = document.querySelector('meta[name="site-version"]');
+  const own = meta && /^\d+$/.test(meta.content) ? meta.content : null;
+  let loaded = own;
   let bar = null;
   let dismissed = null;
 
@@ -39,7 +43,11 @@
     bar = document.createElement('div');
     bar.className = 'update-bar';
     bar.innerHTML = '<span>יש גרסה חדשה</span><button class="update-reload">לרענון</button><button class="update-close">סגירה</button>';
-    bar.querySelector('.update-reload').onclick = () => location.reload();
+    bar.querySelector('.update-reload').onclick = async () => {
+      // מרענן גם את הדף עצמו מהשרת ולא מהמטמון
+      try { await fetch(location.href, { cache: 'reload' }); } catch (e) {}
+      location.reload();
+    };
     bar.querySelector('.update-close').onclick = () => { dismissed = version; bar.remove(); bar = null; if (nav) nav.style.marginTop = navTop; };
     // פס ברוחב מלא בראש הדף, מעל סרגל הניווט, גם כשלגוף הדף יש ריפוד
     const bs = getComputedStyle(document.body);
