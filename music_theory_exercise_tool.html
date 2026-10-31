@@ -745,7 +745,9 @@
         <div class="control-group ear-only-setting">
           <label>כלי נגינה:</label>
           <select id="instrumentSelect" onchange="loadSamples(this.value)">
-            <option value="vibraphone" selected>ויברפון</option>
+            <option value="harp" selected>נבל</option>
+            <option value="soft">צליל רך</option>
+            <option value="vibraphone">ויברפון</option>
             <option value="piano">פסנתר</option>
           </select>
         </div>
@@ -1124,12 +1126,39 @@ function playInstrumentNote(freq, startTime, stopAt = null, release = 0.04, fade
     damper.gain.setTargetAtTime(0, stopAt, release);
     srcStop = stopAt + release * 10;
   }
-  // עד שהדגימות נטענות (או כשהדף נפתח מקובץ מקומי) מנגנים פסנתר מסונתז
-  if (sampleBuffers[inst]) playSampleNote(ctx, inst, freq, startTime, srcStop, damper);
+  // עד שהדגימות נטענות (או כשהדף נפתח מקובץ מקומי) מנגנים את הצליל הרך המסונתז
+  if (inst !== 'soft' && sampleBuffers[inst]) playSampleNote(ctx, inst, freq, startTime, srcStop, damper);
   else {
-    loadSamples(inst);
-    playPianoNote(ctx, freq, startTime, damper);
+    if (inst !== 'soft') loadSamples(inst);
+    playSoftNote(ctx, freq, startTime, srcStop, damper);
   }
+}
+
+// צליל רך: טון יסוד ושלושה עליונים חלשים בלבד, שדועכים מהר יותר ככל שהם גבוהים.
+// בצלילים נמוכים העליון השני חזק יותר, כדי שיישמעו גם ברמקול של טלפון
+function playSoftNote(ctx, freq, t, stopAt, dest) {
+  const amps = freq < 220 ? [0.8, 0.55, 0.22, 0.08] : [1, 0.35, 0.12, 0.04];
+  const k = Math.pow(freq / 262, 0.3);
+  const out = ctx.createGain();
+  out.gain.setValueAtTime(0, t);
+  out.gain.linearRampToValueAtTime(0.07, t + 0.006);
+  out.connect(dest);
+  const end = stopAt !== null ? stopAt : t + 6;
+  amps.forEach((a, i) => {
+    const h = i + 1;
+    if (freq * h > 16000) return;
+    const tau = 2.4 / k / Math.pow(h, 0.8);
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq * h, t);
+    g.gain.setValueAtTime(a, t);
+    g.gain.setTargetAtTime(0, t, tau);
+    osc.connect(g);
+    g.connect(out);
+    osc.start(t);
+    osc.stop(end);
+  });
 }
 
 // דגימות אמיתיות, כל אחת כ-8 שניות של צלצול טבעי. צלילים שביניהן מוזזים בגובה מהדגימה הקרובה.
@@ -1139,7 +1168,9 @@ const SAMPLE_SETS = {
     notes: ['As1', 'C2', 'D2', 'E2', 'Fs2', 'Gs2', 'As2', 'C3', 'D3', 'E3', 'Fs3', 'Gs3', 'As3', 'C4', 'D4', 'E4', 'Fs4', 'Gs4', 'As4',
       'C5', 'D5', 'E5', 'Fs5', 'Gs5', 'As5', 'C6', 'D6', 'E6', 'Fs6', 'Gs6', 'As6', 'C7'] },
   vibraphone: { dir: 'sounds/vibraphone/', gain: 0.3,
-    notes: ['A3', 'C4', 'E4', 'G4', 'B4', 'D5', 'F5', 'A5', 'C6', 'E6'] }
+    notes: ['A3', 'C4', 'E4', 'G4', 'B4', 'D5', 'F5', 'A5', 'C6', 'E6'] },
+  harp: { dir: 'sounds/harp/', gain: 0.47,
+    notes: ['G1', 'D2', 'F2', 'A2', 'C3', 'E3', 'G3', 'B3', 'D4', 'F4', 'A4', 'C5', 'E5', 'G5', 'B5', 'D6'] }
 };
 const sampleBuffers = {};
 const sampleLoads = {};
@@ -1181,7 +1212,7 @@ function playSampleNote(ctx, inst, freq, t, stopAt, dest) {
   if (stopAt !== null) src.stop(stopAt);
 }
 
-// יציאה משותפת עם קומפרסור, כדי שאקורדים לא יתעוותו
+// יציאה משותפת עם קומפרסור, כדי שאקורדים לא יתעוותו, ורברב עדין וקצר של חדר
 function masterOut(ctx) {
   if (!ctx._master) {
     const comp = ctx.createDynamicsCompressor();
@@ -1191,66 +1222,38 @@ function masterOut(ctx) {
     comp.attack.value = 0.003;
     comp.release.value = 0.25;
     comp.connect(ctx.destination);
+    const reverb = ctx.createConvolver();
+    reverb.normalize = false;
+    reverb.buffer = makeRoomImpulse(ctx, 1.5);
+    const wet = ctx.createGain();
+    wet.gain.value = 0.36;
+    comp.connect(reverb);
+    reverb.connect(wet);
+    wet.connect(ctx.destination);
     ctx._master = comp;
   }
   return ctx._master;
 }
 
-// פסנתר מסונתז, לשימוש עד שהדגימות נטענות: שני מיתרים מעט לא מכוונים, עליונים עם אי-הרמוניות קלה, דעיכה דו-שלבית וסוסטיין ארוך,
-// ופילטר שמתכהה עם הזמן כמו מיתר אמיתי
-function playPianoNote(ctx, freq, t, dest) {
-  const sustain = 7 * Math.min(1.6, Math.max(0.6, 440 / freq) ** 0.35);
-  const out = ctx.createGain();
-  out.gain.setValueAtTime(0, t);
-  out.gain.linearRampToValueAtTime(0.22, t + 0.004);
-  out.gain.exponentialRampToValueAtTime(0.1, t + 0.3);
-  out.gain.exponentialRampToValueAtTime(0.04, t + sustain * 0.5);
-  out.gain.exponentialRampToValueAtTime(0.0001, t + sustain);
-
-  const lp = ctx.createBiquadFilter();
-  lp.type = 'lowpass';
-  lp.Q.value = 0.5;
-  lp.frequency.setValueAtTime(Math.min(freq * 14, 12000), t);
-  lp.frequency.exponentialRampToValueAtTime(Math.max(freq * 2.5, 400), t + sustain * 0.7);
-  lp.connect(out);
-  out.connect(dest);
-
-  const B = 0.0004; // אי-הרמוניות של מיתר
-  const partials = [1, 0.55, 0.32, 0.22, 0.14, 0.09, 0.06, 0.04];
-  [-1.2, 1.2].forEach(cents => {
-    const detune = Math.pow(2, cents / 1200);
-    partials.forEach((amp, i) => {
-      const n = i + 1;
-      const f = freq * n * Math.sqrt(1 + B * n * n) * detune;
-      if (f > 16000) return;
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(f, t);
-      g.gain.setValueAtTime(amp * 0.2, t);
-      g.gain.exponentialRampToValueAtTime(amp * 0.2 * 0.05, t + sustain / Math.sqrt(n));
-      osc.connect(g);
-      g.connect(lp);
-      osc.start(t);
-      osc.stop(t + sustain + 0.05);
-    });
-  });
-  // מכת הפטיש
-  const len = Math.floor(ctx.sampleRate * 0.012);
-  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
-  const noise = ctx.createBufferSource();
-  noise.buffer = buf;
-  const bp = ctx.createBiquadFilter();
-  bp.type = 'bandpass';
-  bp.frequency.value = Math.min(freq * 3, 6000);
-  const ng = ctx.createGain();
-  ng.gain.value = 0.06;
-  noise.connect(bp);
-  bp.connect(ng);
-  ng.connect(out);
-  noise.start(t);
+// תגובת חדר: רעש שדועך ב-60dB לאורך rt שניות, מתכהה עם הזמן, ומתחיל אחרי 12ms
+function makeRoomImpulse(ctx, rt) {
+  const sr = ctx.sampleRate;
+  const len = Math.floor(rt * sr);
+  const buf = ctx.createBuffer(2, len, sr);
+  for (let c = 0; c < 2; c++) {
+    const d = buf.getChannelData(c);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-6.9 * i / len);
+    for (let pass = 0; pass < 3; pass++) {
+      for (let i = len - 1; i > 0; i--) d[i] = 0.55 * d[i] + 0.45 * d[i - 1];
+    }
+    const pre = Math.floor(0.012 * sr);
+    for (let i = 0; i < pre; i++) d[i] = 0;
+    let energy = 0;
+    for (let i = 0; i < len; i++) energy += d[i] * d[i];
+    const norm = 1 / Math.sqrt(energy);
+    for (let i = 0; i < len; i++) d[i] *= norm;
+  }
+  return buf;
 }
 
 function changeTheme(themeClass) {
@@ -1659,10 +1662,12 @@ function updateFirstNoteButtonUI() {
 }
 
 // סוף ההשמעה, לפי כלי. ויברפון: דעיכה טבעית שמתחילה כבר באטק של הצליל האחרון (בהרמוני: של כולם).
-// פסנתר: עם פדל, הצליל דועך לבד עד סוף הדגימה
+// פסנתר, נבל וצליל רך: עם פדל, הצליל דועך לבד
 const ENDINGS = {
   vibraphone: { curve: 'exp', melodic: 3.5, harmonic: 4 },
-  piano: { curve: 'natural', melodic: 6, harmonic: 6 }
+  piano: { curve: 'natural', melodic: 6, harmonic: 6 },
+  harp: { curve: 'natural', melodic: 6, harmonic: 6 },
+  soft: { curve: 'natural', melodic: 6, harmonic: 6 }
 };
 function ending() {
   return ENDINGS[document.getElementById('instrumentSelect').value] || ENDINGS.piano;
