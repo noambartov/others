@@ -831,7 +831,7 @@
       <button class="share-btn no-train" onclick="shareCurrentExercise()">שתף</button>
       <button class="next-btn train-only" onclick="showTrainingReport(true)">דוח עד כה</button>
       <button class="next-btn train-only" onclick="endTraining()">סיום אימון</button>
-      <div class="help-wrapper no-train">
+      <div class="help-wrapper">
         <button class="help-btn" id="helpBtn" onclick="showHelp()">עזרה</button>
         <span class="help-popover" id="helpPopover"></span>
       </div>
@@ -857,9 +857,9 @@
     </div>
 
     <div id="chordAnswersArea" class="chord-answers-container" style="display: none;">
-      <div class="section-title">1. בחירת הטיפוס:</div>
+      <div class="section-title" id="chordTypeTitle">1. בחירת הטיפוס:</div>
       <div class="options-grid" id="chordTypeButtons"></div>
-      <div class="section-title">2. בחירת ההיפוך:</div>
+      <div class="section-title" id="chordInvTitle">2. בחירת ההיפוך:</div>
       <div class="options-grid" id="chordInvButtons"></div>
     </div>
 
@@ -1877,6 +1877,13 @@ function setupChordUI() {
     btn.onclick = () => checkChordInv(inv.id, btn);
     invContainer.appendChild(btn);
   });
+
+  // כשיש רק היפוך אחד אפשרי (למשל רק מצב יסודי) אין מה לבחור: השאלה על ההיפוך לא מוצגת
+  const singleInv = currentExercise.inversionsPool.length < 2;
+  if (singleInv) selectedChordInv = currentExercise.inversion;
+  document.getElementById('chordInvTitle').style.display = singleInv ? 'none' : '';
+  invContainer.style.display = singleInv ? 'none' : '';
+  document.getElementById('chordTypeTitle').innerText = singleInv ? 'בחירת הטיפוס:' : '1. בחירת הטיפוס:';
 }
 
 function inversionIrrelevant(type, struct) {
@@ -2573,6 +2580,8 @@ function applyHint(step) {
 
 function showHelp() {
   if (!currentExercise) return;
+  // באימון לפי שלבים נספרת רק תשובה ראשונה בלי עזרה
+  if (training && !exerciseSolved) noteWrong('עזרה', 'help');
   // הרמזים נבנים מחדש בכל לחיצה, כדי לדלג על חלק שהתלמיד כבר ענה עליו נכון
   const steps = buildHintSteps().filter(st => !shownHints.has(st.key));
   const btn = document.getElementById('helpBtn');
@@ -2606,7 +2615,7 @@ function revealAnswer() {
     text = `${rootStr} ${currentExercise.struct.name}`;
   } else if (currentExercise.type === 'chords' || currentExercise.type === 'septachords') {
     const invName = INVERSIONS_DATA[currentExercise.type].find(i => i.id === currentExercise.inversion).name;
-    text = `${getStructureLabel(currentExercise.struct)} (${invName})`;
+    text = currentExercise.inversionsPool.length < 2 ? getStructureLabel(currentExercise.struct) : `${getStructureLabel(currentExercise.struct)} (${invName})`;
   } else {
     text = `${getStructureLabel(currentExercise.struct)}`;
   }
