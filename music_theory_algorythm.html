@@ -1,7 +1,11 @@
+---
+# Jekyll ממלא כאן את זמן הבנייה, כדי ש-update-check.js יזהה עותק ישן מהמטמון
+---
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
+    <meta name="site-version" content="{{ site.time | date: \'%s\' }}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>מחשב מוזיקלי מקיף: מרווחים, סולמות, ואקורדים מרובעים</title>
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
