@@ -319,21 +319,33 @@
   }
 
   // ===== ספירה =====
-  // הברת הספירה של סימן לפי מקומו בתיבה: 1 ו 2 ו, בשש-עשריות 1 ה ו ה, בטריולה 1 אוֹ לָה.
-  // במשקל מורכב סופרים שמיניות: 1 2 3 4 5 6
-  function countLabel(meter, at, e) {
+  // הברות קונוקול לכל פעמה, לפי החלוקה הדקה ביותר שיש בה:
+  // פעמה שלמה ta, לשניים ta ka, לשלושה ta ki ta, לארבעה ta ka di mi.
+  // במשקל מורכב הפעמה מתחלקת לשלוש שמיניות (ta ki ta), ועם שש-עשריות לשש (ta ka di mi ta ka).
+  // הפסקות לא מקבלות הברה. events: [{ at (בתוך התיבה), rest, tuplet }]
+  const SYLLABLES = { 1: ['ta'], 2: ['ta', 'ka'], 3: ['ta', 'ki', 'ta'], 4: ['ta', 'ka', 'di', 'mi'], 6: ['ta', 'ka', 'di', 'mi', 'ta', 'ka'] };
+  function countLabels(meter, events) {
     const m = METERS[meter];
-    if (m.compound) {
-      if (at % 6 === 0) return String(at / 6 + 1);
-      return at % 3 === 0 ? 'ה' : '';
-    }
-    const beat = Math.floor(at / m.beatTicks) + 1;
-    const f = at % m.beatTicks;
-    if (e && e.tuplet) return f === 0 ? String(beat) : f === 4 ? 'אוֹ' : f === 8 ? 'לָה' : '';
-    if (f === 0) return String(beat);
-    if (f === 6) return 'ו';
-    if (f === 3 || f === 9) return 'ה';
-    return '';
+    const bt = m.beatTicks;
+    const grids = {};
+    events.forEach(e => {
+      const beat = Math.floor(e.at / bt);
+      const f = e.at % bt;
+      let g = 1;
+      if (m.compound) g = f === 0 ? 1 : f % 6 === 0 ? 3 : 6;
+      else if (e.tuplet || f % 4 === 0 && f % 12 !== 0 && f % 6 !== 0) g = f === 0 ? 1 : 3;
+      else g = f === 0 ? 1 : f % 6 === 0 ? 2 : 4;
+      if (e.tuplet && !m.compound) g = Math.max(g, 3);
+      // טריולה ושש-עשריות לא נפגשות באותה פעמה בתרגילים, אז הגדול קובע
+      grids[beat] = Math.max(grids[beat] || 1, g);
+    });
+    return events.map(e => {
+      if (e.rest) return '';
+      const beat = Math.floor(e.at / bt);
+      const g = grids[beat];
+      const idx = Math.round((e.at % bt) / (bt / g));
+      return SYLLABLES[g][idx] || '';
+    });
   }
 
   // ===== ציור =====
@@ -515,12 +527,13 @@
     // ספירה מתחת לתווים ("1 ו 2 ו") או מספרי הפעמות בלבד
     const hasText = !!(opts.counts || opts.beatNumbers);
     const ty = y + sp * 3.4;
-    const txt = (tx, s) => `<text x="${r(tx)}" y="${r(ty)}" text-anchor="middle" font-family="Assistant, sans-serif" font-size="${r(sp * 1.35)}" fill="#8a8a8a">${s}</text>`;
+    const txt = (tx, s) => `<text direction="ltr" x="${r(tx)}" y="${r(ty)}" text-anchor="middle" font-family="Assistant, sans-serif" font-size="${r(sp * 1.35)}" fill="#8a8a8a">${s}</text>`;
     if (opts.counts) {
-      evList.forEach(v => {
-        const s = countLabel(ex.meter, v.at, v.e);
-        if (s) svg += txt(v.x + sp * 0.6, s);
-      });
+      for (let b = 0; b < ex.bars.length; b++) {
+        const inBar = evList.filter(v => v.bar === b);
+        const labels = countLabels(ex.meter, inBar.map(v => ({ at: v.at, rest: v.e.rest, tuplet: v.e.tuplet })));
+        inBar.forEach((v, i) => { if (labels[i]) svg += txt(v.x + sp * 0.6, labels[i]); });
+      }
     }
     if (opts.beatNumbers) {
       const nb = ex.bars.length;
@@ -622,7 +635,7 @@
 
   const RhythmCore = {
     TPQ, METERS, LEVELS, parseCell, cellsFor, allowedStart, fillSpan, generate, variant, dictation, completion,
-    flatten, onsets, signature, writtenKey, beamGroups, timeline, barSeconds, scoreTaps, countLabel, render, svgFor, svgLines, naturalWidth, symbolSvg,
+    flatten, onsets, signature, writtenKey, beamGroups, timeline, barSeconds, scoreTaps, countLabels, render, svgFor, svgLines, naturalWidth, symbolSvg,
     symbolTicks, eventSymbol, GLYPHS
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = RhythmCore;
