@@ -117,7 +117,7 @@ test('konnakol syllables follow the finest subdivision in each beat', () => {
   assert.strictEqual(lab('4/4', ['q', '8 8', '16 16 16 16', 'T8 8 8']), 'ta ta ka ta ka di mi ta ki ta');
   assert.strictEqual(lab('2/4', ['8 16 16', '8. 16']), 'ta di mi ta mi');
   assert.strictEqual(lab('4/4', ['8 q 8', 'R8 8', 'q']), 'ta ka ka  ka ta');
-  assert.strictEqual(lab('6/8', ['8 8 8', '16 16 8 8']), 'ta ki ta ta ka di ta');
+  assert.strictEqual(lab('6/8', ['8 8 8', '16 16 8 8']), 'ta ki ta ta ki ta ki');
 });
 
 test('rendering draws one notehead per sounding note and never throws', () => {
