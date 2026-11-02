@@ -52,20 +52,53 @@
       notes: tune('G4 R:.5 D4:.5 G4 R:.5 D4:.5 G4:.5 D4:.5 G4:.5 B4:.5 D5:2 C5 R:.5 A4:.5 C5 R:.5 A4:.5 C5:.5 A4:.5 F#4:.5 A4:.5 D4:2') }
   };
 
+  // ---------- מיומנויות ----------
+  // מיומנות = מצב (קריאה או שמיעה) + סוג תרגיל. השליטה נמדדת לפי 20 התשובות האחרונות (ניסיון ראשון, בלי עזרה)
+  const SKILLS = [
+    { key: 'read:note_id', mode: 'read', type: 'note_id', name: 'זיהוי תווים' },
+    { key: 'read:intervals', mode: 'read', type: 'intervals', name: 'מרווחים' },
+    { key: 'read:chords', mode: 'read', type: 'chords', name: 'משולשים' },
+    { key: 'read:septachords', mode: 'read', type: 'septachords', name: 'ספטאקורדים' },
+    { key: 'read:scales', mode: 'read', type: 'scales', name: 'סולמות' },
+    { key: 'read:modes', mode: 'read', type: 'modes', name: 'מודוסים' },
+    { key: 'ear:intervals', mode: 'ear', type: 'intervals', name: 'מרווחים' },
+    { key: 'ear:chords', mode: 'ear', type: 'chords', name: 'משולשים' },
+    { key: 'ear:septachords', mode: 'ear', type: 'septachords', name: 'ספטאקורדים' },
+    { key: 'ear:scales', mode: 'ear', type: 'scales', name: 'סולמות' },
+    { key: 'ear:modes', mode: 'ear', type: 'modes', name: 'מודוסים' }
+  ];
+  const MODE_NAME = { read: 'קריאה', ear: 'שמיעה' };
+  const LEVEL_NAMES = ['עוד לא תורגל', 'מתחיל', 'בטוח', 'שולט'];
+  const WINDOW = 20;
+  function skillLabel(sk) { return `${sk.name} ב${MODE_NAME[sk.mode]}`; }
+  function skillStats(s, key) {
+    const h = (s.skills && s.skills[key]) || [];
+    const n = h.length, ok = h.filter(Boolean).length;
+    const acc = n ? ok / n : 0;
+    let level = 0;
+    if (n >= WINDOW && acc >= 0.9) level = 3;
+    else if (n >= 10 && acc >= 0.75) level = 2;
+    else if (n) level = 1;
+    // ציון רציף בין 0 ל-1, לסידור התרגול היומי: מעט תשובות = ציון נמוך
+    return { n, ok, acc, level, score: acc * Math.min(n, WINDOW) / WINDOW };
+  }
+  const countLevel = (s, min, mode) => SKILLS.filter(sk => (!mode || sk.mode === mode) && skillStats(s, sk.key).level >= min).length;
+
   // הסדר הוא גם סדר הקושי. כל הישג פותח שיר אחד
   const ACHIEVEMENTS = [
     { id: 'first', song: 'twinkle', how: 'התרגיל הראשון', test: s => s.total >= 1 },
     { id: 'goal1', song: 'jacques', how: 'להשלים יעד יומי', test: s => s.met.length >= 1 },
-    { id: 'run10', song: 'ode', how: '10 תשובות נכונות ברצף', test: s => s.bestRun >= 10 },
+    { id: 'sure1', song: 'ode', how: 'מיומנות ראשונה בדרגת בטוח', test: s => countLevel(s, 2) >= 1 },
     { id: 'streak3', song: 'lullaby', how: '3 ימים ברצף', test: s => streak(s) >= 3 },
-    { id: 'total100', song: 'minuet', how: '100 תרגילים', test: s => s.total >= 100 },
-    { id: 'pass', song: 'largo', how: 'לעבור רמה באימון לפי שלבים', test: s => s.passed.length >= 1 },
-    { id: 'run25', song: 'fifth', how: '25 תשובות נכונות ברצף', test: s => s.bestRun >= 25 },
+    { id: 'run10', song: 'minuet', how: '10 תשובות נכונות ברצף', test: s => s.bestRun >= 10 },
+    { id: 'master1', song: 'largo', how: 'מיומנות ראשונה בדרגת שולט', test: s => countLevel(s, 3) >= 1 },
     { id: 'streak7', song: 'morning', how: '7 ימים ברצף', test: s => streak(s) >= 7 },
-    { id: 'perfect', song: 'elise', how: '100% באימון לפי שלבים', test: s => s.perfect },
-    { id: 'total500', song: 'canon', how: '500 תרגילים', test: s => s.total >= 500 },
-    { id: 'pass4', song: 'mountain', how: 'לעבור את רמה 4', test: s => s.passed.includes(3) },
-    { id: 'pass7', song: 'nacht', how: 'לעבור את רמה 7', test: s => s.passed.includes(6) }
+    { id: 'both', song: 'fifth', how: 'שליטה גם בקריאה וגם בשמיעה', test: s => countLevel(s, 3, 'read') >= 1 && countLevel(s, 3, 'ear') >= 1 },
+    { id: 'pass', song: 'elise', how: 'לעבור רמה באימון לפי שלבים', test: s => s.passed.length >= 1 },
+    { id: 'master3', song: 'canon', how: '3 מיומנויות בדרגת שולט', test: s => countLevel(s, 3) >= 3 },
+    { id: 'run25', song: 'mountain', how: '25 תשובות נכונות ברצף', test: s => s.bestRun >= 25 },
+    { id: 'allsure', song: 'nacht', how: 'כל המיומנויות שבחרת, לפחות 3, בדרגת בטוח',
+      test: s => s.chosen.length >= 3 && s.chosen.every(k => skillStats(s, k).level >= 2) }
   ];
 
   function dayKey(d = new Date()) {
@@ -80,7 +113,7 @@
   function load() {
     let s = null;
     try { s = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
-    return Object.assign({ goal: 20, days: {}, met: [], run: 0, bestRun: 0, total: 0, passed: [], perfect: false, unlocked: {} }, s || {});
+    return Object.assign({ goal: 20, days: {}, met: [], run: 0, bestRun: 0, total: 0, passed: [], perfect: false, unlocked: {}, skills: {}, chosen: [] }, s || {});
   }
   function save(s) {
     try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {}
@@ -426,11 +459,23 @@
   // ---------- אירועים מדף התרגול ----------
   // נקרא אחרי כל תרגיל שנפתר. clean = נכון בניסיון הראשון ובלי עזרה.
   // מחזיר את ההישגים החדשים (אם יש) כדי שהדף יחכה עם התרגיל הבא
-  function solved(clean) {
+  // skill = 'read:intervals' וכו'. ליעד היומי נספרים רק תרגילים במיומנויות שנבחרו (או הכול, כשעוד לא נבחרו)
+  function recordSkill(s, skill, clean) {
+    if (!skill) return;
+    const h = s.skills[skill] = s.skills[skill] || [];
+    h.push(!!clean);
+    if (h.length > WINDOW) h.splice(0, h.length - WINDOW);
+  }
+  function counts(s, skill) { return !s.chosen.length || s.chosen.includes(skill); }
+
+  function solved(clean, skill) {
     const s = load();
     const today = dayKey();
+    const before = skill ? skillStats(s, skill).level : 0;
+    recordSkill(s, skill, clean);
+    const after = skill ? skillStats(s, skill).level : 0;
     s.total++;
-    s.days[today] = (s.days[today] || 0) + 1;
+    if (counts(s, skill)) s.days[today] = (s.days[today] || 0) + 1;
     s.run = clean ? s.run + 1 : 0;
     s.bestRun = Math.max(s.bestRun, s.run);
     let goalHit = false;
@@ -444,17 +489,62 @@
     if (goalHit && !fresh.length) {
       const n = streak(s);
       toast(n > 1 ? `היעד היומי הושלם. ${n} ימים ברצף` : 'היעד היומי הושלם');
+    } else if (!fresh.length && after > before && after >= 2) {
+      const sk = SKILLS.find(x => x.key === skill);
+      toast(`${skillLabel(sk)}: ${LEVEL_NAMES[after]}`);
     } else if (clean && !fresh.length && [5, 15, 20].includes(s.run)) {
       toast(`${s.run} נכונות ברצף`);
     }
     return fresh;
   }
 
-  function broke() {
+  // דילוג על תרגיל שלא נפתר: שובר את הרצף ונספר כטעות במיומנות
+  function broke(skill) {
     const s = load();
-    if (!s.run) return;
     s.run = 0;
+    recordSkill(s, skill, false);
     save(s);
+  }
+
+  function toggleSkill(key) {
+    const s = load();
+    const i = s.chosen.indexOf(key);
+    if (i >= 0) s.chosen.splice(i, 1); else s.chosen.push(key);
+    save(s);
+    render();
+  }
+
+  // התרגול היומי: 20 תרגילים מהמיומנויות שנבחרו. מיומנות חלשה מקבלת יותר תרגילים, וכל אחת לפחות אחד
+  function dailyPlan(length) {
+    const s = load();
+    const chosen = SKILLS.filter(sk => s.chosen.includes(sk.key));
+    if (!chosen.length) return null;
+    const weights = chosen.map(sk => 1 + 2 * (1 - skillStats(s, sk.key).score));
+    const total = weights.reduce((a, b) => a + b, 0);
+    let per = weights.map(w => Math.max(1, Math.round(length * w / total)));
+    // תיקון עיגול כדי שיצאו בדיוק length תרגילים
+    while (per.reduce((a, b) => a + b, 0) > length) {
+      const i = per.indexOf(Math.max(...counts));
+      per[i]--;
+    }
+    while (per.reduce((a, b) => a + b, 0) < length) {
+      const i = weights.indexOf(Math.max(...weights.filter((w, j) => per[j] < length)));
+      per[i]++;
+    }
+    const plan = [];
+    chosen.forEach((sk, i) => { for (let k = 0; k < per[i]; k++) plan.push({ mode: sk.mode, type: sk.type, label: skillLabel(sk), skill: sk.key }); });
+    for (let i = plan.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [plan[i], plan[j]] = [plan[j], plan[i]];
+    }
+    return plan;
+  }
+
+  function startDaily() {
+    const plan = dailyPlan(20);
+    if (!plan) return;
+    close();
+    window.startDailyMix(plan);
   }
 
   function trainingDone(level, pct) {
@@ -547,10 +637,27 @@
         <div><div class="rw-big">${s.total}</div><div class="rw-label">תרגילים בסך הכול</div></div>
       </div>
       <div class="report-bar rw-today"><span style="width:${Math.min(100, 100 * today / s.goal)}%"></span></div>
+      <div class="rw-daily">
+        <button class="primary" onclick="Rewards.startDaily()" ${s.chosen.length ? '' : 'disabled'}>תרגול יומי</button>
+        <span>${s.chosen.length ? `20 תרגילים מ-${s.chosen.length === 1 ? 'המיומנות שבחרת' : s.chosen.length + ' המיומנויות שבחרת'}, יותר ממה שעוד חלש` : 'בוחרים למטה מיומנויות, והתרגול היומי נבנה מהן'}</span>
+      </div>
+      <div class="report-section">
+        <h3>המיומנויות שלי</h3>
+        <p class="rw-hint">לוחצים על מיומנות כדי לבחור אותה. השליטה נמדדת לפי 20 התשובות האחרונות: מתחיל, בטוח (75% מתוך 10 לפחות), שולט (90% מתוך 20).</p>
+        ${['read', 'ear'].map(mode => `<div class="sk-group"><div class="sk-mode">${MODE_NAME[mode]}</div>${SKILLS.filter(sk => sk.mode === mode).map(sk => {
+          const st = skillStats(s, sk.key);
+          const on = s.chosen.includes(sk.key);
+          return `<button class="sk-row${on ? ' on' : ''}" onclick="Rewards.toggleSkill('${sk.key}')">
+            <span class="sk-box"></span><span class="sk-name">${sk.name}</span>
+            <span class="sk-meter">${[1, 2, 3].map(l => `<span class="${st.level >= l ? 'f' : ''}"></span>`).join('')}</span>
+            <span class="sk-level">${LEVEL_NAMES[st.level]}${st.n ? ` · ${Math.round(100 * st.acc)}%` : ''}</span></button>`;
+        }).join('')}</div>`).join('')}
+      </div>
       <div class="report-section">
         <h3>השבוע</h3>
         <div class="wk">${week.join('')}</div>
         <div class="rw-goal"><span>יעד יומי</span><div class="seg">${GOALS.map(g => `<button class="${g === s.goal ? 'active' : ''}" onclick="Rewards.setGoal(${g})">${g}</button>`).join('')}</div></div>
+        ${s.chosen.length ? '<p class="rw-hint" style="margin-top:10px">ליעד היומי נספרים תרגילים במיומנויות שבחרת, גם בתרגול החופשי.</p>' : ''}
       </div>
       <div class="report-section">
         <h3>שירים ${got} מתוך ${ACHIEVEMENTS.length}</h3>
@@ -559,6 +666,6 @@
       </div>`;
   }
 
-  window.Rewards = { solved, broke, trainingDone, renderChip, open, close, setGoal, play: playSong, closeUnlock, showUnlock, SONGS, ACHIEVEMENTS, _load: load, _save: save, _svg: melodySvg };
+  window.Rewards = { solved, broke, toggleSkill, startDaily, dailyPlan, SKILLS, trainingDone, renderChip, open, close, setGoal, play: playSong, closeUnlock, showUnlock, SONGS, ACHIEVEMENTS, _load: load, _save: save, _svg: melodySvg };
   renderChip();
 })();
