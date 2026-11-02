@@ -4,6 +4,7 @@
   const SECTIONS = [
     { id: 'ear', label: 'תרגול שמיעה', href: 'music_theory_exercise_tool.html?mode=ear' },
     { id: 'read', label: 'תרגול קריאה', href: 'music_theory_exercise_tool.html?mode=read' },
+    { id: 'rhythm', label: 'תרגול קצב', href: 'rhythm_practice.html' },
     { id: 'print', label: 'דפי תרגול להדפסה', href: 'music_theory_worksheets_generator.html' }
   ];
 
@@ -19,7 +20,8 @@
     @media (max-width: 520px) {
       .site-nav { flex-direction: column; gap: 6px; padding: 10px 16px; }
       .site-nav .site-home { font-size: 17px; }
-      .site-nav .site-links { gap: 18px; }
+      .site-nav .site-links { gap: 14px; }
+      .site-nav .site-links a { font-size: 14px; }
     }
     @media print { .site-nav { display: none; } }
   `;
@@ -50,7 +52,7 @@
     nav.querySelectorAll('.site-links a').forEach(a => {
       a.addEventListener('click', e => {
         const mode = a.dataset.section;
-        if (typeof window.setAppMode !== 'function' || mode === 'print') return;
+        if (typeof window.setAppMode !== 'function' || (mode !== 'ear' && mode !== 'read')) return;
         e.preventDefault();
         window.setAppMode(mode);
         history.replaceState(null, '', '?mode=' + mode);
