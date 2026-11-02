@@ -1,0 +1,578 @@
+---
+# Jekyll ממלא כאן את זמן הבנייה, כדי ש-update-check.js יזהה עותק ישן מהמטמון
+---
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="site-version" content="{{ site.time | date: \'%s\' }}">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>תרגול קצב</title>
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-title" content="תורת המוזיקה">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#ffffff">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600&display=swap');
+
+    * { box-sizing: border-box; touch-action: manipulation; }
+    html { height: 100%; }
+    body {
+      min-height: 100%; margin: 0; padding: 8px; background: #ffffff; color: #222222;
+      font-family: 'Assistant', -apple-system, BlinkMacSystemFont, sans-serif; direction: rtl;
+      display: flex; flex-direction: column;
+    }
+    button { font-family: inherit; }
+    .container { max-width: 820px; width: 100%; margin: 0 auto; flex: 1; display: flex; flex-direction: column; }
+
+    /* פס עליון: הגדרות מימין, ניקוד משמאל */
+    .topbar { position: relative; border-bottom: 1px solid #eeeeee; padding: 10px 0; min-height: 22px; }
+    .topscore { position: absolute; left: 0; top: 10px; font-size: 15px; color: #999999; }
+    details summary { color: #555555; font-weight: 500; font-size: 15px; list-style: none; display: inline-block; cursor: pointer; }
+    details summary::-webkit-details-marker { display: none; }
+    details[open] summary { color: #222222; }
+    .settings { display: flex; flex-direction: column; gap: 14px; padding: 14px 0 6px; }
+    .setting label { display: block; font-size: 13px; color: #999999; margin-bottom: 6px; }
+    .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+    .seg button { font-size: 13px; padding: 6px 12px; border-radius: 6px; cursor: pointer; background: #ffffff; border: 1px solid #e6e6e6; color: #999999; }
+    .seg button.active { background: #e6e6e6; border-color: #e6e6e6; color: #222222; }
+
+    /* סוגי התרגיל */
+    .ex-types { display: flex; justify-content: center; gap: 18px; padding: 12px 0 2px; white-space: nowrap; }
+    .ex-types button { background: none; border: none; padding: 2px 0; font-size: 15px; color: #999999; cursor: pointer; transition: color .15s; }
+    .ex-types button:hover, .ex-types button.active { color: #222222; }
+    .level-line { text-align: center; font-size: 13px; color: #999999; padding-top: 4px; }
+    .level-line button { background: none; border: none; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+    .level-line button:hover { color: #222222; }
+
+    .stage { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 18px; padding: 20px 0 10px; }
+    .prompt { text-align: center; font-size: 14px; color: #999999; min-height: 20px; }
+
+    .big-play-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .big-play {
+      width: 96px; height: 96px; border-radius: 50%; border: none; cursor: pointer; background: #222222; color: #ffffff;
+      display: flex; align-items: center; justify-content: center; padding-inline-start: 6px; direction: ltr;
+    }
+    .big-play:hover { background: #000000; }
+    .big-play:active { transform: scale(0.96); }
+
+    .score-view { color: #222222; padding: 6px 0; display: flex; flex-direction: column; gap: 10px; }
+
+    /* אפשרויות: אריחים אפורים כמו בתרגול השמיעה */
+    .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .tiles.symbols { grid-template-columns: repeat(4, 1fr); max-width: 520px; width: 100%; margin: 0 auto; }
+    .tile {
+      background: #efefef; color: #222222; border: none; border-radius: 6px; cursor: pointer;
+      padding: 14px 10px 8px; display: flex; align-items: center; justify-content: center; min-height: 92px;
+    }
+    .tile:hover { background: #e2e2e2; }
+    .tile.correct, .tile.correct:hover { background: #222222; color: #ffffff; }
+    .tile.wrong, .tile.wrong:hover { background: #ffffff; color: #c4c4c4; box-shadow: inset 0 0 0 1px #eeeeee; }
+    .tile.done { cursor: default; }
+    .tile.done.playable { cursor: pointer; }
+    .tiles.symbols .tile { min-height: 84px; padding: 8px; }
+
+    /* משטח ההקשה */
+    .tap-pad {
+      width: 100%; height: 130px; border: none; border-radius: 10px; background: #efefef; color: #999999;
+      font-size: 16px; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+      transition: background .06s;
+    }
+    .tap-pad.hit { background: #dcdcdc; }
+    .tap-pad.live { color: #222222; }
+    .count { text-align: center; font-size: 34px; font-weight: 400; color: #222222; min-height: 44px; line-height: 44px; }
+    .count.muted { color: #bbbbbb; }
+    .summary { text-align: center; font-size: 15px; line-height: 1.7; color: #555555; }
+    .summary strong { font-weight: 600; color: #222222; }
+    .legend { text-align: center; font-size: 13px; color: #999999; }
+
+    .action-bar { display: flex; justify-content: center; gap: 26px; flex-wrap: wrap; padding: 8px 0 4px; }
+    .action-bar button { background: none; border: none; padding: 2px 0; font-size: 15px; font-weight: 500; color: #777777; cursor: pointer; }
+    .action-bar button:hover { color: #222222; }
+    .action-bar button.primary { color: #222222; }
+    .action-bar button[hidden] { display: none; }
+
+    footer { text-align: center; font-size: 13px; color: #aaaaaa; padding: 24px 16px 8px; }
+    footer a { color: #888888; text-decoration: none; }
+
+    @media (max-width: 560px) {
+      .tiles { grid-template-columns: 1fr; }
+      .tiles.symbols { grid-template-columns: repeat(4, 1fr); }
+      .tile { min-height: 78px; }
+      .ex-types { gap: 14px; }
+      .ex-types button { font-size: 14px; }
+      .tap-pad { font-size: 15px; }
+      .big-play { width: 84px; height: 84px; }
+      .tap-pad { height: 150px; }
+    }
+  </style>
+</head>
+<body data-section="rhythm">
+
+<div class="container">
+  <div class="topbar">
+    <span class="topscore" id="score">0 מתוך 0</span>
+    <details id="settingsBox">
+      <summary>הגדרות</summary>
+      <div class="settings">
+        <div class="setting"><label>שלב</label><div class="seg" id="levelSeg"></div></div>
+        <div class="setting"><label>מהירות (פעמות לדקה)</label><div class="seg" id="tempoSeg"></div></div>
+        <div class="setting" id="metroSetting"><label>מטרונום בזמן ההשמעה</label><div class="seg" id="metroSeg"></div></div>
+      </div>
+    </details>
+  </div>
+
+  <nav class="ex-types" id="kindRow">
+    <button data-kind="dictation">הכתבה</button>
+    <button data-kind="tap">קריאה והקשה</button>
+    <button data-kind="complete">השלמת תיבה</button>
+  </nav>
+  <div class="level-line"><button id="levelLine" onclick="openSettings()"></button></div>
+
+  <div class="stage" id="stage"></div>
+
+  <div class="action-bar" id="actions"></div>
+
+  <footer>
+    נעם ברטוב <a href="https://noambartov.com" target="_blank" rel="noopener noreferrer">noambartov.com</a>
+  </footer>
+</div>
+
+<script src="site-nav.js"></script>
+<script src="rhythm-core.js"></script>
+<script>
+const R = window.RhythmCore;
+const PLAY_ICON = '<svg viewBox="0 0 24 24" width="36" height="36"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>';
+const KINDS = ['dictation', 'tap', 'complete'];
+const TEMPOS = [60, 80, 100, 120];
+const SETTINGS_KEY = 'mt_rhythm_settings';
+
+const state = { kind: 'dictation', level: 1, tempo: 80, metro: true, right: 0, total: 0 };
+let cur = null; // התרגיל הנוכחי
+
+// ===== הגדרות =====
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    if (KINDS.includes(s.kind)) state.kind = s.kind;
+    if (s.level >= 1 && s.level <= R.LEVELS.length) state.level = s.level;
+    if (TEMPOS.includes(s.tempo)) state.tempo = s.tempo;
+    if (typeof s.metro === 'boolean') state.metro = s.metro;
+  } catch (e) {}
+  const q = new URLSearchParams(location.search);
+  if (KINDS.includes(q.get('ex'))) state.kind = q.get('ex');
+  const lv = parseInt(q.get('level'), 10);
+  if (lv >= 1 && lv <= R.LEVELS.length) state.level = lv;
+}
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ kind: state.kind, level: state.level, tempo: state.tempo, metro: state.metro })); } catch (e) {}
+}
+
+function seg(id, items, current, onPick) {
+  const el = document.getElementById(id);
+  el.innerHTML = items.map(([v, label]) => `<button data-v="${v}" class="${String(v) === String(current) ? 'active' : ''}">${label}</button>`).join('');
+  el.querySelectorAll('button').forEach(b => b.onclick = () => onPick(b.dataset.v));
+}
+
+function renderSettings() {
+  seg('levelSeg', R.LEVELS.map(l => [l.n, `${l.n}. ${l.name}`]), state.level, v => { state.level = +v; changed(); });
+  seg('tempoSeg', TEMPOS.map(t => [t, t]), state.tempo, v => { state.tempo = +v; changed(false); });
+  seg('metroSeg', [['1', 'עם'], ['0', 'בלי']], state.metro ? '1' : '0', v => { state.metro = v === '1'; changed(false); });
+  document.getElementById('metroSetting').style.display = state.kind === 'tap' ? 'none' : '';
+  document.querySelectorAll('#kindRow button').forEach(b => b.classList.toggle('active', b.dataset.kind === state.kind));
+  const L = R.LEVELS[state.level - 1];
+  document.getElementById('levelLine').innerHTML = `שלב ${L.n}: ${L.name} · ${L.meters.map(m => `<span dir="ltr">${m}</span>`).join(' ')} · ${state.tempo} לדקה`;
+}
+
+function changed(regenerate = true) {
+  saveSettings();
+  renderSettings();
+  if (regenerate) newExercise(false);
+}
+
+function openSettings() {
+  const d = document.getElementById('settingsBox');
+  d.open = true;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.querySelectorAll('#kindRow button').forEach(b => b.onclick = () => {
+  if (state.kind === b.dataset.kind) return;
+  state.kind = b.dataset.kind;
+  changed();
+});
+
+function updateScore() {
+  document.getElementById('score').textContent = `${state.right} מתוך ${state.total}`;
+}
+function count(ok) {
+  if (cur.counted) return;
+  cur.counted = true;
+  state.total++;
+  if (ok) state.right++;
+  updateScore();
+}
+
+// ===== שמע =====
+let audioCtx = null, audioStale = false, master = null;
+let scheduled = [];
+let timers = [];
+
+function setPlaybackSession() {
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+}
+function getAudioContext() {
+  if (audioCtx && (audioStale || audioCtx.state === 'closed')) {
+    const old = audioCtx;
+    audioCtx = null; master = null;
+    try { old.close(); } catch (e) {}
+  }
+  audioStale = false;
+  if (!audioCtx) {
+    setPlaybackSession();
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    master = audioCtx.createGain();
+    master.gain.value = 0.9;
+    master.connect(audioCtx.destination);
+    // באייפון הקשר נפתח רק כשמשמיעים בו משהו בתוך לחיצה
+    try {
+      const src = audioCtx.createBufferSource();
+      src.buffer = audioCtx.createBuffer(1, 1, 22050);
+      src.connect(audioCtx.destination);
+      src.start(0);
+    } catch (e) {}
+  }
+  if (audioCtx.state !== 'running') {
+    const p = audioCtx.resume();
+    if (p && p.catch) p.catch(() => {});
+  }
+  return audioCtx;
+}
+setPlaybackSession();
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { stopAll(); if (audioCtx) audioStale = true; }
+  else setPlaybackSession();
+});
+window.addEventListener('pagehide', () => { stopAll(); if (audioCtx) audioStale = true; });
+
+function stopAll() {
+  scheduled.forEach(n => { try { n.stop(); } catch (e) {} });
+  scheduled = [];
+  timers.forEach(clearTimeout);
+  timers = [];
+  if (tapRun) tapRun = null;
+}
+
+function env(ctx, t, peak, attack, hold, release) {
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(peak, t + attack);
+  if (hold > 0) g.gain.setValueAtTime(peak, t + attack + hold);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + attack + hold + release);
+  g.connect(master);
+  return g;
+}
+
+// מקל מטרונום: צליל קצר, הפעמה הראשונה בתיבה גבוהה יותר
+function click(t, kind, vol = 1) {
+  const ctx = audioCtx;
+  const freq = kind === 'accent' ? 1760 : kind === 'sub' ? 1180 : 1320;
+  const peak = (kind === 'sub' ? 0.12 : kind === 'accent' ? 0.42 : 0.3) * vol;
+  const o = ctx.createOscillator();
+  o.type = 'sine';
+  o.frequency.value = freq;
+  o.connect(env(ctx, t, peak, 0.002, 0, 0.045));
+  o.start(t); o.stop(t + 0.06);
+  scheduled.push(o);
+}
+
+// צליל הקצב: מוחזק לאורך כל המשך, כדי שישמעו את ההבדל בין חצי לרבע והפסקה
+function tone(t, dur, vol = 1) {
+  const ctx = audioCtx;
+  const len = Math.max(0.05, dur * 0.88 - 0.02);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.3 * vol, t + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.17 * vol, t + Math.min(0.12, len));
+  g.gain.setValueAtTime(0.17 * vol, t + len);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.04);
+  g.connect(master);
+  [[523.25, 'triangle', 1], [1046.5, 'sine', 0.25]].forEach(([f, type, a]) => {
+    const o = ctx.createOscillator();
+    o.type = type; o.frequency.value = f;
+    const og = ctx.createGain(); og.gain.value = a;
+    o.connect(og); og.connect(g);
+    o.start(t); o.stop(t + len + 0.06);
+    scheduled.push(o);
+  });
+}
+
+function tapSound(t) {
+  const ctx = audioCtx;
+  const o = ctx.createOscillator();
+  o.type = 'triangle'; o.frequency.value = 880;
+  o.connect(env(ctx, t, 0.25, 0.002, 0, 0.05));
+  o.start(t); o.stop(t + 0.07);
+}
+
+// פעמות המטרונום מ-t0, לאורך bars תיבות. בשש-שמיניות גם שמיניות חלשות
+function metronome(ex, t0, bars, vol) {
+  const m = R.METERS[ex.meter];
+  const beat = 60 / state.tempo;
+  for (let b = 0; b < bars; b++) {
+    for (let i = 0; i < m.beats; i++) {
+      const t = t0 + (b * m.beats + i) * beat;
+      click(t, i === 0 ? 'accent' : 'beat', vol);
+      if (m.compound) { click(t + beat / 3, 'sub', vol); click(t + beat * 2 / 3, 'sub', vol); }
+    }
+  }
+}
+
+// השמעת תרגיל: תיבת ספירה ואז הקצב. מחזיר את זמן ההתחלה של הקצב
+function playExercise(ex, { countIn = true, metro = state.metro, onEnd } = {}) {
+  stopAll();
+  const ctx = getAudioContext();
+  const t0 = ctx.currentTime + 0.12;
+  const bar = R.barSeconds(ex, state.tempo);
+  const start = countIn ? t0 + bar : t0;
+  if (countIn) metronome(ex, t0, 1, 1);
+  if (metro) metronome(ex, start, ex.bars.length, 0.45);
+  R.timeline(ex, state.tempo).forEach(n => { if (!n.rest) tone(start + n.start, n.dur); });
+  const end = start + bar * ex.bars.length;
+  if (countIn) countDisplay(ex, t0);
+  if (onEnd) timers.push(setTimeout(onEnd, (end - ctx.currentTime) * 1000));
+  return start;
+}
+
+// ספירה על המסך בזמן תיבת הספירה
+function countDisplay(ex, t0) {
+  const el = document.getElementById('count');
+  if (!el) return;
+  const m = R.METERS[ex.meter];
+  const beat = 60 / state.tempo;
+  for (let i = 0; i <= m.beats; i++) {
+    const ms = (t0 + i * beat - audioCtx.currentTime) * 1000;
+    timers.push(setTimeout(() => {
+      el.textContent = i < m.beats ? String(i + 1) : '';
+      el.classList.toggle('muted', false);
+    }, Math.max(0, ms)));
+  }
+}
+
+// ===== תרגילים =====
+function newExercise(autoplay) {
+  stopAll();
+  if (state.kind === 'dictation') newDictation(autoplay);
+  else if (state.kind === 'tap') newTap();
+  else newComplete();
+}
+
+function actions(list) {
+  const el = document.getElementById('actions');
+  el.innerHTML = '';
+  list.forEach(([label, fn, cls]) => {
+    if (!label) return;
+    const b = document.createElement('button');
+    b.textContent = label;
+    if (cls) b.className = cls;
+    b.onclick = fn;
+    el.appendChild(b);
+  });
+}
+
+function scoreSvg(ex, opts) {
+  return R.svgFor(ex, Object.assign({ line: '#9a9a9a' }, opts));
+}
+
+// תווים גדולים: בטלפון התיבות נשברות לשורות כדי שהתווים לא יהיו זעירים
+function bigScore(ex, opts) {
+  const avail = Math.min(820, document.querySelector('.container').clientWidth || 820);
+  const maxNatural = avail < 600 ? avail / 0.95 : avail / 1.1;
+  return R.svgLines(ex, Object.assign({ line: '#9a9a9a', scale: 1.7 }, opts), maxNatural);
+}
+
+// כמה אפשרויות באותו קנה מידה
+function sameScale(list, opts) {
+  const W = Math.max(...list.map(ex => R.naturalWidth(ex, opts)));
+  return list.map(ex => scoreSvg(ex, Object.assign({ boxWidth: W }, opts)));
+}
+
+// --- הכתבה ---
+function newDictation(autoplay) {
+  const d = R.dictation(state.level);
+  cur = { kind: 'dictation', d, answered: false, counted: false, heard: false };
+  const stage = document.getElementById('stage');
+  stage.innerHTML = `
+    <div class="big-play-wrap"><button class="big-play" id="bigPlay" aria-label="השמע">${PLAY_ICON}</button><div class="count muted" id="count"></div></div>
+    <div class="prompt" id="prompt">מה שמעתם? אחרי תיבת ספירה אחת מתחיל הקצב</div>
+    <div class="tiles" id="tiles">${sameScale(d.options, { scale: 1.25 }).map((svg, i) => `<button class="tile" data-i="${i}">${svg}</button>`).join('')}</div>`;
+  document.getElementById('bigPlay').onclick = () => { cur.heard = true; playExercise(d.answer); };
+  stage.querySelectorAll('.tile').forEach(t => t.onclick = () => pickDictation(+t.dataset.i, t));
+  actions([['השמע שוב', () => playExercise(d.answer)], ['לתרגיל הבא', () => newExercise(true), 'primary']]);
+  if (autoplay) { cur.heard = true; playExercise(d.answer); }
+}
+
+function pickDictation(i, el) {
+  const d = cur.d;
+  if (cur.answered) { playExercise(d.options[i], { countIn: false }); return; }
+  if (el.classList.contains('wrong')) return;
+  if (i === d.correct) {
+    count(true);
+    cur.answered = true;
+    el.classList.add('correct');
+    document.querySelectorAll('#tiles .tile').forEach(t => t.classList.add('done', 'playable'));
+    document.getElementById('prompt').textContent = 'נכון. אפשר ללחוץ על כל תיבה כדי לשמוע אותה';
+  } else {
+    count(false);
+    el.classList.add('wrong');
+    document.getElementById('prompt').textContent = 'לא זה. אפשר להשמיע שוב';
+  }
+}
+
+// --- השלמת תיבה ---
+function newComplete() {
+  const c = R.completion(state.level);
+  cur = { kind: 'complete', c, answered: false, counted: false };
+  const stage = document.getElementById('stage');
+  stage.innerHTML = `
+    <div class="score-view" id="bar">${bigScore(c.ex, { missing: c.missing })}</div>
+    <div class="count muted" id="count"></div>
+    <div class="prompt" id="prompt">איזה סימן משלים את התיבה?</div>
+    <div class="tiles symbols" id="tiles">${c.options.map((s, i) => `<button class="tile" data-i="${i}" aria-label="${s}">${R.symbolSvg(s, { height: 62 })}</button>`).join('')}</div>`;
+  stage.querySelectorAll('.tile').forEach(t => t.onclick = () => pickComplete(+t.dataset.i, t));
+  actions([['לתרגיל הבא', () => newExercise(true), 'primary']]);
+}
+
+function pickComplete(i, el) {
+  const c = cur.c;
+  if (cur.answered || el.classList.contains('wrong')) return;
+  if (i === c.correct) {
+    count(true);
+    cur.answered = true;
+    el.classList.add('correct');
+    document.querySelectorAll('#tiles .tile').forEach(t => t.classList.add('done'));
+    document.getElementById('bar').innerHTML = bigScore(c.ex);
+    const ticks = R.symbolTicks(c.answer);
+    const beats = ticks / R.METERS[c.ex.meter].beatTicks;
+    document.getElementById('prompt').textContent = `נכון: ${symbolName(c.answer)}${beats ? '' : ''}`;
+    playExercise(c.ex, { countIn: true });
+    actions([['השמע', () => playExercise(c.ex)], ['לתרגיל הבא', () => newExercise(true), 'primary']]);
+  } else {
+    count(false);
+    el.classList.add('wrong');
+    document.getElementById('prompt').textContent = 'הסימן הזה לא משלים את התיבה. כמה פעמות חסרות?';
+  }
+}
+
+function symbolName(sym) {
+  const rest = sym[0] === 'R';
+  const t = rest ? sym.slice(1) : sym;
+  const dotted = t.endsWith('.');
+  const base = { w: 'שלם', h: 'חצי', q: 'רבע', '8': 'שמינית', '16': 'שש-עשרית' }[dotted ? t.slice(0, -1) : t];
+  const fem = base === 'שמינית' || base === 'שש-עשרית';
+  return (rest ? 'הפסקת ' + base : (fem ? base : base)) + (dotted ? (rest || fem ? ' מנוקדת' : ' מנוקד') : '');
+}
+
+// --- קריאה והקשה ---
+let tapRun = null;
+
+function newTap() {
+  const ex = R.generate(state.level, 'tap');
+  cur = { kind: 'tap', ex, counted: false };
+  renderTap();
+}
+
+function renderTap(result) {
+  const ex = cur.ex;
+  const stage = document.getElementById('stage');
+  const marks = result ? result.errors.map(err => ({ err, good: result.good })) : null;
+  const noteStyle = result ? result.errors.map(err => ({ color: err !== null && Math.abs(err) <= result.good ? null : '#a8a8a8' })) : null;
+  stage.innerHTML = `
+    <div class="score-view">${bigScore(ex, { marks, noteStyle })}</div>
+    ${result ? summaryHtml(result) : '<div class="prompt">לחצו "התחל". אחרי תיבת ספירה אחת מקישים את הקצב עם המטרונום</div><div class="count muted" id="count"></div>'}
+    ${result ? '' : `<button class="tap-pad" id="tapPad">הקישו כאן את הקצב, או במקש רווח</button>`}`;
+  if (!result) {
+    const pad = document.getElementById('tapPad');
+    pad.addEventListener('pointerdown', e => { e.preventDefault(); onTap(e); });
+  }
+  actions(result
+    ? [['נסו שוב', () => { renderTap(); startTap(); }, 'primary'], ['השמע איך זה נשמע', () => playExercise(ex, { metro: true })], ['לתרגיל הבא', () => newExercise(false)]]
+    : [['התחל', startTap, 'primary'], ['השמע איך זה נשמע', () => playExercise(ex, { metro: true })], ['לתרגיל הבא', () => newExercise(false)]]);
+}
+
+function summaryHtml(res) {
+  const n = res.errors.length;
+  const parts = [];
+  if (res.early) parts.push(`מוקדם: ${res.early}`);
+  if (res.late) parts.push(`מאוחר: ${res.late}`);
+  if (res.missed) parts.push(`לא הוקשו: ${res.missed}`);
+  if (res.extra) parts.push(`הקשות מיותרות: ${res.extra}`);
+  const head = res.passed ? '<strong>מדויק. כל התווים בזמן</strong>' : `<strong>${res.onTime} מתוך ${n} בזמן</strong>`;
+  return `<div class="summary">${head}${parts.length ? '<br>' + parts.join(' · ') : ''}</div>
+    <div class="legend">הנקודה מתחת לתו: משמאל לקו = מוקדם, מימין = מאוחר. עיגול ריק = לא הוקש</div>`;
+}
+
+function startTap() {
+  stopAll();
+  const ex = cur.ex;
+  const ctx = getAudioContext();
+  const t0 = ctx.currentTime + 0.15;
+  const bar = R.barSeconds(ex, state.tempo);
+  const start = t0 + bar;
+  metronome(ex, t0, 1 + ex.bars.length, 1);
+  countDisplay(ex, t0);
+  const latency = (ctx.outputLatency || 0) + (ctx.baseLatency || 0);
+  const expected = R.timeline(ex, state.tempo).filter(n => !n.rest).map(n => start + n.start);
+  tapRun = { start, expected, taps: [], latency, ex };
+  const pad = document.getElementById('tapPad');
+  if (pad) { pad.textContent = 'הקישו כאן'; pad.classList.add('live'); }
+  const end = start + bar * ex.bars.length + 0.35;
+  timers.push(setTimeout(() => {
+    if (pad) { pad.textContent = ''; }
+  }, (start - ctx.currentTime) * 1000));
+  timers.push(setTimeout(finishTap, (end - ctx.currentTime) * 1000));
+}
+
+function onTap(e) {
+  if (!tapRun || !audioCtx) return;
+  // זמן ההקשה בשעון השמע: מורידים את העיכוב מאז האירוע ואת עיכוב הרמקול
+  const delay = e && e.timeStamp ? Math.max(0, Math.min(0.1, (performance.now() - e.timeStamp) / 1000)) : 0;
+  const t = audioCtx.currentTime - delay - tapRun.latency;
+  if (t < tapRun.start - 0.3) return; // הקשות בזמן תיבת הספירה לא נספרות
+  tapRun.taps.push(t);
+  tapSound(audioCtx.currentTime);
+  const pad = document.getElementById('tapPad');
+  if (pad) { pad.classList.add('hit'); setTimeout(() => pad.classList.remove('hit'), 90); }
+}
+
+function finishTap() {
+  if (!tapRun) return;
+  const run = tapRun;
+  tapRun = null;
+  const res = R.scoreTaps(run.expected, run.taps, { good: 0.09 });
+  count(res.passed);
+  renderTap(res);
+}
+
+document.addEventListener('keydown', e => {
+  if (state.kind !== 'tap' || e.repeat) return;
+  if (e.code === 'Space' || e.key === ' ') {
+    e.preventDefault();
+    if (tapRun) onTap(e);
+    else if (document.getElementById('tapPad')) startTap();
+  }
+});
+
+// ===== התחלה =====
+loadSettings();
+renderSettings();
+updateScore();
+newExercise(false);
+</script>
+<script src="update-check.js"></script>
+</body>
+</html>

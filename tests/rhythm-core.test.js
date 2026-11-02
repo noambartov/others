@@ -1,0 +1,114 @@
+// בדיקות ללוגיקת הקצב. הרצה: node tests/rhythm-core.test.js
+const assert = require('assert');
+const R = require('../rhythm-core.js');
+
+let passed = 0;
+function test(name, fn) {
+  try { fn(); passed++; } catch (e) { console.error('FAIL: ' + name); throw e; }
+}
+
+// מחולל אקראי קבוע, כדי שכישלון יחזור על עצמו
+function seeded(seed) {
+  let s = seed >>> 0;
+  return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+}
+
+const barTicks = meter => R.METERS[meter].beats * R.METERS[meter].beatTicks;
+
+test('every generated bar fills its meter exactly, with cells on allowed beats', () => {
+  const rnd = seeded(1);
+  for (let level = 1; level <= R.LEVELS.length; level++) {
+    for (let k = 0; k < 300; k++) {
+      const ex = R.generate(level, ['dictation', 'tap', 'complete'][k % 3], rnd);
+      assert.ok(R.LEVELS[level - 1].meters.includes(ex.meter));
+      ex.bars.forEach(bar => {
+        const sum = bar.reduce((a, c) => a + c.events.reduce((b, e) => b + e.ticks, 0), 0);
+        assert.strictEqual(sum, barTicks(ex.meter), `${ex.meter} ${bar.map(c => c.str).join('|')}`);
+        let pos = 0;
+        bar.forEach(c => {
+          assert.strictEqual(c.start, pos);
+          assert.ok(R.allowedStart(ex.meter, c, c.start), `${c.str} at ${c.start} in ${ex.meter}`);
+          assert.ok(c.level <= level);
+          pos += c.beats;
+        });
+      });
+    }
+  }
+});
+
+test('all durations are whole ticks, triplets included', () => {
+  R.parseCell('T8 8 8').forEach(e => assert.strictEqual(e.ticks, 4));
+  assert.strictEqual(R.parseCell('8. 16').reduce((a, e) => a + e.ticks, 0), R.TPQ);
+  assert.strictEqual(R.parseCell('q.')[0].ticks, 18);
+});
+
+test('dictation gives four options that all sound different, one of them the answer', () => {
+  const rnd = seeded(2);
+  for (let level = 1; level <= R.LEVELS.length; level++) {
+    for (let k = 0; k < 150; k++) {
+      const d = R.dictation(level, rnd);
+      assert.ok(d, 'level ' + level);
+      assert.strictEqual(d.options.length, 4);
+      const sigs = new Set(d.options.map(R.signature));
+      assert.strictEqual(sigs.size, 4, d.options.map(R.writtenKey).join(' / '));
+      assert.strictEqual(R.signature(d.options[d.correct]), R.signature(d.answer));
+      d.options.forEach(o => assert.strictEqual(o.meter, d.answer.meter));
+    }
+  }
+});
+
+test('completion: exactly one option has the missing duration', () => {
+  const rnd = seeded(3);
+  for (let level = 1; level <= R.LEVELS.length; level++) {
+    for (let k = 0; k < 150; k++) {
+      const c = R.completion(level, rnd);
+      assert.ok(c, 'level ' + level);
+      const ev = c.ex.bars[c.missing.bar][c.missing.cell].events[c.missing.ev];
+      assert.strictEqual(R.eventSymbol(ev), c.answer);
+      assert.strictEqual(c.options[c.correct], c.answer);
+      assert.strictEqual(new Set(c.options).size, 4);
+      const fits = c.options.filter(s => R.symbolTicks(s) === ev.ticks && (s[0] === 'R') === ev.rest);
+      assert.strictEqual(fits.length, 1, c.options.join(','));
+      assert.strictEqual(ev.tuplet, 0);
+    }
+  }
+});
+
+test('timeline in seconds follows the tempo; in 6/8 the beat is a dotted quarter', () => {
+  const ex = { meter: '6/8', level: 6, bars: [[R.cellsFor('6/8', 6).find(c => c.str === '8 8 8'), R.cellsFor('6/8', 6).find(c => c.str === 'q.')]] };
+  const t = R.timeline(ex, 60);
+  assert.deepStrictEqual(t.map(n => +n.start.toFixed(4)), [0, 0.3333, 0.6667, 1]);
+  assert.strictEqual(R.barSeconds(ex, 60), 2);
+});
+
+test('scoreTaps: on time, early, late, missed and extra taps', () => {
+  const exp = [0, 0.5, 1, 1.5];
+  const r1 = R.scoreTaps(exp, [0.01, 0.49, 1.02, 1.5]);
+  assert.ok(r1.passed);
+  assert.strictEqual(r1.onTime, 4);
+  const r2 = R.scoreTaps(exp, [-0.15, 0.5, 1.2]);
+  assert.strictEqual(r2.early, 1);
+  assert.strictEqual(r2.late, 1);
+  assert.strictEqual(r2.missed, 1);
+  assert.strictEqual(r2.errors[3], null);
+  assert.ok(!r2.passed);
+  const r3 = R.scoreTaps(exp, [0, 0.25, 0.5, 1, 1.5]);
+  assert.strictEqual(r3.extra, 1);
+  assert.ok(!r3.passed);
+});
+
+test('rendering draws one notehead per sounding note and never throws', () => {
+  const rnd = seeded(4);
+  for (let level = 1; level <= R.LEVELS.length; level++) {
+    for (let k = 0; k < 60; k++) {
+      const ex = R.generate(level, 'tap', rnd);
+      const out = R.render(ex);
+      assert.strictEqual(out.notes.length, R.onsets(ex).length);
+      assert.ok(!/NaN|undefined/.test(out.svg));
+      const lines = R.svgLines(ex, {}, 200);
+      assert.ok(!/NaN|undefined/.test(lines));
+    }
+  }
+});
+
+console.log(`rhythm-core: ${passed} tests passed`);
