@@ -16,6 +16,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#ffffff">
+  <link rel="stylesheet" href="rewards.css?v={{ site.time | date: '%s' }}">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600&display=swap');
 
@@ -117,6 +118,7 @@
 <div class="container">
   <div class="topbar">
     <span class="topscore" id="score">0 מתוך 0</span>
+    <button class="reward-chip" id="rewardChip" onclick="Rewards.open()" aria-label="האוסף שלי"><span class="chip-row"><span class="chip-label">היום</span> <span class="chip-num">0/20</span></span><span class="chip-bar"><span></span></span></button>
     <details id="settingsBox">
       <summary>הגדרות</summary>
       <div class="settings">
@@ -138,6 +140,8 @@
 
   <div class="action-bar" id="actions"></div>
 
+  <div class="rewards-panel" id="rewardsPanel" style="display: none;"></div>
+
   <footer>
     נעם ברטוב <a href="https://noambartov.com" target="_blank" rel="noopener noreferrer">noambartov.com</a>
   </footer>
@@ -145,6 +149,8 @@
 
 <script src="site-nav.js"></script>
 <script src="rhythm-core.js"></script>
+<script src="theory-core.js"></script>
+<script src="rewards.js?v={{ site.time | date: '%s' }}"></script>
 <script>
 const R = window.RhythmCore;
 const PLAY_ICON = '<svg viewBox="0 0 24 24" width="36" height="36"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>';
@@ -212,6 +218,11 @@ function updateScore() {
 }
 function count(ok) {
   if (cur.counted) return;
+  // מערכת התגמולים: התשובה הראשונה בכל תרגיל נספרת במיומנות הקצב (rewards.js)
+  if (window.Rewards) {
+    const unlocked = Rewards.solved(ok, 'rhythm:' + cur.kind);
+    if (unlocked.length) setTimeout(() => { stopAll(); Rewards.showUnlock(unlocked); }, 1200);
+  }
   cur.counted = true;
   state.total++;
   if (ok) state.right++;

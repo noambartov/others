@@ -1,6 +1,7 @@
 // מערכת תגמולים לתרגול לבד: יעד יומי, רצף ימים, ואוסף שירים קטנים שנפתחים על הישגים.
 // הכול נשמר במכשיר (localStorage) בלי הרשמה. הקובץ נטען אחרי הסקריפט הראשי של דף התרגול
-// ומשתמש בפונקציות ההשמעה שלו (playInstrumentNote, midiToFreq, silenceAll).
+// ומשתמש בפונקציות ההשמעה שלו (playInstrumentNote, midiToFreq, silenceAll). בדף הקצב, שאין בו את
+// הפונקציות האלה, השירים מתנגנים בצליל רך פשוט משלו (ראו songAudio).
 (function () {
   const KEY = 'mt_rewards';
   const GOALS = [10, 20, 40];
@@ -65,12 +66,19 @@
     { key: 'ear:chords', mode: 'ear', type: 'chords', name: 'משולשים' },
     { key: 'ear:septachords', mode: 'ear', type: 'septachords', name: 'ספטאקורדים' },
     { key: 'ear:scales', mode: 'ear', type: 'scales', name: 'סולמות' },
-    { key: 'ear:modes', mode: 'ear', type: 'modes', name: 'מודוסים' }
+    { key: 'ear:modes', mode: 'ear', type: 'modes', name: 'מודוסים' },
+    // קצב: התרגול עצמו בדף הקצב (rhythm_practice.html), הסוג = state.kind שם
+    { key: 'rhythm:dictation', mode: 'rhythm', type: 'dictation', name: 'הכתבה' },
+    { key: 'rhythm:tap', mode: 'rhythm', type: 'tap', name: 'קריאה והקשה' },
+    { key: 'rhythm:complete', mode: 'rhythm', type: 'complete', name: 'השלמת תיבה' }
   ];
-  const MODE_NAME = { read: 'קריאה', ear: 'שמיעה' };
+  const MODE_NAME = { read: 'קריאה', ear: 'שמיעה', rhythm: 'קצב' };
+  const PRACTICE_PAGE = 'music_theory_exercise_tool.html';
+  const RHYTHM_PAGE = 'rhythm_practice.html';
+  const onRhythmPage = () => !window.startDailyMix;
   const LEVEL_NAMES = ['עוד לא תורגל', 'מתחיל', 'בטוח', 'שולט'];
   const WINDOW = 20;
-  function skillLabel(sk) { return `${sk.name} ב${MODE_NAME[sk.mode]}`; }
+  function skillLabel(sk) { return sk.mode === 'rhythm' ? `קצב: ${sk.name}` : `${sk.name} ב${MODE_NAME[sk.mode]}`; }
   function skillStats(s, key) {
     const h = (s.skills && s.skills[key]) || [];
     const n = h.length, ok = h.filter(Boolean).length;
@@ -369,13 +377,47 @@
     return `<svg class="mel-svg" viewBox="0 0 ${W + 1} ${H}" preserveAspectRatio="xMidYMid meet">${out}</svg>`;
   }
 
+  // השמעה: בדף התרגול דרך הכלי שנבחר; בדף אחר בצליל רך פשוט
+  let ownCtx = null, ownBus = null;
+  const songAudio = {
+    ctx() {
+      if (typeof getAudioContext === 'function' && typeof playInstrumentNote === 'function') return getAudioContext();
+      if (!ownCtx) ownCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (ownCtx.state !== 'running') ownCtx.resume();
+      return ownCtx;
+    },
+    note(midi, start, stop, release) {
+      if (typeof playInstrumentNote === 'function') return playInstrumentNote(midiToFreq(midi), start, stop, release);
+      const ctx = this.ctx();
+      if (!ownBus) { ownBus = ctx.createGain(); ownBus.connect(ctx.destination); }
+      const osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+      g.gain.setValueAtTime(0, start);
+      g.gain.linearRampToValueAtTime(0.22, start + 0.01);
+      g.gain.setTargetAtTime(0.08, start + 0.02, 0.25);
+      g.gain.setTargetAtTime(0, stop, release * 2 + 0.03);
+      osc.connect(g); g.connect(ownBus);
+      osc.start(start); osc.stop(stop + release * 12 + 0.3);
+    },
+    silence(fade) {
+      if (typeof silenceAll === 'function') return silenceAll(fade);
+      if (!ownBus || !ownCtx) return;
+      const bus = ownBus, t = ownCtx.currentTime;
+      bus.gain.setValueAtTime(bus.gain.value, t);
+      bus.gain.linearRampToValueAtTime(0, t + fade);
+      setTimeout(() => bus.disconnect(), fade * 1000 + 200);
+      ownBus = null;
+    }
+  };
+
   let playTimers = [];
   function playSong(id, svgHost) {
     const song = SONGS[id];
     playTimers.forEach(clearTimeout);
     playTimers = [];
-    silenceAll(0.05);
-    const ctx = getAudioContext();
+    songAudio.silence(0.05);
+    const ctx = songAudio.ctx();
     const t0 = ctx.currentTime + 0.1;
     let t = 0;
     const els = svgHost ? [...svgHost.querySelectorAll('.mel-note')] : [];
@@ -387,7 +429,7 @@
       const dur = n.beats * song.tempo;
       if (!n.rest) {
         const last = i === song.notes.length - 1;
-        playInstrumentNote(midiToFreq(n.midi), t0 + t, t0 + t + dur * (last ? 3 : 0.95), last ? 0.4 : 0.06);
+        songAudio.note(n.midi, t0 + t, t0 + t + dur * (last ? 3 : 0.95), last ? 0.4 : 0.06);
         const el = svgHost && svgHost.querySelector(`.mel-note[data-i="${i}"]`);
         if (el) playTimers.push(setTimeout(() => {
           els.forEach(e => e.classList.remove('lit'));
@@ -427,7 +469,7 @@
     if (!dlg) {
       dlg = document.createElement('div');
       dlg.id = 'rewardDialog';
-      dlg.className = 'share-dialog';
+      dlg.className = 'share-dialog rw-dialog';
       document.body.appendChild(dlg);
     }
     dlg.innerHTML = `<div class="share-box reward-box" role="dialog">
@@ -437,7 +479,7 @@
       <div class="reward-staff" id="rewardStaff">${melodySvg(song, { width: 380 })}</div>
       <p class="reward-how">על: ${a.how}</p>
       ${more}
-      <div class="share-actions">
+      <div class="share-actions rw-actions">
         <button class="primary" onclick="Rewards.closeUnlock()">המשך</button>
         <button onclick="Rewards.play('${a.song}', document.getElementById('rewardStaff'))">נגן שוב</button>
         <button onclick="Rewards.closeUnlock(); Rewards.open()">לאוסף</button>
@@ -450,7 +492,7 @@
     const dlg = document.getElementById('rewardDialog');
     if (dlg) dlg.hidden = true;
     playTimers.forEach(clearTimeout);
-    silenceAll(0.3);
+    songAudio.silence(0.3);
     const fn = afterUnlock;
     afterUnlock = null;
     if (fn) setTimeout(fn, 400);
@@ -517,7 +559,7 @@
   // התרגול היומי: 20 תרגילים מהמיומנויות שנבחרו. מיומנות חלשה מקבלת יותר תרגילים, וכל אחת לפחות אחד
   function dailyPlan(length) {
     const s = load();
-    const chosen = SKILLS.filter(sk => s.chosen.includes(sk.key));
+    const chosen = SKILLS.filter(sk => sk.mode !== 'rhythm' && s.chosen.includes(sk.key));
     if (!chosen.length) return null;
     const weights = chosen.map(sk => 1 + 2 * (1 - skillStats(s, sk.key).score));
     const total = weights.reduce((a, b) => a + b, 0);
@@ -541,10 +583,63 @@
   }
 
   function startDaily() {
+    if (onRhythmPage()) { location.href = PRACTICE_PAGE + '?mode=ear&daily=1'; return; }
     const plan = dailyPlan(20);
     if (!plan) return;
     close();
     window.startDailyMix(plan);
+  }
+
+  // תרגול קצב: פותח את דף הקצב על מיומנות הקצב החלשה מבין אלה שנבחרו
+  function startRhythm() {
+    const s = load();
+    const picks = SKILLS.filter(sk => sk.mode === 'rhythm' && s.chosen.includes(sk.key))
+      .sort((a, b) => skillStats(s, a.key).score - skillStats(s, b.key).score);
+    if (!picks.length) return;
+    try {
+      const st = JSON.parse(localStorage.getItem('mt_rhythm_settings') || '{}');
+      st.kind = picks[0].type;
+      localStorage.setItem('mt_rhythm_settings', JSON.stringify(st));
+    } catch (e) {}
+    if (onRhythmPage()) location.reload();
+    else location.href = RHYTHM_PAGE;
+  }
+
+  // איפוס כל ההתקדמות (יעד, רצף, מיומנויות ושירים), אחרי אישור
+  function askReset() {
+    let dlg = document.getElementById('rewardConfirm');
+    if (!dlg) {
+      dlg = document.createElement('div');
+      dlg.id = 'rewardConfirm';
+      dlg.className = 'share-dialog rw-dialog rw-confirm';
+      document.body.appendChild(dlg);
+    }
+    dlg.innerHTML = `<div class="share-box reward-box" role="dialog">
+      <h3>לאפס את ההתקדמות?</h3>
+      <p class="rw-confirm-text">הרצף, הספירה היומית, מדי המיומנויות והשירים שנפתחו יימחקו מהמכשיר הזה, ואי אפשר לבטל. גודל היעד והמיומנויות שבחרת נשארים.</p>
+      <div class="share-actions rw-actions">
+        <button class="primary" onclick="Rewards.reset()">איפוס</button>
+        <button onclick="document.getElementById('rewardConfirm').hidden = true">ביטול</button>
+      </div></div>`;
+    dlg.hidden = false;
+  }
+  function reset() {
+    const old = load();
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    // המטרה היומית והמיומנויות שנבחרו הן העדפות, לא התקדמות, ולכן נשארות
+    const s = load();
+    s.goal = old.goal;
+    s.chosen = old.chosen;
+    save(s);
+    document.getElementById('rewardConfirm').hidden = true;
+    renderChip();
+    render();
+    toast('ההתקדמות אופסה');
+  }
+
+  // דף התרגול שנפתח מדף הקצב עם ?daily=1 מתחיל מיד תרגול יומי
+  if (/[?&]daily=1/.test(location.search) && window.startDailyMix) {
+    setTimeout(() => { if (dailyPlan(20)) startDaily(); }, 300);
   }
 
   function trainingDone(level, pct) {
@@ -568,16 +663,18 @@
   }
 
   // ---------- דף האוסף ----------
-  let returnTo = null;
+  // הדף מסתיר את כל מה שבמיכל חוץ מהסרגל העליון, הדף עצמו והכותרת התחתונה, ומחזיר כשיוצאים
+  let hidden = null;
   function open() {
     const panel = document.getElementById('rewardsPanel');
-    const practice = document.getElementById('practiceArea');
-    const trainingPanel = document.getElementById('trainingPanel');
-    if (panel.style.display !== 'block') {
-      returnTo = { practice: practice.style.display, training: trainingPanel.style.display };
+    if (!hidden) {
+      hidden = [];
+      [...panel.parentElement.children].forEach(el => {
+        if (el === panel || el.classList.contains('topbar') || el.tagName === 'FOOTER') return;
+        hidden.push([el, el.style.display]);
+        el.style.display = 'none';
+      });
     }
-    practice.style.display = 'none';
-    trainingPanel.style.display = 'none';
     document.body.classList.add('in-rewards');
     panel.style.display = 'block';
     render();
@@ -588,11 +685,8 @@
     panel.style.display = 'none';
     document.body.classList.remove('in-rewards');
     playTimers.forEach(clearTimeout);
-    if (returnTo) {
-      document.getElementById('practiceArea').style.display = returnTo.practice;
-      document.getElementById('trainingPanel').style.display = returnTo.training;
-    }
-    returnTo = null;
+    if (hidden) hidden.forEach(([el, d]) => { el.style.display = d; });
+    hidden = null;
   }
   function setGoal(g) {
     const s = load();
@@ -619,6 +713,8 @@
       week.push(`<div class="wk-day"><span class="wk-box ${cls}"></span><span class="wk-l">${DAY_LETTERS[d.getDay()]}</span></div>`);
     }
     const got = ACHIEVEMENTS.filter(a => s.unlocked[a.id]).length;
+    const nMix = SKILLS.filter(sk => sk.mode !== 'rhythm' && s.chosen.includes(sk.key)).length;
+    const nRhythm = SKILLS.filter(sk => sk.mode === 'rhythm' && s.chosen.includes(sk.key)).length;
     const cards = ACHIEVEMENTS.map(a => {
       const song = SONGS[a.song];
       if (!s.unlocked[a.id]) {
@@ -638,13 +734,18 @@
       </div>
       <div class="report-bar rw-today"><span style="width:${Math.min(100, 100 * today / s.goal)}%"></span></div>
       <div class="rw-daily">
-        <button class="primary" onclick="Rewards.startDaily()" ${s.chosen.length ? '' : 'disabled'}>תרגול יומי</button>
-        <span>${s.chosen.length ? `20 תרגילים מ-${s.chosen.length === 1 ? 'המיומנות שבחרת' : s.chosen.length + ' המיומנויות שבחרת'}, יותר ממה שעוד חלש` : 'בוחרים למטה מיומנויות, והתרגול היומי נבנה מהן'}</span>
+        <div class="rw-btns">
+          <button class="primary" onclick="Rewards.startDaily()" ${nMix ? '' : 'disabled'}>תרגול יומי</button>
+          ${nRhythm ? '<button class="secondary" onclick="Rewards.startRhythm()">תרגול קצב</button>' : ''}
+        </div>
+        <span>${!s.chosen.length ? 'בוחרים למטה מיומנויות, והתרגול היומי נבנה מהן'
+          : nMix ? `20 תרגילים מ-${nMix === 1 ? 'מיומנות הקריאה והשמיעה שבחרת' : nMix + ' מיומנויות הקריאה והשמיעה שבחרת'}, יותר ממה שעוד חלש${nRhythm ? '. הקצב בדף משלו, מתחילים מהחלש' : ''}`
+          : 'הקצב מתורגל בדף משלו. כדי לקבל תרגול יומי מעורב בוחרים גם מיומנות קריאה או שמיעה'}</span>
       </div>
       <div class="report-section">
         <h3>המיומנויות שלי</h3>
         <p class="rw-hint">לוחצים על מיומנות כדי לבחור אותה. השליטה נמדדת לפי 20 התשובות האחרונות: מתחיל, בטוח (75% מתוך 10 לפחות), שולט (90% מתוך 20).</p>
-        ${['read', 'ear'].map(mode => `<div class="sk-group"><div class="sk-mode">${MODE_NAME[mode]}</div>${SKILLS.filter(sk => sk.mode === mode).map(sk => {
+        ${['read', 'ear', 'rhythm'].map(mode => `<div class="sk-group"><div class="sk-mode">${MODE_NAME[mode]}</div>${SKILLS.filter(sk => sk.mode === mode).map(sk => {
           const st = skillStats(s, sk.key);
           const on = s.chosen.includes(sk.key);
           return `<button class="sk-row${on ? ' on' : ''}" onclick="Rewards.toggleSkill('${sk.key}')">
@@ -663,9 +764,11 @@
         <h3>שירים ${got} מתוך ${ACHIEVEMENTS.length}</h3>
         <p class="rw-hint">כל הישג פותח שיר קצר. לוחצים על שיר כדי לשמוע אותו.</p>
         <div class="song-grid">${cards}</div>
+      </div>
+      <div class="rw-reset"><button onclick="Rewards.askReset()">איפוס ההתקדמות</button>
       </div>`;
   }
 
-  window.Rewards = { solved, broke, toggleSkill, startDaily, dailyPlan, SKILLS, trainingDone, renderChip, open, close, setGoal, play: playSong, closeUnlock, showUnlock, SONGS, ACHIEVEMENTS, _load: load, _save: save, _svg: melodySvg };
+  window.Rewards = { solved, broke, toggleSkill, startDaily, startRhythm, askReset, reset, dailyPlan, SKILLS, trainingDone, renderChip, open, close, setGoal, play: playSong, closeUnlock, showUnlock, SONGS, ACHIEVEMENTS, _load: load, _save: save, _svg: melodySvg };
   renderChip();
 })();
