@@ -17,9 +17,8 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#ffffff">
   <link rel="stylesheet" href="rewards.css?v={{ site.time | date: '%s' }}">
+  <link rel="stylesheet" href="fonts/fonts.css">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600&display=swap');
-
     * { box-sizing: border-box; touch-action: manipulation; }
     html { height: 100%; }
     body {
@@ -221,7 +220,9 @@ function count(ok) {
   // מערכת התגמולים: התשובה הראשונה בכל תרגיל נספרת במיומנות הקצב (rewards.js)
   if (window.Rewards) {
     const unlocked = Rewards.solved(ok, 'rhythm:' + cur.kind);
-    if (unlocked.length) setTimeout(() => { stopAll(); Rewards.showUnlock(unlocked); }, 1200);
+    // שיר חדש באוסף עוצר את המעבר האוטומטי, ולכן בהכתבה נכונה "המשך" מביא את התרגיל הבא
+    const then = ok && cur.kind === 'dictation' ? goNext : null;
+    if (unlocked.length) setTimeout(() => { stopAll(); Rewards.showUnlock(unlocked, then); }, 1200);
   }
   cur.counted = true;
   state.total++;

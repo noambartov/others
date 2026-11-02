@@ -40,11 +40,16 @@ const VIEWPORTS = {
   mobile: { ...devices['iPhone 13'], defaultBrowserType: undefined },
 };
 
-// דף חדש עם רישום שגיאות. בקשות לאתרים חיצוניים (גופנים, ספריות PDF) נחסמות כדי שהבדיקה לא תלויה ברשת.
-async function openPage(viewport, file, storage = {}) {
+// דף חדש עם רישום שגיאות. האתר לא אמור לטעון שום דבר מאתר אחר (גופנים וספריות PDF מאוחסנים באתר),
+// ולכן כל בקשה החוצה נחסמת ונרשמת כשגיאה. ה-service worker כבוי כאן ונבדק בנפרד למטה.
+async function openPage(viewport, file, storage = {}, { serviceWorkers = 'block' } = {}) {
   const { defaultBrowserType, ...opts } = VIEWPORTS[viewport];
-  const context = await browser.newContext({ ...opts, locale: 'he-IL' });
-  await context.route(url => !url.href.startsWith(base), route => route.abort());
+  const context = await browser.newContext({ ...opts, locale: 'he-IL', serviceWorkers });
+  const errors = [];
+  await context.route(url => !url.href.startsWith(base), route => {
+    errors.push('request outside the site: ' + route.request().url());
+    route.abort();
+  });
   await context.addInitScript(items => {
     if (sessionStorage.getItem('__seeded')) return;
     sessionStorage.setItem('__seeded', '1');
@@ -52,18 +57,14 @@ async function openPage(viewport, file, storage = {}) {
   }, storage);
   context.setDefaultTimeout(8000);
   const page = await context.newPage();
-  const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('dialog', d => { errors.push('unexpected dialog: ' + d.message()); d.dismiss(); });
   page.on('console', m => {
     if (m.type() !== 'error') return;
-    const t = m.text();
-    // משאבים חיצוניים חסומים בכוונה
-    if (/ERR_FAILED|ERR_BLOCKED|Failed to load resource/.test(t)) return;
-    errors.push('console: ' + t);
+    errors.push('console: ' + m.text() + (m.location().url ? ' @ ' + m.location().url : ''));
   });
   await page.goto(base + file);
-  return { page, errors, close: () => context.close() };
+  return { page, context, errors, close: () => context.close() };
 }
 
 function noErrors(errors) {
@@ -88,6 +89,10 @@ for (const vp of Object.keys(VIEWPORTS)) {
       await page.waitForFunction(() => document.getElementById('stavesContainer').children.length > 0
         && document.getElementById('answersStavesContainer').children.length > 0);
       await page.locator('.btn-answers').click();
+      const download = page.waitForEvent('download', { timeout: 30000 });
+      await page.locator('.btn-pdf').click();
+      const file = await (await download).path();
+      assert.ok(fs.readFileSync(file).subarray(0, 5).toString() === '%PDF-', 'a PDF was downloaded');
       noErrors(errors);
       await close();
     });
@@ -272,6 +277,9 @@ for (const vp of Object.keys(VIEWPORTS)) {
       await page.evaluate(() => { window.__firstEx = cur.d; });
       const i = await page.evaluate(() => cur.d.correct);
       await page.locator(`#tiles .tile[data-i="${i}"]`).click();
+      // בתשובה הנכונה הראשונה נפתח שיר חדש באוסף; "המשך" מביא את התרגיל הבא
+      await page.waitForFunction(() => cur.d !== window.__firstEx || (d => d && !d.hidden)(document.getElementById('rewardDialog')), null, { timeout: 4000 });
+      if (await page.locator('#rewardDialog:not([hidden])').count()) await page.locator('#rewardDialog .primary').click();
       await page.waitForFunction(() => cur.d !== window.__firstEx, null, { timeout: 4000 });
       assert.strictEqual(await page.locator('#score').textContent(), '1 מתוך 1');
       noErrors(errors);
@@ -328,3 +336,47 @@ for (const vp of Object.keys(VIEWPORTS)) {
     });
   });
 }
+
+// ---------- בלי אינטרנט ----------
+describe('offline', () => {
+  test('every file the service worker saves ahead exists', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+    const list = JSON.parse(src.match(/const PRECACHE = (\[[\s\S]*?\]);/)[1].replace(/\/\/.*$/gm, '').replace(/'/g, '"').replace(/,\s*\]/, ']'));
+    for (const f of list) if (f !== './') assert.ok(fs.existsSync(path.join(ROOT, f)), 'missing ' + f);
+    // וכל דף וקובץ JS באתר נמצא ברשימה
+    const pages = fs.readdirSync(ROOT).filter(f => /\.html$/.test(f));
+    const scripts = fs.readdirSync(path.join(ROOT, 'practice')).map(f => 'practice/' + f);
+    for (const f of [...pages, ...scripts]) assert.ok(list.includes(f), f + ' is not saved for offline use');
+  });
+
+  test('after one visit, every page opens and works with no network', async () => {
+    const { page, context, errors, close } = await openPage('mobile', 'index.html', { mt_app_mode: 'read' }, { serviceWorkers: 'allow' });
+    await page.evaluate(() => Promise.race([navigator.serviceWorker.ready,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('no service worker registered')), 10000))]));
+    // מחכים שההתקנה תשמור את כל הקבצים
+    await page.waitForFunction(async () => {
+      const c = await caches.open('site-v1');
+      return (await c.keys()).length >= 45;
+    }, null, { timeout: 15000 });
+    await context.setOffline(true);
+
+    for (const f of ['index.html', 'rhythm_practice.html', 'music_theory_worksheets_generator.html', 'music_theory_algorythm.html']) {
+      await page.goto(base + f);
+      assert.ok(await page.locator('body').isVisible(), f);
+    }
+    await page.goto(base + 'music_theory_exercise_tool.html');
+    assert.ok(await page.evaluate(() => document.fonts.check('16px Assistant')), 'font available offline');
+    await page.locator('#exTypeRow button[data-type="intervals"]').click();
+    await page.locator('#playAudioBtn').click();
+    assert.ok(await page.evaluate(() => Object.keys(sampleBuffers).length > 0 || sampleLoads.harp), 'harp samples load offline');
+    await page.evaluate(() => sampleLoads.harp);
+    assert.ok(await page.evaluate(() => !!sampleBuffers.harp), 'harp samples decoded offline');
+    await answerCorrectly(page);
+    await waitForNextExercise(page);
+    // ספריות ה-PDF נטענו גם הן מהעותק השמור
+    await page.goto(base + 'music_theory_worksheets_generator.html');
+    assert.ok(await page.evaluate(() => !!(window.jspdf && window.html2canvas)), 'PDF libraries offline');
+    noErrors(errors.filter(e => !/version\.json/.test(e)));
+    await close();
+  });
+});

@@ -69,4 +69,9 @@
   setInterval(() => { if (!document.hidden) check(); }, INTERVAL);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
   window.addEventListener('focus', check);
+
+  // עבודה בלי אינטרנט: ה-service worker שומר עותק של האתר (ראו sw.js)
+  if ('serviceWorker' in navigator && window.isSecureContext) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
 })();
