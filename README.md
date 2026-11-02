@@ -6,6 +6,7 @@
 | --- | --- |
 | `index.html` | דף הבית: חמשה וקישורים לכלים |
 | `music_theory_exercise_tool.html` | תרגול אונליין עם השמעה |
+| `practice/` | הקוד של דף התרגול, לפי נושא: `state.js` (מצב), `audio.js` (השמעה וכלים), `notation.js` (ציור החמשה), `settings.js` (הגדרות ושיתוף), `exercise.js` (תרגיל ותשובות), `training.js` (מצבים, שלבים, תרגול יומי ודוח), `hints.js` (עזרה), `main.js` (הפעלה), `practice.css` (עיצוב). קבצי JS רגילים שחולקים משתנים גלובליים, לכן סדר הטעינה בדף חשוב: `state.js` ראשון ו-`main.js` אחרון. |
 | `rhythm_practice.html` | תרגול קצב: הכתבה רתמית, קריאה והקשה, השלמת תיבה, בשישה שלבים |
 | `music_theory_worksheets_generator.html` | דפי תרגול להדפסה ול-PDF |
 | `music_theory_algorythm.html` | מחשבון מרווחים, סולמות ואקורדים (כלי עבודה, לא מקושר מדף הבית) |
