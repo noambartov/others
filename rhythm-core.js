@@ -321,9 +321,9 @@
   // ===== ספירה =====
   // הברות קונוקול לכל פעמה, לפי החלוקה הדקה ביותר שיש בה:
   // פעמה שלמה ta, לשניים ta ka, לשלושה ta ki ta, לארבעה ta ka di mi.
-  // במשקל מורכב הפעמה מתחלקת לשלוש שמיניות (ta ki ta), ועם שש-עשריות לשש, פעמיים שלוש (ta ki ta ta ki ta).
+  // במשקל מורכב הפעמה מתחלקת לשלוש שמיניות (ta ki ta), ועם שש-עשריות לשש (ta ka di mi ta ka).
   // הפסקות לא מקבלות הברה. events: [{ at (בתוך התיבה), rest, tuplet }]
-  const SYLLABLES = { 1: ['ta'], 2: ['ta', 'ka'], 3: ['ta', 'ki', 'ta'], 4: ['ta', 'ka', 'di', 'mi'], 6: ['ta', 'ki', 'ta', 'ta', 'ki', 'ta'] };
+  const SYLLABLES = { 1: ['ta'], 2: ['ta', 'ka'], 3: ['ta', 'ki', 'ta'], 4: ['ta', 'ka', 'di', 'mi'], 6: ['ta', 'ka', 'di', 'mi', 'ta', 'ka'] };
   function countLabels(meter, events) {
     const m = METERS[meter];
     const bt = m.beatTicks;
