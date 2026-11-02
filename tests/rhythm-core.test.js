@@ -81,20 +81,30 @@ test('timeline in seconds follows the tempo; in 6/8 the beat is a dotted quarter
   assert.strictEqual(R.barSeconds(ex, 60), 2);
 });
 
-test('scoreTaps: on time, early, late, missed and extra taps', () => {
-  const exp = [0, 0.5, 1, 1.5];
-  const r1 = R.scoreTaps(exp, [0.01, 0.49, 1.02, 1.5]);
-  assert.ok(r1.passed);
-  assert.strictEqual(r1.onTime, 4);
-  const r2 = R.scoreTaps(exp, [-0.15, 0.5, 1.2]);
-  assert.strictEqual(r2.early, 1);
-  assert.strictEqual(r2.late, 1);
-  assert.strictEqual(r2.missed, 1);
-  assert.strictEqual(r2.errors[3], null);
-  assert.ok(!r2.passed);
-  const r3 = R.scoreTaps(exp, [0, 0.25, 0.5, 1, 1.5]);
-  assert.strictEqual(r3.extra, 1);
-  assert.ok(!r3.passed);
+test('scoreTaps: lenient window, steady device lag forgiven, missed and extra taps', () => {
+  const exp = [0, 0.5, 1, 1.5, 2, 2.5];
+  const r1 = R.scoreTaps(exp, [0.1, 0.43, 1.12, 1.5, 1.9, 2.6], { beat: 0.5 });
+  assert.ok(r1.passed, 'within about a fifth of a beat counts');
+  // כל ההקשות מאחרות ב-0.15 שנ' (עיכוב של המכשיר), גם בשש-עשריות צפופות: מקוזז
+  const dense = [0, 0.1875, 0.375, 0.5625, 0.75, 0.9375, 1.125, 1.3125];
+  const r2 = R.scoreTaps(dense, dense.map((t, i) => t + 0.15 + (i % 2 ? 0.02 : -0.02)), { beat: 0.75 });
+  assert.ok(r2.perfect, 'constant lag is compensated');
+  const r2b = R.scoreTaps(exp, exp.map(t => t + 0.15), { beat: 0.5 });
+  assert.ok(r2b.perfect && r2b.offset > 0);
+  // מי שמקיש בזמן לא מוזז
+  assert.strictEqual(R.scoreTaps(exp, exp.slice(), { beat: 0.5 }).offset, 0);
+  // הקשה כפולה מהירה נספרת כאחת
+  const r3 = R.scoreTaps(exp, exp.concat([0.03]), { beat: 0.5 });
+  assert.strictEqual(r3.extra, 0);
+  const r4 = R.scoreTaps(exp, [0, 0.5, 1, 1.5, 2], { beat: 0.5 });
+  assert.strictEqual(r4.missed, 1);
+  assert.strictEqual(r4.errors[5], null);
+  assert.ok(!r4.passed);
+  const r5 = R.scoreTaps(exp, exp.concat([0.25, 1.25]), { beat: 0.5 });
+  assert.strictEqual(r5.extra, 2);
+  assert.ok(!r5.passed);
+  const r6 = R.scoreTaps(exp, [0, 0.5, 1.22, 1.5, 2, 2.5], { beat: 0.5 });
+  assert.strictEqual(r6.late, 1);
 });
 
 test('rendering draws one notehead per sounding note and never throws', () => {
@@ -105,7 +115,7 @@ test('rendering draws one notehead per sounding note and never throws', () => {
       const out = R.render(ex);
       assert.strictEqual(out.notes.length, R.onsets(ex).length);
       assert.ok(!/NaN|undefined/.test(out.svg));
-      const lines = R.svgLines(ex, {}, 200);
+      const lines = R.svgLines(ex, { counts: true, beatNumbers: true }, 200);
       assert.ok(!/NaN|undefined/.test(lines));
     }
   }
