@@ -221,7 +221,15 @@ function count(ok) {
   // מערכת התגמולים: התשובה הראשונה בכל תרגיל נספרת במיומנות הקצב (rewards.js)
   if (window.Rewards) {
     const unlocked = Rewards.solved(ok, 'rhythm:' + cur.kind);
-    if (unlocked.length) setTimeout(() => { stopAll(); Rewards.showUnlock(unlocked); }, 1200);
+    if (unlocked.length) {
+      // שיר חדש נפתח: עוצרים, מציגים אותו, ואחרי הסגירה ממשיכים לתרגיל הבא אם היה אמור לעבור
+      const ex = cur;
+      setTimeout(() => {
+        if (cur !== ex) return;
+        stopAll();
+        Rewards.showUnlock(unlocked, () => { if (cur === ex && ex.nextOnResume) ex.nextOnResume(); });
+      }, 1200);
+    }
   }
   cur.counted = true;
   state.total++;
@@ -388,7 +396,10 @@ function newExercise(autoplay) {
 }
 
 function goNext() { newExercise(true); }
-function scheduleNext(ms = NEXT_DELAY) { timers.push(setTimeout(goNext, ms)); }
+function scheduleNext(ms = NEXT_DELAY, fn = goNext) {
+  cur.nextOnResume = fn;
+  timers.push(setTimeout(fn, ms));
+}
 
 function actions(list) {
   const el = document.getElementById('actions');
@@ -568,6 +579,7 @@ function showCompleteAnswer(right) {
   setPrompt(`${right ? 'נכון: ' : 'התשובה: '}${symbolName(c.answer)}`);
   completeActions();
   // התיבה המלאה מתנגנת, ואחרי תשובה נכונה עוברים לתרגיל הבא
+  if (right) cur.nextOnResume = goNext;
   playExercise(c.ex, { countIn: true, onEnd: right ? () => scheduleNext(600) : null });
 }
 
@@ -704,7 +716,7 @@ function finishTap() {
   count(res.passed && !cur.helped);
   renderTap(res);
   // הכול בזמן: עוברים לבד לתרגיל הבא
-  if (res.passed) timers.push(setTimeout(() => newExercise(false), 1800));
+  if (res.passed) scheduleNext(1800, () => newExercise(false));
 }
 
 document.addEventListener('keydown', e => {
