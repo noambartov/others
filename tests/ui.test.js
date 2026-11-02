@@ -75,7 +75,7 @@ for (const vp of Object.keys(VIEWPORTS)) {
   describe(`pages load (${vp})`, () => {
     test('home page links to every section', async () => {
       const { page, errors, close } = await openPage(vp, 'index.html');
-      for (const href of ['music_theory_exercise_tool.html', 'music_theory_worksheets_generator.html']) {
+      for (const href of ['music_theory_exercise_tool.html', 'music_theory_worksheets_generator.html', 'rhythm_practice.html']) {
         assert.ok(await page.locator(`a[href*="${href}"]`).count() > 0, 'missing link to ' + href);
       }
       noErrors(errors);
@@ -238,6 +238,43 @@ for (const vp of Object.keys(VIEWPORTS)) {
       assert.strictEqual(await student.page.evaluate(() => currentExercise.type), 'chords');
       noErrors(student.errors);
       await student.close();
+    });
+  });
+}
+
+// ---------- תרגול מקצב ----------
+for (const vp of Object.keys(VIEWPORTS)) {
+  describe(`rhythm practice (${vp})`, () => {
+    test('dictation: play and pick the right bar', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
+      await page.locator('#kindRow button[data-kind="dictation"]').click();
+      await page.locator('#bigPlay').click();
+      const i = await page.evaluate(() => cur.d.correct);
+      await page.locator(`#tiles .tile[data-i="${i}"]`).click();
+      assert.ok(await page.locator('#tiles .tile.correct').count() === 1, 'marked correct');
+      noErrors(errors);
+      await close();
+    });
+
+    test('complete the bar: pick the missing symbol', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
+      await page.locator('#kindRow button[data-kind="complete"]').click();
+      const i = await page.evaluate(() => cur.c.correct);
+      await page.locator(`#tiles .tile[data-i="${i}"]`).click();
+      assert.ok(await page.locator('#tiles .tile.correct').count() === 1, 'marked correct');
+      noErrors(errors);
+      await close();
+    });
+
+    test('read and tap: start, tap, get a summary', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
+      await page.locator('#kindRow button[data-kind="tap"]').click();
+      await page.locator('#actions button', { hasText: 'התחל' }).click();
+      await page.locator('#tapPad').click();
+      await page.evaluate(() => finishTap());
+      assert.ok(await page.locator('.summary').isVisible(), 'summary shown');
+      noErrors(errors);
+      await close();
     });
   });
 }
