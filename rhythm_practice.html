@@ -312,21 +312,22 @@ function click(t, kind, vol = 1) {
 
 // צליל הקצב: מוחזק לאורך כל המשך, כדי שישמעו את ההבדל בין חצי לרבע והפסקה
 function tone(t, dur, vol = 1) {
+  // צליל רך: סינוס על סול 4 עם שלוש הרמוניות חלשות, מוחזק לאורך המשך (נבחר מהדוגמאות, 12)
   const ctx = audioCtx;
-  const len = Math.max(0.05, dur * 0.88 - 0.02);
+  const len = Math.max(0.06, dur * 0.88 - 0.02);
   const g = ctx.createGain();
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(0.3 * vol, t + 0.006);
-  g.gain.exponentialRampToValueAtTime(0.17 * vol, t + Math.min(0.12, len));
-  g.gain.setValueAtTime(0.17 * vol, t + len);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.04);
+  g.gain.exponentialRampToValueAtTime(0.35 * vol, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.22 * vol, t + Math.min(0.15, len));
+  g.gain.setValueAtTime(0.22 * vol, t + len);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.06);
   g.connect(master);
-  [[523.25, 'triangle', 1], [1046.5, 'sine', 0.25]].forEach(([f, type, a]) => {
+  [[392, 1], [784, 0.18], [1176, 0.07], [1568, 0.03]].forEach(([f, a]) => {
     const o = ctx.createOscillator();
-    o.type = type; o.frequency.value = f;
+    o.type = 'sine'; o.frequency.value = f;
     const og = ctx.createGain(); og.gain.value = a;
     o.connect(og); og.connect(g);
-    o.start(t); o.stop(t + len + 0.06);
+    o.start(t); o.stop(t + len + 0.08);
     scheduled.push(o);
   });
 }
