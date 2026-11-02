@@ -6,6 +6,7 @@
 | --- | --- |
 | `index.html` | דף הבית: חמשה וקישורים לכלים |
 | `music_theory_exercise_tool.html` | תרגול אונליין עם השמעה |
+| `practice/` | הקוד של דף התרגול, לפי נושא: `state.js` (מצב), `audio.js` (השמעה וכלים), `notation.js` (ציור החמשה), `settings.js` (הגדרות ושיתוף), `exercise.js` (תרגיל ותשובות), `training.js` (מצבים, שלבים, תרגול יומי ודוח), `hints.js` (עזרה), `main.js` (הפעלה), `practice.css` (עיצוב). קבצי JS רגילים שחולקים משתנים גלובליים, לכן סדר הטעינה בדף חשוב: `state.js` ראשון ו-`main.js` אחרון. |
 | `rhythm_practice.html` | תרגול קצב: הכתבה רתמית, קריאה והקשה, השלמת תיבה, בשישה שלבים |
 | `music_theory_worksheets_generator.html` | דפי תרגול להדפסה ול-PDF |
 | `music_theory_algorythm.html` | מחשבון מרווחים, סולמות ואקורדים (כלי עבודה, לא מקושר מדף הבית) |
@@ -16,9 +17,15 @@
 ## בדיקות
 
 ```
-node tests/theory-core.test.js
-node tests/rhythm-core.test.js
+npm install && npx playwright install chromium   # פעם אחת
+npm test
 ```
+
+- `tests/theory-core.test.js`: הלוגיקה המשותפת (בנייה, זיהוי, סימני מפתח).
+- `tests/rhythm-core.test.js`: הלוגיקה של תרגול המקצב.
+- `tests/ui.test.js`: הדפים בדפדפן אמיתי, במחשב ובטלפון: כל סוג תרגיל בקריאה ובשמיעה נטען, מנגן ומקבל תשובה נכונה; אימון לפי שלבים, שיתוף, האוסף, תרגול המקצב, דפי התרגול להדפסה והמחשבון. בדיקה נכשלת על כל שגיאת JavaScript בדף.
+
+הבדיקות רצות אוטומטית ב-GitHub על כל PR ועל כל דחיפה ל-main.
 
 דגימות הפסנתר והוויברפון: ראו `sounds/README.md` (ממאגר VCSL, ברישיון CC0).
 
