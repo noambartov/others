@@ -73,6 +73,7 @@
     .tile.correct, .tile.correct:hover { background: #222222; color: #ffffff; }
     .tile.wrong, .tile.wrong:hover { background: #ffffff; color: #c4c4c4; box-shadow: inset 0 0 0 1px #eeeeee; }
     .tile.done { cursor: default; }
+    .tile.hint-out { opacity: 0.3; pointer-events: none; }
     .tile.done.playable { cursor: pointer; }
     .tiles.symbols .tile { min-height: 84px; padding: 8px; }
 
@@ -319,41 +320,42 @@ function tapSound(t) {
   o.start(t); o.stop(t + 0.07);
 }
 
-// פעמות המטרונום מ-t0, לאורך bars תיבות. בשש-שמיניות גם שמיניות חלשות
-function metronome(ex, t0, bars, vol) {
+// פעמות המטרונום מ-t0, לאורך bars תיבות. במשקל מורכב, או כשמבקשים חלוקה, גם צליל חלש בין הפעמות
+function metronome(ex, t0, bars, vol, tempo = state.tempo, subdivide = false) {
   const m = R.METERS[ex.meter];
-  const beat = 60 / state.tempo;
+  const beat = 60 / tempo;
   for (let b = 0; b < bars; b++) {
     for (let i = 0; i < m.beats; i++) {
       const t = t0 + (b * m.beats + i) * beat;
       click(t, i === 0 ? 'accent' : 'beat', vol);
       if (m.compound) { click(t + beat / 3, 'sub', vol); click(t + beat * 2 / 3, 'sub', vol); }
+      else if (subdivide) click(t + beat / 2, 'sub', vol * 1.6);
     }
   }
 }
 
 // השמעת תרגיל: תיבת ספירה ואז הקצב. מחזיר את זמן ההתחלה של הקצב
-function playExercise(ex, { countIn = true, metro = state.metro, onEnd } = {}) {
+function playExercise(ex, { countIn = true, metro = state.metro, onEnd, tempo = state.tempo, subdivide = false } = {}) {
   stopAll();
   const ctx = getAudioContext();
   const t0 = ctx.currentTime + 0.12;
-  const bar = R.barSeconds(ex, state.tempo);
+  const bar = R.barSeconds(ex, tempo);
   const start = countIn ? t0 + bar : t0;
-  if (countIn) metronome(ex, t0, 1, 1);
-  if (metro) metronome(ex, start, ex.bars.length, 0.45);
-  R.timeline(ex, state.tempo).forEach(n => { if (!n.rest) tone(start + n.start, n.dur); });
+  if (countIn) metronome(ex, t0, 1, 1, tempo, subdivide);
+  if (metro) metronome(ex, start, ex.bars.length, subdivide ? 0.7 : 0.45, tempo, subdivide);
+  R.timeline(ex, tempo).forEach(n => { if (!n.rest) tone(start + n.start, n.dur); });
   const end = start + bar * ex.bars.length;
-  if (countIn) countDisplay(ex, t0);
+  if (countIn) countDisplay(ex, t0, tempo);
   if (onEnd) timers.push(setTimeout(onEnd, (end - ctx.currentTime) * 1000));
   return start;
 }
 
 // ספירה על המסך בזמן תיבת הספירה
-function countDisplay(ex, t0) {
+function countDisplay(ex, t0, tempo = state.tempo) {
   const el = document.getElementById('count');
   if (!el) return;
   const m = R.METERS[ex.meter];
-  const beat = 60 / state.tempo;
+  const beat = 60 / tempo;
   for (let i = 0; i <= m.beats; i++) {
     const ms = (t0 + i * beat - audioCtx.currentTime) * 1000;
     timers.push(setTimeout(() => {
@@ -363,6 +365,9 @@ function countDisplay(ex, t0) {
   }
 }
 
+const SLOW = 0.75;          // רמז "לאט יותר": שלושה רבעים מהמהירות
+const NEXT_DELAY = 1500;    // אחרי תשובה נכונה, כמו בתרגול השמיעה
+
 // ===== תרגילים =====
 function newExercise(autoplay) {
   stopAll();
@@ -370,6 +375,9 @@ function newExercise(autoplay) {
   else if (state.kind === 'tap') newTap();
   else newComplete();
 }
+
+function goNext() { newExercise(true); }
+function scheduleNext(ms = NEXT_DELAY) { timers.push(setTimeout(goNext, ms)); }
 
 function actions(list) {
   const el = document.getElementById('actions');
@@ -382,6 +390,18 @@ function actions(list) {
     b.onclick = fn;
     el.appendChild(b);
   });
+}
+
+// עזרה מדורגת: עזרה ← רמז נוסף ← תשובה. תרגיל שנעזרו בו לא נספר כנכון
+const HELP_LABELS = ['עזרה', 'רמז נוסף', 'תשובה'];
+function helpAction(steps) {
+  if (cur.answered || cur.hint >= steps) return [null];
+  return [HELP_LABELS[Math.min(cur.hint, 2)], () => { cur.helped = true; cur.hint++; applyHint(); }];
+}
+function applyHint() {
+  if (cur.kind === 'dictation') dictationHint();
+  else if (cur.kind === 'tap') tapHint();
+  else completeHint();
 }
 
 function scoreSvg(ex, opts) {
@@ -401,42 +421,87 @@ function sameScale(list, opts) {
   return list.map(ex => scoreSvg(ex, Object.assign({ boxWidth: W }, opts)));
 }
 
+function setPrompt(s) { const el = document.getElementById('prompt'); if (el) el.textContent = s; }
+
 // --- הכתבה ---
 function newDictation(autoplay) {
   const d = R.dictation(state.level);
-  cur = { kind: 'dictation', d, answered: false, counted: false, heard: false };
+  cur = { kind: 'dictation', d, answered: false, counted: false, hint: 0, helped: false, slow: false };
   const stage = document.getElementById('stage');
   stage.innerHTML = `
     <div class="big-play-wrap"><button class="big-play" id="bigPlay" aria-label="השמע">${PLAY_ICON}</button><div class="count muted" id="count"></div></div>
     <div class="prompt" id="prompt">מה שמעתם? אחרי תיבת ספירה אחת מתחיל הקצב</div>
     <div class="tiles" id="tiles">${sameScale(d.options, { scale: 1.25 }).map((svg, i) => `<button class="tile" data-i="${i}">${svg}</button>`).join('')}</div>`;
-  document.getElementById('bigPlay').onclick = () => { cur.heard = true; playExercise(d.answer); };
+  document.getElementById('bigPlay').onclick = playDictation;
   stage.querySelectorAll('.tile').forEach(t => t.onclick = () => pickDictation(+t.dataset.i, t));
-  actions([['השמע שוב', () => playExercise(d.answer)], ['לתרגיל הבא', () => newExercise(true), 'primary']]);
-  if (autoplay) { cur.heard = true; playExercise(d.answer); }
+  dictationActions();
+  if (autoplay) playDictation();
+}
+
+function playDictation() {
+  const d = cur.d;
+  if (cur.slow) playExercise(d.answer, { tempo: Math.round(state.tempo * SLOW), metro: true, subdivide: true });
+  else playExercise(d.answer);
+}
+
+function dictationActions() {
+  actions([['השמע שוב', playDictation], helpAction(3), ['לתרגיל הבא', goNext, 'primary']]);
+}
+
+function dictationHint() {
+  const d = cur.d;
+  const tiles = [...document.querySelectorAll('#tiles .tile')];
+  if (cur.hint === 1) {
+    cur.slow = true;
+    setPrompt('לאט יותר, והמטרונום מכה גם את החלוקה');
+    playDictation();
+  } else if (cur.hint === 2) {
+    // נשארות שתי אפשרויות: הנכונה ועוד אחת
+    const wrong = tiles.filter((t, i) => i !== d.correct && !t.classList.contains('wrong'));
+    const keep = wrong[Math.floor(Math.random() * wrong.length)];
+    tiles.forEach((t, i) => { if (i !== d.correct && t !== keep) t.classList.add('hint-out'); });
+    setPrompt('נשארו שתי אפשרויות');
+  } else {
+    revealDictation();
+  }
+  dictationActions();
+}
+
+function revealDictation() {
+  const d = cur.d;
+  count(false);
+  cur.answered = true;
+  const tiles = [...document.querySelectorAll('#tiles .tile')];
+  tiles.forEach(t => { t.classList.remove('hint-out'); t.classList.add('done', 'playable'); });
+  tiles[d.correct].classList.add('correct');
+  setPrompt('זו התשובה. אפשר ללחוץ על כל תיבה כדי לשמוע אותה');
+  dictationActions();
+  playDictation();
 }
 
 function pickDictation(i, el) {
   const d = cur.d;
   if (cur.answered) { playExercise(d.options[i], { countIn: false }); return; }
-  if (el.classList.contains('wrong')) return;
+  if (el.classList.contains('wrong') || el.classList.contains('hint-out')) return;
   if (i === d.correct) {
-    count(true);
+    count(!cur.helped);
     cur.answered = true;
     el.classList.add('correct');
-    document.querySelectorAll('#tiles .tile').forEach(t => t.classList.add('done', 'playable'));
-    document.getElementById('prompt').textContent = 'נכון. אפשר ללחוץ על כל תיבה כדי לשמוע אותה';
+    document.querySelectorAll('#tiles .tile').forEach(t => { t.classList.remove('hint-out'); t.classList.add('done', 'playable'); });
+    setPrompt('נכון');
+    dictationActions();
+    scheduleNext();
   } else {
     count(false);
     el.classList.add('wrong');
-    document.getElementById('prompt').textContent = 'לא זה. אפשר להשמיע שוב';
+    setPrompt('לא זה. אפשר להשמיע שוב');
   }
 }
 
 // --- השלמת תיבה ---
 function newComplete() {
   const c = R.completion(state.level);
-  cur = { kind: 'complete', c, answered: false, counted: false };
+  cur = { kind: 'complete', c, answered: false, counted: false, hint: 0, helped: false };
   const stage = document.getElementById('stage');
   stage.innerHTML = `
     <div class="score-view" id="bar">${bigScore(c.ex, { missing: c.missing })}</div>
@@ -444,27 +509,67 @@ function newComplete() {
     <div class="prompt" id="prompt">איזה סימן משלים את התיבה?</div>
     <div class="tiles symbols" id="tiles">${c.options.map((s, i) => `<button class="tile" data-i="${i}" aria-label="${s}">${R.symbolSvg(s, { height: 62 })}</button>`).join('')}</div>`;
   stage.querySelectorAll('.tile').forEach(t => t.onclick = () => pickComplete(+t.dataset.i, t));
-  actions([['לתרגיל הבא', () => newExercise(true), 'primary']]);
+  completeActions();
+}
+
+function completeActions() {
+  const c = cur.c;
+  actions([cur.answered ? ['השמע', () => playExercise(c.ex)] : [null], helpAction(3), ['לתרגיל הבא', goNext, 'primary']]);
+}
+
+// כמה חסר, במילים: בפעמות, ובמשקל מורכב בשמיניות
+function missingText(c) {
+  const m = R.METERS[c.ex.meter];
+  const ticks = R.symbolTicks(c.answer);
+  const words = { 0.25: 'רבע פעמה', 0.5: 'חצי פעמה', 0.75: 'שלושה רבעים של פעמה', 1: 'פעמה אחת', 1.5: 'פעמה וחצי', 2: 'שתי פעמות', 3: 'שלוש פעמות', 4: 'ארבע פעמות' };
+  if (m.compound) {
+    const e = ticks / 6;
+    const w = { 0.5: 'חצי שמינית', 1: 'שמינית אחת', 1.5: 'שמינית וחצי', 2: 'שתי שמיניות', 3: 'שלוש שמיניות', 6: 'שש שמיניות' }[e];
+    return w ? `חסרות ${w}`.replace('חסרות שמינית אחת', 'חסרה שמינית אחת').replace('חסרות חצי', 'חסרה חצי').replace('חסרות שמינית וחצי', 'חסרה שמינית וחצי') : '';
+  }
+  const w = words[ticks / m.beatTicks];
+  if (!w) return '';
+  return (/^(שתי|שלוש|ארבע)/.test(w) ? 'חסרות ' : 'חסרה ') + w;
+}
+
+function completeHint() {
+  const c = cur.c;
+  if (cur.hint === 1) {
+    document.getElementById('bar').innerHTML = bigScore(c.ex, { missing: c.missing, beatNumbers: true });
+    setPrompt('מספרי הפעמות מתחת לתיבה. איזו פעמה לא מלאה?');
+  } else if (cur.hint === 2) {
+    setPrompt(missingText(c) || 'כמה חסר כדי למלא את התיבה?');
+  } else {
+    count(false);
+    showCompleteAnswer(false);
+    return;
+  }
+  completeActions();
+}
+
+function showCompleteAnswer(right) {
+  const c = cur.c;
+  cur.answered = true;
+  const tiles = [...document.querySelectorAll('#tiles .tile')];
+  tiles.forEach(t => t.classList.add('done'));
+  tiles[c.correct].classList.add('correct');
+  document.getElementById('bar').innerHTML = bigScore(c.ex, cur.hint ? { beatNumbers: true } : {});
+  setPrompt(`${right ? 'נכון: ' : 'התשובה: '}${symbolName(c.answer)}`);
+  completeActions();
+  // התיבה המלאה מתנגנת, ואחרי תשובה נכונה עוברים לתרגיל הבא
+  playExercise(c.ex, { countIn: true, onEnd: right ? () => scheduleNext(600) : null });
 }
 
 function pickComplete(i, el) {
   const c = cur.c;
   if (cur.answered || el.classList.contains('wrong')) return;
   if (i === c.correct) {
-    count(true);
-    cur.answered = true;
-    el.classList.add('correct');
-    document.querySelectorAll('#tiles .tile').forEach(t => t.classList.add('done'));
-    document.getElementById('bar').innerHTML = bigScore(c.ex);
-    const ticks = R.symbolTicks(c.answer);
-    const beats = ticks / R.METERS[c.ex.meter].beatTicks;
-    document.getElementById('prompt').textContent = `נכון: ${symbolName(c.answer)}${beats ? '' : ''}`;
-    playExercise(c.ex, { countIn: true });
-    actions([['השמע', () => playExercise(c.ex)], ['לתרגיל הבא', () => newExercise(true), 'primary']]);
+    count(!cur.helped);
+    showCompleteAnswer(true);
   } else {
     count(false);
     el.classList.add('wrong');
-    document.getElementById('prompt').textContent = 'הסימן הזה לא משלים את התיבה. כמה פעמות חסרות?';
+    setPrompt('הסימן הזה לא משלים את התיבה. כמה פעמות חסרות?');
   }
 }
 
@@ -474,7 +579,7 @@ function symbolName(sym) {
   const dotted = t.endsWith('.');
   const base = { w: 'שלם', h: 'חצי', q: 'רבע', '8': 'שמינית', '16': 'שש-עשרית' }[dotted ? t.slice(0, -1) : t];
   const fem = base === 'שמינית' || base === 'שש-עשרית';
-  return (rest ? 'הפסקת ' + base : (fem ? base : base)) + (dotted ? (rest || fem ? ' מנוקדת' : ' מנוקד') : '');
+  return (rest ? 'הפסקת ' + base : base) + (dotted ? (rest || fem ? ' מנוקדת' : ' מנוקד') : '');
 }
 
 // --- קריאה והקשה ---
@@ -482,26 +587,54 @@ let tapRun = null;
 
 function newTap() {
   const ex = R.generate(state.level, 'tap');
-  cur = { kind: 'tap', ex, counted: false };
+  cur = { kind: 'tap', ex, counted: false, hint: 0, helped: false, counts: false, guided: false };
   renderTap();
 }
+
+function tapTempo() { return cur.guided ? Math.round(state.tempo * SLOW) : state.tempo; }
+function playTapExample() { playExercise(cur.ex, { metro: true, tempo: tapTempo() }); }
 
 function renderTap(result) {
   const ex = cur.ex;
   const stage = document.getElementById('stage');
   const marks = result ? result.errors.map(err => ({ err, good: result.good })) : null;
   const noteStyle = result ? result.errors.map(err => ({ color: err !== null && Math.abs(err) <= result.good ? null : '#a8a8a8' })) : null;
+  const intro = cur.guided
+    ? 'ניסיון איטי: הקצב מתנגן חלש, ומקישים יחד איתו'
+    : 'לחצו "התחל". אחרי תיבת ספירה אחת מקישים את הקצב עם המטרונום';
   stage.innerHTML = `
-    <div class="score-view">${bigScore(ex, { marks, noteStyle })}</div>
-    ${result ? summaryHtml(result) : '<div class="prompt">לחצו "התחל". אחרי תיבת ספירה אחת מקישים את הקצב עם המטרונום</div><div class="count muted" id="count"></div>'}
+    <div class="score-view">${bigScore(ex, { marks, noteStyle, counts: cur.counts })}</div>
+    ${result ? summaryHtml(result) : `<div class="prompt" id="prompt">${intro}</div><div class="count muted" id="count"></div>`}
     ${result ? '' : `<button class="tap-pad" id="tapPad">הקישו כאן את הקצב, או במקש רווח</button>`}`;
   if (!result) {
     const pad = document.getElementById('tapPad');
     pad.addEventListener('pointerdown', e => { e.preventDefault(); onTap(e); });
   }
-  actions(result
-    ? [['נסו שוב', () => { renderTap(); startTap(); }, 'primary'], ['השמע איך זה נשמע', () => playExercise(ex, { metro: true })], ['לתרגיל הבא', () => newExercise(false)]]
-    : [['התחל', startTap, 'primary'], ['השמע איך זה נשמע', () => playExercise(ex, { metro: true })], ['לתרגיל הבא', () => newExercise(false)]]);
+  cur.result = result || null;
+  tapActions();
+}
+
+function tapActions() {
+  const help = cur.hint < 3 ? [HELP_LABELS[cur.hint] === 'תשובה' ? 'ניסיון איטי' : HELP_LABELS[cur.hint], () => { cur.helped = true; cur.hint++; applyHint(); }] : [null];
+  actions(cur.result
+    ? [['נסו שוב', () => { renderTap(); startTap(); }, 'primary'], ['השמע איך זה נשמע', playTapExample], help, ['לתרגיל הבא', () => newExercise(false)]]
+    : [['התחל', startTap, 'primary'], ['השמע איך זה נשמע', playTapExample], help, ['לתרגיל הבא', () => newExercise(false)]]);
+}
+
+function tapHint() {
+  if (cur.hint === 1) {
+    if (cur.result) renderTap();
+    setPrompt('כך זה נשמע. אחר כך לחצו "התחל"');
+    playTapExample();
+  } else if (cur.hint === 2) {
+    cur.counts = true;
+    renderTap();
+    setPrompt('הספירה מתחת לתווים. ספרו בקול והקישו על התווים');
+  } else {
+    cur.guided = true;
+    renderTap();
+  }
+  tapActions();
 }
 
 function summaryHtml(res) {
@@ -511,7 +644,7 @@ function summaryHtml(res) {
   if (res.late) parts.push(`מאוחר: ${res.late}`);
   if (res.missed) parts.push(`לא הוקשו: ${res.missed}`);
   if (res.extra) parts.push(`הקשות מיותרות: ${res.extra}`);
-  const head = res.passed ? '<strong>מדויק. כל התווים בזמן</strong>' : `<strong>${res.onTime} מתוך ${n} בזמן</strong>`;
+  const head = res.perfect ? '<strong>מדויק. כל התווים בזמן</strong>' : res.passed ? `<strong>טוב מאוד: ${res.onTime} מתוך ${n} בזמן</strong>` : `<strong>${res.onTime} מתוך ${n} בזמן</strong>`;
   return `<div class="summary">${head}${parts.length ? '<br>' + parts.join(' · ') : ''}</div>
     <div class="legend">הנקודה מתחת לתו: משמאל לקו = מוקדם, מימין = מאוחר. עיגול ריק = לא הוקש</div>`;
 }
@@ -519,15 +652,18 @@ function summaryHtml(res) {
 function startTap() {
   stopAll();
   const ex = cur.ex;
+  const tempo = tapTempo();
   const ctx = getAudioContext();
   const t0 = ctx.currentTime + 0.15;
-  const bar = R.barSeconds(ex, state.tempo);
+  const bar = R.barSeconds(ex, tempo);
   const start = t0 + bar;
-  metronome(ex, t0, 1 + ex.bars.length, 1);
-  countDisplay(ex, t0);
+  metronome(ex, t0, 1 + ex.bars.length, 1, tempo);
+  // בניסיון האיטי הקצב עצמו מתנגן חלש, להקיש יחד איתו
+  if (cur.guided) R.timeline(ex, tempo).forEach(n => { if (!n.rest) tone(start + n.start, n.dur, 0.45); });
+  countDisplay(ex, t0, tempo);
   const latency = (ctx.outputLatency || 0) + (ctx.baseLatency || 0);
-  const expected = R.timeline(ex, state.tempo).filter(n => !n.rest).map(n => start + n.start);
-  tapRun = { start, expected, taps: [], latency, ex };
+  const expected = R.timeline(ex, tempo).filter(n => !n.rest).map(n => start + n.start);
+  tapRun = { start, expected, taps: [], latency, ex, tempo };
   const pad = document.getElementById('tapPad');
   if (pad) { pad.textContent = 'הקישו כאן'; pad.classList.add('live'); }
   const end = start + bar * ex.bars.length + 0.35;
@@ -553,9 +689,11 @@ function finishTap() {
   if (!tapRun) return;
   const run = tapRun;
   tapRun = null;
-  const res = R.scoreTaps(run.expected, run.taps, { good: 0.09 });
-  count(res.passed);
+  const res = R.scoreTaps(run.expected, run.taps, { beat: 60 / run.tempo });
+  count(res.passed && !cur.helped);
   renderTap(res);
+  // הכול בזמן: עוברים לבד לתרגיל הבא
+  if (res.passed) timers.push(setTimeout(() => newExercise(false), 1800));
 }
 
 document.addEventListener('keydown', e => {

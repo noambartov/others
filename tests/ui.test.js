@@ -266,6 +266,56 @@ for (const vp of Object.keys(VIEWPORTS)) {
       await close();
     });
 
+    test('dictation: a right answer moves on by itself', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
+      await page.locator('#kindRow button[data-kind="dictation"]').click();
+      await page.evaluate(() => { window.__firstEx = cur.d; });
+      const i = await page.evaluate(() => cur.d.correct);
+      await page.locator(`#tiles .tile[data-i="${i}"]`).click();
+      await page.waitForFunction(() => cur.d !== window.__firstEx, null, { timeout: 4000 });
+      assert.strictEqual(await page.locator('#score').textContent(), '1 מתוך 1');
+      noErrors(errors);
+      await close();
+    });
+
+    test('dictation: stepped help, then the answer, not counted as right', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
+      await page.locator('#kindRow button[data-kind="dictation"]').click();
+      await page.locator('#actions button', { hasText: 'עזרה' }).click();
+      await page.locator('#actions button', { hasText: 'רמז נוסף' }).click();
+      assert.strictEqual(await page.locator('#tiles .tile.hint-out').count(), 2, 'two options left');
+      await page.locator('#actions button', { hasText: 'תשובה' }).click();
+      assert.strictEqual(await page.locator('#tiles .tile.correct').count(), 1);
+      assert.strictEqual(await page.locator('#score').textContent(), '0 מתוך 1');
+      noErrors(errors);
+      await close();
+    });
+
+    test('complete the bar: help shows beat numbers and what is missing', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
+      await page.locator('#kindRow button[data-kind="complete"]').click();
+      await page.locator('#actions button', { hasText: 'עזרה' }).click();
+      assert.ok(await page.locator('#bar svg text', { hasText: '1' }).count() >= 1, 'beat numbers');
+      await page.locator('#actions button', { hasText: 'רמז נוסף' }).click();
+      assert.match(await page.locator('#prompt').textContent(), /חסר/);
+      noErrors(errors);
+      await close();
+    });
+
+    test('read and tap: help adds counting under the notes', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
+      await page.locator('#kindRow button[data-kind="tap"]').click();
+      await page.locator('#actions button', { hasText: 'עזרה' }).click();
+      await page.locator('#actions button', { hasText: 'רמז נוסף' }).click();
+      assert.ok(await page.locator('.score-view svg text').count() >= 2, 'counting shown');
+      await page.locator('#actions button', { hasText: 'ניסיון איטי' }).click();
+      await page.locator('#actions button', { hasText: 'התחל' }).click();
+      await page.evaluate(() => finishTap());
+      assert.ok(await page.locator('.summary').isVisible());
+      noErrors(errors);
+      await close();
+    });
+
     test('read and tap: start, tap, get a summary', async () => {
       const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
       await page.locator('#kindRow button[data-kind="tap"]').click();

@@ -259,32 +259,81 @@
   // ===== בדיקת הקשות =====
   // expected: זמני התווים, taps: זמני ההקשות (שניות, אותו שעון)
   // מחזיר לכל תו את הסטייה (שלילי = מוקדם) או null אם לא הוקש, ואת מספר ההקשות המיותרות
+  // expected: זמני התווים, taps: זמני ההקשות (שניות, אותו שעון)
+  // הבדיקה סלחנית: "בזמן" = עד כחמישית פעמה (לפחות 0.14 שנ׳), הקשה כפולה מהירה נספרת כאחת,
+  // ועיכוב קבוע (מסך מגע, רמקול בלוטות׳) עד 0.15 שנ׳ מקוזז.
+  // מחזיר לכל תו את הסטייה (שלילי = מוקדם) או null אם לא הוקש, ואת מספר ההקשות המיותרות
   function scoreTaps(expected, taps, opts) {
     opts = opts || {};
-    const good = opts.good || 0.09;
+    const beat = opts.beat || 0.75;
+    const good = opts.good || Math.min(0.2, Math.max(0.14, beat * 0.2));
     const n = expected.length;
     const win = expected.map((t, i) => {
       const prev = i > 0 ? t - expected[i - 1] : Infinity;
       const next = i < n - 1 ? expected[i + 1] - t : Infinity;
-      return Math.min(0.3, 0.5 * Math.min(prev, next));
+      return Math.min(0.4, 0.6 * Math.min(prev, next));
     });
-    const errors = new Array(n).fill(null);
-    let extra = 0;
-    taps.slice().sort((a, b) => a - b).forEach(tap => {
-      let bestI = -1, bestD = Infinity;
-      for (let i = 0; i < n; i++) {
-        if (errors[i] !== null) continue;
-        const d = Math.abs(tap - expected[i]);
-        if (d <= win[i] && d < bestD) { bestD = d; bestI = i; }
-      }
-      if (bestI >= 0) errors[bestI] = tap - expected[bestI];
-      else extra++;
-    });
+    const sorted = taps.slice().sort((a, b) => a - b).filter((t, i, arr) => i === 0 || t - arr[i - 1] > 0.06);
+
+    function match(shift) {
+      const errors = new Array(n).fill(null);
+      let extra = 0;
+      sorted.forEach(raw => {
+        const tap = raw - shift;
+        let bestI = -1, bestD = Infinity;
+        for (let i = 0; i < n; i++) {
+          if (errors[i] !== null) continue;
+          const d = Math.abs(tap - expected[i]);
+          if (d <= win[i] && d < bestD) { bestD = d; bestI = i; }
+        }
+        if (bestI >= 0) errors[bestI] = tap - expected[bestI];
+        else extra++;
+      });
+      return { errors, extra };
+    }
+
+    // עיכוב קבוע של המכשיר: בודקים הזזות של עד 0.15 שנ׳ ובוחרים את זו שמתאימה הכי טוב.
+    // בשוויון מעדיפים הזזה קטנה, כך שתלמיד שמקיש בזמן לא "מתוקן"
+    const score = mm => mm.errors.filter(e => e !== null && Math.abs(e) <= good).length * 2
+      - mm.errors.filter(e => e === null).length - mm.extra;
+    let offset = 0;
+    let m = match(0);
+    let best = score(m);
+    for (let k = -15; k <= 15; k++) {
+      const shift = k / 100;
+      if (!k) continue;
+      const mm = match(shift);
+      const sc = score(mm) - Math.abs(shift) * 2; // עונש קטן על הזזה
+      if (sc > best + 1e-9) { best = sc; m = mm; offset = shift; }
+    }
+    // הזזה מתקבלת רק כשהיא מתקנת כמה תווים יחד (עיכוב קבוע), לא תו בודד שאיחר
+    if (offset && best - score(match(0)) < 3.5) { offset = 0; m = match(0); }
+    const { errors, extra } = m;
     const onTime = errors.filter(e => e !== null && Math.abs(e) <= good).length;
     const early = errors.filter(e => e !== null && e < -good).length;
     const late = errors.filter(e => e !== null && e > good).length;
     const missed = errors.filter(e => e === null).length;
-    return { errors, extra, onTime, early, late, missed, passed: onTime === n && extra === 0, good };
+    // עובר: כל התווים הוקשו, בלי הקשות מיותרות, ולכל היותר תו אחד מכל עשרה לא בזמן
+    const passed = missed === 0 && extra === 0 && onTime >= n - Math.floor(n / 10);
+    return { errors, extra, onTime, early, late, missed, passed, perfect: onTime === n && extra === 0, good, offset };
+  }
+
+  // ===== ספירה =====
+  // הברת הספירה של סימן לפי מקומו בתיבה: 1 ו 2 ו, בשש-עשריות 1 ה ו ה, בטריולה 1 אוֹ לָה.
+  // במשקל מורכב סופרים שמיניות: 1 2 3 4 5 6
+  function countLabel(meter, at, e) {
+    const m = METERS[meter];
+    if (m.compound) {
+      if (at % 6 === 0) return String(at / 6 + 1);
+      return at % 3 === 0 ? 'ה' : '';
+    }
+    const beat = Math.floor(at / m.beatTicks) + 1;
+    const f = at % m.beatTicks;
+    if (e && e.tuplet) return f === 0 ? String(beat) : f === 4 ? 'אוֹ' : f === 8 ? 'לָה' : '';
+    if (f === 0) return String(beat);
+    if (f === 6) return 'ו';
+    if (f === 3 || f === 9) return 'ה';
+    return '';
   }
 
   // ===== ציור =====
@@ -360,9 +409,11 @@
     }
     const startX = x;
     let noteIdx = 0;
+    const evList = []; // כל הסימנים: מיקום, רוחב וזמן בתוך התיבה (לספירה ולמספרי הפעמות)
 
     ex.bars.forEach((bar, b) => {
       const barStart = x;
+      let tIn = 0;
       const isWholeRest = bar.length === 1 && bar[0].events.length === 1 && bar[0].events[0].rest && bar[0].ticks === m.beats * m.beatTicks;
       bar.forEach((cell, ci) => {
         const groups = beamGroups(cell);
@@ -370,6 +421,8 @@
         cell.events.forEach((e, ei) => {
           const isMissing = opts.missing && opts.missing.bar === b && opts.missing.cell === ci && opts.missing.ev === ei;
           const adv = advance(e, sp) * (opts.spread || 1);
+          evList.push({ x, adv, at: tIn, ticks: e.ticks, e, bar: b, barStart });
+          tIn += e.ticks;
           if (isMissing) {
             const w = Math.max(adv - sp * 0.8, sp * 2.4);
             svg += `<rect x="${r(x - sp * 0.3)}" y="${r(y - sp * 2.2)}" width="${r(w)}" height="${r(sp * 4.4)}" rx="${r(sp * 0.4)}" fill="none" stroke="${faint}" stroke-width="${r(sp * 0.12)}" stroke-dasharray="${r(sp * 0.45)} ${r(sp * 0.35)}"/>`;
@@ -459,8 +512,29 @@
     svg = `<line x1="0" x2="${r(width - (opts.final === false ? 0 : sp * 0.4))}" y1="${r(y)}" y2="${r(y)}" stroke="${lineCol}" stroke-width="${r(sp * 0.13)}"/>` + svg;
 
     // סימוני דיוק מתחת לתווים: קו קצר, ונקודה שזזה שמאלה (מוקדם) או ימינה (מאוחר)
+    // ספירה מתחת לתווים ("1 ו 2 ו") או מספרי הפעמות בלבד
+    const hasText = !!(opts.counts || opts.beatNumbers);
+    const ty = y + sp * 3.4;
+    const txt = (tx, s) => `<text x="${r(tx)}" y="${r(ty)}" text-anchor="middle" font-family="Assistant, sans-serif" font-size="${r(sp * 1.35)}" fill="#8a8a8a">${s}</text>`;
+    if (opts.counts) {
+      evList.forEach(v => {
+        const s = countLabel(ex.meter, v.at, v.e);
+        if (s) svg += txt(v.x + sp * 0.6, s);
+      });
+    }
+    if (opts.beatNumbers) {
+      const nb = ex.bars.length;
+      for (let b = 0; b < nb; b++) {
+        for (let k = 0; k < m.beats; k++) {
+          const at = k * m.beatTicks;
+          const v = evList.find(v => v.bar === b && v.at <= at && at < v.at + v.ticks);
+          if (!v) continue;
+          svg += txt(v.x + sp * 0.6 + (at - v.at) / v.ticks * v.adv, String(k + 1));
+        }
+      }
+    }
     if (opts.marks) {
-      const my = y + sp * 3.6;
+      const my = y + sp * (hasText ? 5.2 : 3.6);
       opts.marks.forEach((mk, i) => {
         const nx = notes[i] && notes[i].x;
         if (nx == null) return;
@@ -475,7 +549,7 @@
         }
       });
     }
-    const height = opts.marks ? y + sp * 4.6 : y + sp * 3;
+    const height = opts.marks ? y + sp * (hasText ? 6.2 : 4.6) : hasText ? y + sp * 4.2 : y + sp * 3;
     return { svg, width, height, notes, y };
   }
 
@@ -548,7 +622,7 @@
 
   const RhythmCore = {
     TPQ, METERS, LEVELS, parseCell, cellsFor, allowedStart, fillSpan, generate, variant, dictation, completion,
-    flatten, onsets, signature, writtenKey, beamGroups, timeline, barSeconds, scoreTaps, render, svgFor, svgLines, naturalWidth, symbolSvg,
+    flatten, onsets, signature, writtenKey, beamGroups, timeline, barSeconds, scoreTaps, countLabel, render, svgFor, svgLines, naturalWidth, symbolSvg,
     symbolTicks, eventSymbol, GLYPHS
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = RhythmCore;
