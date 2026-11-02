@@ -23,32 +23,33 @@
   }
   const tune = s => s.trim().split(/\s+/).map(parseNote);
 
-  // שירים בנחלת הכלל. tempo = שניות לפעמה
+  // שירים בנחלת הכלל. המשכים ברבעים (1 = רבע, .5 = שמינית, .25 = שש-עשרית). R = הפסקה.
+  // time = משקל, key = סימני היתק במפתח, pickup = אורך תיבת הפתיחה החלקית (אם יש), tempo = שניות לרבע
   const SONGS = {
-    twinkle: { name: 'כוכב קטן', by: 'עממי צרפתי, וריאציות של מוצרט', tempo: 0.42,
+    twinkle: { name: 'כוכב קטן', by: 'עממי צרפתי, וריאציות של מוצרט', tempo: 0.42, time: [4, 4], key: 'G',
       notes: tune('G4 G4 D5 D5 E5 E5 D5:2 C5 C5 B4 B4 A4 A4 G4:2') },
-    jacques: { name: 'פרר ז׳אק', by: 'עממי צרפתי', tempo: 0.42,
+    jacques: { name: 'פרר ז׳אק', by: 'עממי צרפתי', tempo: 0.42, time: [4, 4], key: 'G',
       notes: tune('G4 A4 B4 G4 G4 A4 B4 G4 B4 C5 D5:2 B4 C5 D5:2') },
-    ode: { name: 'אודה לשמחה', by: 'בטהובן, הסימפוניה התשיעית', tempo: 0.4,
+    ode: { name: 'אודה לשמחה', by: 'בטהובן, הסימפוניה התשיעית', tempo: 0.4, time: [4, 4], key: 'G',
       notes: tune('B4 B4 C5 D5 D5 C5 B4 A4 G4 G4 A4 B4 B4:1.5 A4:.5 A4:2') },
-    lullaby: { name: 'שיר ערש', by: 'ברהמס', tempo: 0.42,
+    lullaby: { name: 'שיר ערש', by: 'ברהמס', tempo: 0.42, time: [3, 4], key: 'C', pickup: 1,
       notes: tune('E4:.5 E4:.5 G4:2 E4:.5 E4:.5 G4:2 E4:.5 G4:.5 C5:1 B4:1.5 A4:.5 A4:1 G4:2') },
-    minuet: { name: 'מינואט בסול מז׳ור', by: 'מהמחברת של אנה מגדלנה באך', tempo: 0.38,
+    minuet: { name: 'מינואט בסול מז׳ור', by: 'מהמחברת של אנה מגדלנה באך', tempo: 0.38, time: [3, 4], key: 'G',
       notes: tune('D5 G4:.5 A4:.5 B4:.5 C5:.5 D5 G4 G4 E5 C5:.5 D5:.5 E5:.5 F#5:.5 G5 G4 G4') },
-    largo: { name: 'לארגו', by: 'דבוז׳ק, הסימפוניה מהעולם החדש', tempo: 0.55,
-      notes: tune('A4:1.5 C5:.5 C5:2 A4:1.5 G4:.5 F4:2 G4 A4 C5 A4 G4:3') },
-    fifth: { name: 'הסימפוניה החמישית', by: 'בטהובן', tempo: 0.4,
-      notes: tune('R:.5 G4:.5 G4:.5 G4:.5 Eb4:3 R:.5 F4:.5 F4:.5 F4:.5 D4:3') },
-    morning: { name: 'בוקר', by: 'גריג, פר גינט', tempo: 0.42,
-      notes: tune('D5:.5 B4:.5 A4:.5 G4:.5 A4:.5 B4:.5 D5:.5 B4:.5 A4:.5 G4:.5 A4:.5 B4:.5 A4:.5 B4:.5 D5:.5 B4:.5 D5:.5 E5:.5 B4:.5 E5:.5 D5:.5 B4:.5 A4:.5 G4:2') },
-    elise: { name: 'לאליזה', by: 'בטהובן', tempo: 0.5,
-      notes: tune('E5:.5 D#5:.5 E5:.5 D#5:.5 E5:.5 B4:.5 D5:.5 C5:.5 A4:1.5 C4:.5 E4:.5 A4:.5 B4:1.5 E4:.5 G#4:.5 B4:.5 C5:2') },
-    canon: { name: 'קנון', by: 'פכלבל', tempo: 0.6,
-      notes: tune('E5 D5 C5 B4 A4 G4 A4 B4:2') },
-    mountain: { name: 'בהיכל מלך ההרים', by: 'גריג, פר גינט', tempo: 0.46,
+    largo: { name: 'לארגו', by: 'דבוז׳ק, הסימפוניה מהעולם החדש', tempo: 0.55, time: [4, 4], key: 'F',
+      notes: tune('A4:1.5 C5:.5 C5:2 A4:1.5 G4:.5 F4:2 G4 A4 C5 A4 G4:4') },
+    fifth: { name: 'הסימפוניה החמישית', by: 'בטהובן', tempo: 0.4, time: [2, 4], key: 'Cm',
+      notes: tune('R:.5 G4:.5 G4:.5 G4:.5 Eb4:2 R:.5 F4:.5 F4:.5 F4:.5 D4:2') },
+    morning: { name: 'בוקר', by: 'גריג, פר גינט', tempo: 0.42, time: [6, 8], key: 'G',
+      notes: tune('D5:.5 B4:.5 A4:.5 G4:.5 A4:.5 B4:.5 D5:.5 B4:.5 A4:.5 G4:.5 A4:.5 B4:.5 A4:.5 B4:.5 D5:.5 B4:.5 D5:.5 E5:.5 B4:.5 E5:.5 D5:.5 B4:.5 A4:.5 G4:.5') },
+    elise: { name: 'לאליזה', by: 'בטהובן', tempo: 0.5, time: [3, 8], key: 'C', pickup: 0.5,
+      notes: tune('E5:.25 D#5:.25 E5:.25 D#5:.25 E5:.25 B4:.25 D5:.25 C5:.25 A4:.5 R:.25 C4:.25 E4:.25 A4:.25 B4:.5 R:.25 E4:.25 G#4:.25 B4:.25 C5:.5') },
+    canon: { name: 'קנון', by: 'פכלבל', tempo: 0.42, time: [4, 4], key: 'C',
+      notes: tune('E5:2 D5:2 C5:2 B4:2 A4:2 G4:2 A4:2 B4:2') },
+    mountain: { name: 'בהיכל מלך ההרים', by: 'גריג, פר גינט', tempo: 0.4, time: [4, 4], key: 'C',
       notes: tune('A4:.5 B4:.5 C5:.5 D5:.5 E5:.5 C5:.5 E5 D#5:.5 B4:.5 D#5 D5:.5 Bb4:.5 D5 A4:.5 B4:.5 C5:.5 D5:.5 E5:.5 C5:.5 E5:.5 A5:.5 G5:.5 E5:.5 C5:.5 E5:.5 G5:2') },
-    nacht: { name: 'מוזיקת לילה זעירה', by: 'מוצרט', tempo: 0.42,
-      notes: tune('G4:1.5 D4:.5 G4:1.5 D4:.5 G4:.5 D4:.5 G4:.5 B4:.5 D5:2 C5:1.5 A4:.5 C5:1.5 A4:.5 C5:.5 A4:.5 F#4:.5 A4:.5 D4:2') }
+    nacht: { name: 'מוזיקת לילה זעירה', by: 'מוצרט', tempo: 0.42, time: [4, 4], key: 'G',
+      notes: tune('G4 R:.5 D4:.5 G4 R:.5 D4:.5 G4:.5 D4:.5 G4:.5 B4:.5 D5:2 C5 R:.5 A4:.5 C5 R:.5 A4:.5 C5:.5 A4:.5 F#4:.5 A4:.5 D4:2') }
   };
 
   // הסדר הוא גם סדר הקושי. כל הישג פותח שיר אחד
@@ -98,38 +99,241 @@
     return fresh;
   }
 
-  // ---------- חמשה קטנה עם המנגינה ----------
+  // ---------- תיווי המנגינה: משקל, תיבות, משכים, קורות והפסקות ----------
+  // יחידת מידה פנימית: S = רווח אחד בין קווי החמשה. ה-SVG מוקטן לפי הרוחב שלו בדף.
+  const S = 8;
+  const KEYS = {
+    C: [], Am: [],
+    G: [{ letter: 3, acc: 1, line: 8 }],
+    F: [{ letter: 6, acc: -1, line: 4 }],
+    Cm: [{ letter: 6, acc: -1, line: 4 }, { letter: 2, acc: -1, line: 7 }, { letter: 5, acc: -1, line: 3 }]
+  };
+  const letterOf = absLine => ((absLine + 2) % 7 + 7) % 7; // 0 = דו
+  const INK = '#222222';
+
+  function barLength(song) { return song.time[0] * 4 / song.time[1]; }
+  // אורך קבוצת הקורה ברבעים
+  function beamGroup(song) {
+    const [n, d] = song.time;
+    if (d === 8) return 1.5;
+    if (n === 3) return 1;
+    return 2;
+  }
+  function baseDur(d) {
+    for (const b of [4, 2, 1, 0.5, 0.25]) {
+      if (Math.abs(d - b) < 1e-6) return { base: b, dot: false };
+      if (Math.abs(d - b * 1.5) < 1e-6) return { base: b, dot: true };
+    }
+    return { base: 1, dot: false };
+  }
+  function noteSpace(d) { return 10 + 14 * Math.pow(d, 0.6); }
+
+  // חלוקה לתיבות, וחישוב סימני ההיתק שצריך לכתוב (לפי המפתח ולפי מה שכבר נכתב באותה תיבה)
+  function layoutMeasures(song) {
+    const bar = barLength(song);
+    const keyAcc = {};
+    KEYS[song.key || 'C'].forEach(k => { keyAcc[k.letter] = k.acc; });
+    const measures = [];
+    let cur = null, cap = 0, filled = 0, pos = 0;
+    song.notes.forEach((n, i) => {
+      if (!cur || filled >= cap - 1e-6) {
+        cap = measures.length === 0 && song.pickup ? song.pickup : bar;
+        cur = { events: [], start: bar - cap, seen: {} };
+        measures.push(cur);
+        filled = 0;
+      }
+      const ev = Object.assign({ i, at: cur.start + filled }, n, baseDur(n.beats));
+      if (!n.rest) {
+        const current = n.absLine in cur.seen ? cur.seen[n.absLine] : (keyAcc[letterOf(n.absLine)] || 0);
+        ev.showAcc = n.acc !== current;
+        cur.seen[n.absLine] = n.acc;
+      }
+      ev.w = noteSpace(n.beats) + (ev.showAcc ? 9 : 0) + (ev.dot ? 4 : 0);
+      cur.events.push(ev);
+      filled += n.beats;
+      pos += n.beats;
+    });
+    measures.forEach(m => { m.w = 8 + m.events.reduce((t, e) => t + e.w, 0); });
+    return measures;
+  }
+
+  // קבוצות קורה: שמיניות ושש-עשריות רצופות באותה פעמה, בלי הפסקה ביניהן
+  function beamGroups(song, m) {
+    const g = beamGroup(song);
+    const groups = [];
+    let run = [], runKey = null;
+    const flush = () => { if (run.length) groups.push(run); run = []; runKey = null; };
+    m.events.forEach(e => {
+      const beamable = !e.rest && e.base <= 0.5;
+      const key = Math.floor((e.at + 1e-6) / g);
+      if (!beamable || key !== runKey) flush();
+      if (beamable) { run.push(e); runKey = key; }
+    });
+    flush();
+    return groups;
+  }
+
+  function hollowHead(cx, y, fill) {
+    return `<ellipse cx="${cx}" cy="${y}" rx="${S * 0.62}" ry="${S * 0.46}" transform="rotate(-20 ${cx} ${y})" fill="${fill}"/>` +
+      `<ellipse cx="${cx}" cy="${y}" rx="${S * 0.42}" ry="${S * 0.2}" transform="rotate(-35 ${cx} ${y})" fill="#ffffff"/>`;
+  }
+  function wholeHead(cx, y, fill) {
+    return `<ellipse cx="${cx}" cy="${y}" rx="${S * 0.78}" ry="${S * 0.48}" fill="${fill}"/>` +
+      `<ellipse cx="${cx}" cy="${y}" rx="${S * 0.3}" ry="${S * 0.36}" transform="rotate(-50 ${cx} ${y})" fill="#ffffff"/>`;
+  }
+  function flagPath(x, tipY, up, count, fill) {
+    let out = '';
+    for (let k = 0; k < count; k++) {
+      const y0 = tipY + (up ? 1 : -1) * k * S * 0.8;
+      const d = up
+        ? `M${x} ${y0} c0 ${S * 0.5} ${S * 1.1} ${S * 0.9} ${S * 0.9} ${S * 2} c0.3 ${-S * 0.9} ${-S * 0.5} ${-S * 1.3} ${-S * 0.9} ${-S * 1.4} Z`
+        : `M${x} ${y0} c0 ${-S * 0.5} ${S * 1.1} ${-S * 0.9} ${S * 0.9} ${-S * 2} c0.3 ${S * 0.9} ${-S * 0.5} ${S * 1.3} ${-S * 0.9} ${S * 1.4} Z`;
+      out += `<path d="${d}" fill="${fill}"/>`;
+    }
+    return out;
+  }
+  function restSvg(base, x, staff, fill) {
+    const mid = staff.bottomY - 2 * S;
+    if (base >= 4) return `<rect x="${x - S * 0.6}" y="${mid - S}" width="${S * 1.2}" height="${S * 0.5}" fill="${fill}"/>`;
+    if (base >= 2) return `<rect x="${x - S * 0.6}" y="${mid - S * 0.5}" width="${S * 1.2}" height="${S * 0.5}" fill="${fill}"/>`;
+    if (base >= 1) {
+      const u = S / 8;
+      return `<path d="M${x - 2 * u} ${mid - 12 * u} l${5 * u} ${6 * u} l${-4 * u} ${5 * u} l${4.5 * u} ${6 * u} c${-3 * u} ${-2 * u} ${-6 * u} ${-1 * u} ${-3 * u} ${5 * u}" fill="none" stroke="${fill}" stroke-width="${S * 0.24}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    }
+    // שמינית ושש-עשרית: נקודה עם זנב אלכסוני
+    const dots = base >= 0.5 ? 1 : 2;
+    let out = `<line x1="${x + S * 0.55}" y1="${mid - S * 0.6}" x2="${x - S * 0.2}" y2="${mid + S * (dots === 1 ? 1.2 : 1.9)}" stroke="${fill}" stroke-width="${S * 0.15}" stroke-linecap="round"/>`;
+    for (let k = 0; k < dots; k++) {
+      const yy = mid - S * 0.45 + k * S * 0.85;
+      const xx = x - S * 0.35 - k * S * 0.2;
+      out += `<circle cx="${xx}" cy="${yy}" r="${S * 0.24}" fill="${fill}"/>` +
+        `<path d="M${xx} ${yy + S * 0.05} q${S * 0.5} ${S * 0.3} ${S * 0.95 - k * S * 0.2} ${-S * 0.15}" fill="none" stroke="${fill}" stroke-width="${S * 0.13}"/>`;
+    }
+    return out;
+  }
+
+  // opts.width: רוחב שורה (שורות נשברות לפי תיבות). opts.bars: רק התיבות הראשונות. opts.locked: חמשה ריקה
   function melodySvg(song, opts = {}) {
     const T = window.TheoryCore.svg;
-    const space = 7, top = 22, bottomY = top + 4 * space;
-    const staff = { bottomY, space };
-    const notes = song.notes;
-    const startX = 34;
-    // בכרטיסים כל החמשות באותו רוחב, והמרווח בין התווים מתכווץ לפי אורך המנגינה
-    const units = notes.reduce((u, n) => u + (n.rest ? 0.6 : 1) + (n.acc ? 0.6 : 0), 0);
-    const step = opts.fit ? Math.min(18, (opts.fit - startX - 10) / units) : 15;
-    let x = startX, body = '';
-    notes.forEach((n, i) => {
-      if (n.rest) { x += step * 0.6; return; }
-      const y = T.lineY(staff, n.absLine);
-      const fill = opts.locked ? '#d6d6d6' : '#222222';
-      let accW = 0;
-      if (n.acc) {
-        accW = T.accidentalWidth(n.acc, space) + 2;
-        x += accW;
-        body += T.accidental(n.acc, x - T.glyphWidth('noteheadBlack', space) / 2 - 1.5, y, space, fill);
-      }
-      body += `<g class="mel-note" data-i="${i}">` + T.ledgerLines(x, n.absLine, staff, 7, fill) + T.notehead(x, y, space, fill) + '</g>';
-      x += step;
-    });
-    const w = opts.fit || Math.max(x + 6, 160);
-    let lines = '';
-    for (let l = 0; l <= 8; l += 2) {
-      const y = T.lineY(staff, l);
-      lines += `<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="#c8c8c8" stroke-width="0.8"/>`;
+    const fill = opts.locked ? '#d6d6d6' : INK;
+    const lineColor = opts.locked ? '#e2e2e2' : '#bdbdbd';
+    let measures = layoutMeasures(song);
+    if (opts.bars) {
+      const n = opts.bars + (song.pickup ? 1 : 0);
+      measures = measures.slice(0, n);
     }
-    const clef = T.clef('sol', 14, staff, opts.locked ? '#d6d6d6' : '#555555');
-    return `<svg class="mel-svg" viewBox="0 0 ${w} ${bottomY + 22}" preserveAspectRatio="xMidYMid meet">${lines}${clef}${opts.locked ? '' : body}</svg>`;
+    const key = KEYS[song.key || 'C'];
+    const clefW = 30, keyW = key.length * 9 + (key.length ? 4 : 0), timeW = 18;
+    // שבירת שורות
+    const maxW = opts.width || Infinity;
+    const systems = [];
+    let sys = null;
+    measures.forEach(m => {
+      const head = clefW + keyW + (systems.length === 0 && !sys ? timeW : 0);
+      if (!sys || sys.w + m.w > maxW) {
+        sys = { measures: [], w: clefW + keyW + (systems.length === 0 ? timeW : 0), head: clefW + keyW + (systems.length === 0 ? timeW : 0) };
+        systems.push(sys);
+      }
+      sys.measures.push(m);
+      sys.w += m.w;
+    });
+    const W = opts.width && isFinite(opts.width) ? opts.width : Math.max(...systems.map(s => s.w)) + 2;
+    const sysH = S * 11;
+    let out = '';
+    systems.forEach((sy, si) => {
+      const top = si * sysH + S * 3.6;
+      const staff = { bottomY: top + 4 * S, space: S };
+      const isLast = si === systems.length - 1;
+      // מתיחה לרוחב השורה. שורה אחרונה קצרה נשארת ברוחב הטבעי
+      const content = sy.w - sy.head;
+      const avail = W - sy.head - 2;
+      const scale = (isLast && content < avail * 0.7) ? 1 : avail / content;
+      const endX = sy.head + content * scale;
+      for (let l = 0; l <= 8; l += 2) {
+        const y = T.lineY(staff, l);
+        out += `<line x1="0" y1="${y}" x2="${endX}" y2="${y}" stroke="${lineColor}" stroke-width="0.9"/>`;
+      }
+      out += T.clef('sol', 14, staff, opts.locked ? '#d6d6d6' : '#444444');
+      let x = clefW;
+      key.forEach(k => { out += T.accidental(k.acc, x + 8, T.lineY(staff, k.line), S, fill); x += 9; });
+      if (key.length) x += 4;
+      if (si === 0) {
+        const mid = staff.bottomY - 2 * S;
+        const tf = `font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="${S * 2.3}" text-anchor="middle" fill="${fill}"`;
+        out += `<text x="${x + 8}" y="${mid - S * 0.15}" ${tf}>${song.time[0]}</text><text x="${x + 8}" y="${mid + S * 1.85}" ${tf}>${song.time[1]}</text>`;
+        x += timeW;
+      }
+      if (opts.locked) return;
+      sy.measures.forEach((m, mi) => {
+        let ex = x + 8 * scale;
+        const pos = new Map();
+        m.events.forEach(e => {
+          const cx = ex + (e.showAcc ? 9 : 0) + 5;
+          pos.set(e, cx);
+          ex += e.w * scale;
+        });
+        x += m.w * scale;
+        // קורות
+        const groups = beamGroups(song, m);
+        const inBeam = new Set();
+        const stemInfo = new Map();
+        groups.filter(g => g.length > 1).forEach(g => {
+          g.forEach(e => inBeam.add(e));
+          const avg = g.reduce((t, e) => t + e.absLine, 0) / g.length;
+          const up = avg < 4;
+          const ys = g.map(e => T.lineY(staff, e.absLine));
+          const beamY = up ? Math.min(...ys) - 3.4 * S : Math.max(...ys) + 3.4 * S;
+          const hw = T.glyphWidth('noteheadBlack', S) / 2;
+          const sx = e => up ? pos.get(e) + hw - 0.6 : pos.get(e) - hw + 0.6;
+          g.forEach(e => stemInfo.set(e, { up, tip: beamY }));
+          const th = S * 0.48, dir = up ? 1 : -1;
+          const x1 = sx(g[0]), x2 = sx(g[g.length - 1]);
+          out += `<path d="M${x1 - 0.6} ${beamY} L${x2 + 0.6} ${beamY} L${x2 + 0.6} ${beamY + dir * th} L${x1 - 0.6} ${beamY + dir * th} Z" fill="${fill}"/>`;
+          // קורה שנייה לשש-עשריות סמוכות
+          for (let k = 0; k < g.length - 1; k++) {
+            if (g[k].base <= 0.25 && g[k + 1].base <= 0.25) {
+              const yy = beamY + dir * S * 0.78;
+              out += `<path d="M${sx(g[k]) - 0.6} ${yy} L${sx(g[k + 1]) + 0.6} ${yy} L${sx(g[k + 1]) + 0.6} ${yy + dir * th} L${sx(g[k]) - 0.6} ${yy + dir * th} Z" fill="${fill}"/>`;
+            }
+          }
+        });
+        m.events.forEach(e => {
+          const cx = pos.get(e);
+          if (e.rest) { out += restSvg(e.base, cx, staff, fill); return; }
+          const y = T.lineY(staff, e.absLine);
+          const hw = T.glyphWidth('noteheadBlack', S) / 2;
+          let g = '';
+          if (e.showAcc) g += T.accidental(e.acc, cx - hw - 1.5, y, S, fill);
+          g += T.ledgerLines(cx, e.absLine, staff, 7, fill);
+          if (e.base >= 4) g += wholeHead(cx, y, fill);
+          else if (e.base >= 2) g += hollowHead(cx, y, fill);
+          else g += T.notehead(cx, y, S, fill);
+          if (e.dot) g += `<circle cx="${cx + hw + 3.5}" cy="${e.absLine % 2 === 0 ? y - S / 2 : y}" r="${S * 0.17}" fill="${fill}"/>`;
+          // גבעול
+          if (e.base < 4) {
+            const info = stemInfo.get(e) || { up: e.absLine < 4, tip: null };
+            const up = info.up;
+            const tip = info.tip !== null ? info.tip : (up ? y - 3.4 * S : y + 3.4 * S);
+            const sx = up ? cx + hw - 0.6 : cx - hw + 0.6;
+            g += `<line x1="${sx}" y1="${y}" x2="${sx}" y2="${tip}" stroke="${fill}" stroke-width="1.1"/>`;
+            if (!inBeam.has(e) && e.base <= 0.5) g += flagPath(sx, tip, up, e.base <= 0.25 ? 2 : 1, fill);
+          }
+          out += `<g class="mel-note" data-i="${e.i}">${g}</g>`;
+        });
+        // קו תיבה
+        const bx = x;
+        const yT = T.lineY(staff, 8), yB = T.lineY(staff, 0);
+        const final = !opts.bars && isLast && mi === sy.measures.length - 1;
+        if (final) {
+          out += `<line x1="${bx - 4}" y1="${yT}" x2="${bx - 4}" y2="${yB}" stroke="${fill}" stroke-width="0.9"/>` +
+            `<rect x="${bx - 2}" y="${yT}" width="2.6" height="${yB - yT}" fill="${fill}"/>`;
+        } else {
+          out += `<line x1="${bx}" y1="${yT}" x2="${bx}" y2="${yB}" stroke="${lineColor === '#bdbdbd' ? '#888888' : lineColor}" stroke-width="0.9"/>`;
+        }
+      });
+    });
+    const H = systems.length * sysH + S * 1.5;
+    return `<svg class="mel-svg" viewBox="0 0 ${W + 1} ${H}" preserveAspectRatio="xMidYMid meet">${out}</svg>`;
   }
 
   let playTimers = [];
@@ -143,6 +347,9 @@
     let t = 0;
     const els = svgHost ? [...svgHost.querySelectorAll('.mel-note')] : [];
     els.forEach(e => e.classList.remove('lit'));
+    const svg = svgHost && svgHost.querySelector('.mel-svg');
+    document.querySelectorAll('.mel-svg.playing').forEach(x => x.classList.remove('playing'));
+    if (svg) svg.classList.add('playing');
     song.notes.forEach((n, i) => {
       const dur = n.beats * song.tempo;
       if (!n.rest) {
@@ -156,7 +363,10 @@
       }
       t += dur;
     });
-    playTimers.push(setTimeout(() => els.forEach(e => e.classList.remove('lit')), (t + 0.6) * 1000));
+    playTimers.push(setTimeout(() => {
+      els.forEach(e => e.classList.remove('lit'));
+      if (svg) svg.classList.remove('playing');
+    }, (t + 0.6) * 1000));
   }
 
   // ---------- הודעות ----------
@@ -191,7 +401,7 @@
       <p class="reward-kicker">שיר חדש באוסף</p>
       <h3>${song.name}</h3>
       <p class="reward-by">${song.by}</p>
-      <div class="reward-staff" id="rewardStaff">${melodySvg(song)}</div>
+      <div class="reward-staff" id="rewardStaff">${melodySvg(song, { width: 380 })}</div>
       <p class="reward-how">על: ${a.how}</p>
       ${more}
       <div class="share-actions">
@@ -322,10 +532,10 @@
     const cards = ACHIEVEMENTS.map(a => {
       const song = SONGS[a.song];
       if (!s.unlocked[a.id]) {
-        return `<div class="song-card locked">${melodySvg(song, { locked: true, fit: 240 })}
+        return `<div class="song-card locked">${melodySvg(song, { locked: true, bars: 2 })}
           <div class="song-name">שיר נעול</div><div class="song-how">${a.how}</div></div>`;
       }
-      return `<button class="song-card" onclick="Rewards.play('${a.song}', this)">${melodySvg(song, { fit: 240 })}
+      return `<button class="song-card" onclick="Rewards.play('${a.song}', this)">${melodySvg(song, { bars: 2 })}
         <div class="song-name">${song.name}</div><div class="song-by">${song.by}</div></button>`;
     }).join('');
     document.getElementById('rewardsPanel').innerHTML = `
@@ -349,6 +559,6 @@
       </div>`;
   }
 
-  window.Rewards = { solved, broke, trainingDone, renderChip, open, close, setGoal, play: playSong, closeUnlock, showUnlock, SONGS, ACHIEVEMENTS, _load: load, _save: save };
+  window.Rewards = { solved, broke, trainingDone, renderChip, open, close, setGoal, play: playSong, closeUnlock, showUnlock, SONGS, ACHIEVEMENTS, _load: load, _save: save, _svg: melodySvg };
   renderChip();
 })();
