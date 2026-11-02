@@ -237,11 +237,12 @@
     .reward-how { margin: 4px 0 0; font-size: 13px; color: #999999; }
     .reward-more { margin: 4px 0 0; font-size: 13px; color: #555555; }
     .reward-staff { margin: 14px 0 4px; direction: ltr; }
-    .reward-staff .mel-svg { width: 100%; height: 86px; }
+    .reward-staff .mel-svg { width: 100%; height: auto; max-height: 260px; }
     .reward-box .share-actions { justify-content: center; }
-    .mel-note path { transition: fill .1s; }
-    .mel-note.lit path { fill: #000000; }
-    .mel-svg .mel-note.lit { transform-box: fill-box; transform-origin: center; transform: scale(1.25); }
+    /* בזמן הנגינה התווים מתעמעמים, והתו שמתנגן עכשיו כהה */
+    .mel-note { transition: opacity .12s; }
+    .mel-svg.playing .mel-note { opacity: 0.3; }
+    .mel-svg.playing .mel-note.lit { opacity: 1; }
     .rewards-panel .rw-head { margin-top: 6px; display: flex; justify-content: space-between; align-items: baseline; }
     .rw-back { background: none; border: none; padding: 0; font: inherit; font-size: 14px; color: #777777; cursor: pointer; }
     .rw-back:hover { color: #222222; }
@@ -262,7 +263,7 @@
     .song-card { background: var(--btn-bg); border: none; border-radius: 6px; padding: 10px 12px 12px; font: inherit; text-align: right; color: var(--text-dark); cursor: pointer; }
     .song-card:hover { background: #e2e2e2; }
     .song-card.locked { background: #ffffff; border: 1px dashed #dddddd; cursor: default; }
-    .song-card .mel-svg { width: 100%; height: 58px; direction: ltr; display: block; }
+    .song-card .mel-svg { width: 100%; height: 70px; direction: ltr; display: block; }
     .song-name { font-size: 15px; font-weight: 500; margin-top: 4px; }
     .song-card.locked .song-name { color: #bbbbbb; font-weight: 400; }
     .song-by, .song-how { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
