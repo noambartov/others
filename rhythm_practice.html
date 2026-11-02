@@ -124,6 +124,7 @@
       <div class="settings">
         <div class="setting"><label>שלב</label><div class="seg" id="levelSeg"></div></div>
         <div class="setting"><label>מהירות (פעמות לדקה)</label><div class="seg" id="tempoSeg"></div></div>
+        <div class="setting"><label>הברות ספירה (קונוקול) מתחת לתווים</label><div class="seg" id="sylSeg"></div></div>
         <div class="setting" id="metroSetting"><label>מטרונום בזמן ההשמעה</label><div class="seg" id="metroSeg"></div></div>
       </div>
     </details>
@@ -158,7 +159,7 @@ const KINDS = ['dictation', 'tap', 'complete'];
 const TEMPOS = [60, 80, 100, 120];
 const SETTINGS_KEY = 'mt_rhythm_settings';
 
-const state = { kind: 'dictation', level: 1, tempo: 80, metro: true, right: 0, total: 0 };
+const state = { kind: 'dictation', level: 1, tempo: 80, metro: true, syllables: false, right: 0, total: 0 };
 let cur = null; // התרגיל הנוכחי
 
 // ===== הגדרות =====
@@ -169,6 +170,7 @@ function loadSettings() {
     if (s.level >= 1 && s.level <= R.LEVELS.length) state.level = s.level;
     if (TEMPOS.includes(s.tempo)) state.tempo = s.tempo;
     if (typeof s.metro === 'boolean') state.metro = s.metro;
+    if (typeof s.syllables === 'boolean') state.syllables = s.syllables;
   } catch (e) {}
   const q = new URLSearchParams(location.search);
   if (KINDS.includes(q.get('ex'))) state.kind = q.get('ex');
@@ -176,7 +178,7 @@ function loadSettings() {
   if (lv >= 1 && lv <= R.LEVELS.length) state.level = lv;
 }
 function saveSettings() {
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ kind: state.kind, level: state.level, tempo: state.tempo, metro: state.metro })); } catch (e) {}
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ kind: state.kind, level: state.level, tempo: state.tempo, metro: state.metro, syllables: state.syllables })); } catch (e) {}
 }
 
 function seg(id, items, current, onPick) {
@@ -189,10 +191,25 @@ function renderSettings() {
   seg('levelSeg', R.LEVELS.map(l => [l.n, `${l.n}. ${l.name}`]), state.level, v => { state.level = +v; changed(); });
   seg('tempoSeg', TEMPOS.map(t => [t, t]), state.tempo, v => { state.tempo = +v; changed(false); });
   seg('metroSeg', [['1', 'עם'], ['0', 'בלי']], state.metro ? '1' : '0', v => { state.metro = v === '1'; changed(false); });
+  seg('sylSeg', [['1', 'להציג'], ['0', 'לא להציג']], state.syllables ? '1' : '0', v => { state.syllables = v === '1'; changed(false); rerender(); });
   document.getElementById('metroSetting').style.display = state.kind === 'tap' ? 'none' : '';
   document.querySelectorAll('#kindRow button').forEach(b => b.classList.toggle('active', b.dataset.kind === state.kind));
   const L = R.LEVELS[state.level - 1];
   document.getElementById('levelLine').innerHTML = `שלב ${L.n}: ${L.name} · ${L.meters.map(m => `<span dir="ltr">${m}</span>`).join(' ')} · ${state.tempo} לדקה`;
+}
+
+// מתג ההברות: מציירים מחדש את התרגיל הנוכחי בלי להחליף אותו
+function rerender() {
+  if (!cur) return;
+  if (cur.kind === 'tap') { if (!tapRun) renderTap(cur.result || undefined); return; }
+  if (cur.kind === 'complete') {
+    const bar = document.getElementById('bar');
+    if (bar) bar.innerHTML = cur.answered ? bigScore(cur.c.ex, cur.hint ? { beatNumbers: true } : {})
+      : bigScore(cur.c.ex, Object.assign({ missing: cur.c.missing }, cur.hint ? { beatNumbers: true } : {}));
+    return;
+  }
+  const svgs = sameScale(cur.d.options, { scale: 1.25, counts: state.syllables });
+  document.querySelectorAll('#tiles .tile').forEach((t, i) => { t.innerHTML = svgs[i]; });
 }
 
 function changed(regenerate = true) {
@@ -435,7 +452,7 @@ function scoreSvg(ex, opts) {
 function bigScore(ex, opts) {
   const avail = Math.min(820, document.querySelector('.container').clientWidth || 820);
   const maxNatural = avail < 600 ? avail / 0.95 : avail / 1.1;
-  return R.svgLines(ex, Object.assign({ line: '#9a9a9a', scale: 1.7 }, opts), maxNatural);
+  return R.svgLines(ex, Object.assign({ line: '#9a9a9a', scale: 1.7, counts: state.syllables }, opts), maxNatural);
 }
 
 // כמה אפשרויות באותו קנה מידה
@@ -454,7 +471,7 @@ function newDictation(autoplay) {
   stage.innerHTML = `
     <div class="big-play-wrap"><button class="big-play" id="bigPlay" aria-label="השמע">${PLAY_ICON}</button><div class="count muted" id="count"></div></div>
     <div class="prompt" id="prompt">מה שמעתם? אחרי תיבת ספירה אחת מתחיל הקצב</div>
-    <div class="tiles" id="tiles">${sameScale(d.options, { scale: 1.25 }).map((svg, i) => `<button class="tile" data-i="${i}">${svg}</button>`).join('')}</div>`;
+    <div class="tiles" id="tiles">${sameScale(d.options, { scale: 1.25, counts: state.syllables }).map((svg, i) => `<button class="tile" data-i="${i}">${svg}</button>`).join('')}</div>`;
   document.getElementById('bigPlay').onclick = playDictation;
   stage.querySelectorAll('.tile').forEach(t => t.onclick = () => pickDictation(+t.dataset.i, t));
   dictationActions();
@@ -627,7 +644,7 @@ function renderTap(result) {
     ? 'ניסיון איטי: הקצב מתנגן חלש, ומקישים יחד איתו'
     : 'לחצו "התחל". אחרי תיבת ספירה אחת מקישים את הקצב עם המטרונום';
   stage.innerHTML = `
-    <div class="score-view">${bigScore(ex, { marks, noteStyle, counts: cur.counts })}</div>
+    <div class="score-view">${bigScore(ex, { marks, noteStyle, counts: cur.counts || state.syllables })}</div>
     ${result ? summaryHtml(result) : `<div class="prompt" id="prompt">${intro}</div><div class="count muted" id="count"></div>`}
     ${result ? '' : `<button class="tap-pad" id="tapPad">הקישו כאן את הקצב, או במקש רווח</button>`}`;
   if (!result) {
