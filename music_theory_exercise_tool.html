@@ -218,6 +218,59 @@
     .share-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
     .share-actions button, .share-actions a { border: none; border-radius: 6px; padding: 10px 16px; font: inherit; font-size: 14px; cursor: pointer; background: #efefef; color: #222222; text-decoration: none; }
     .share-actions .primary { background: #222222; color: #ffffff; }
+    /* תגמולים: יעד יומי בסרגל העליון, הודעה קצרה, חלון שיר חדש ודף האוסף */
+    body.theme-clean .reward-chip { position: absolute; left: 0; top: 7px; }
+    .reward-chip { background: none; border: none; padding: 2px 0 6px; font: inherit; font-size: 14px; color: var(--text-muted); cursor: pointer; display: inline-flex; flex-direction: column; align-items: stretch; gap: 0; white-space: nowrap; }
+    .reward-chip .chip-label, .reward-chip .chip-num { display: inline; }
+    .reward-chip:hover, .reward-chip.done { color: var(--text-dark); }
+    .chip-bar { display: block; height: 2px; background: #e6e6e6; border-radius: 1px; overflow: hidden; margin-top: 3px; }
+    .chip-bar > span { display: block; height: 100%; width: 0; background: #555555; transition: width .3s; }
+    .reward-chip.done .chip-bar > span { background: #222222; }
+    body.in-session .reward-chip, body:not(.in-session) .topscore { display: none; }
+    body.in-rewards .ex-types, body.in-rewards #sharedNote { display: none !important; }
+    .reward-toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 12px); background: #222222; color: #ffffff; font-size: 14px; padding: 10px 18px; border-radius: 6px; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 60; white-space: nowrap; }
+    .reward-toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .reward-box { text-align: center; }
+    .reward-box h3 { font-size: 22px; font-weight: 500; margin: 2px 0 2px; }
+    .reward-kicker { margin: 0; font-size: 13px; color: #999999; }
+    .reward-by { margin: 0; font-size: 14px; color: #777777; }
+    .reward-how { margin: 4px 0 0; font-size: 13px; color: #999999; }
+    .reward-more { margin: 4px 0 0; font-size: 13px; color: #555555; }
+    .reward-staff { margin: 14px 0 4px; direction: ltr; }
+    .reward-staff .mel-svg { width: 100%; height: 86px; }
+    .reward-box .share-actions { justify-content: center; }
+    .mel-note path { transition: fill .1s; }
+    .mel-note.lit path { fill: #000000; }
+    .mel-svg .mel-note.lit { transform-box: fill-box; transform-origin: center; transform: scale(1.25); }
+    .rewards-panel .rw-head { margin-top: 6px; display: flex; justify-content: space-between; align-items: baseline; }
+    .rw-back { background: none; border: none; padding: 0; font: inherit; font-size: 14px; color: #777777; cursor: pointer; }
+    .rw-back:hover { color: #222222; }
+    .rw-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 18px; }
+    .rw-big { font-size: 34px; font-weight: 300; line-height: 1.1; }
+    .rw-of { font-size: 18px; color: var(--text-muted); }
+    .rw-label { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    .rw-today { margin-top: 14px; }
+    .wk { display: flex; gap: 10px; }
+    .wk-day { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .wk-box { width: 26px; height: 26px; border-radius: 5px; border: 1px solid #e2e2e2; box-sizing: border-box; }
+    .wk-box.some { background: #e6e6e6; border-color: #e6e6e6; }
+    .wk-box.met { background: #222222; border-color: #222222; }
+    .wk-l { font-size: 12px; color: var(--text-muted); }
+    .rw-goal { display: flex; align-items: center; gap: 12px; margin-top: 16px; font-size: 14px; color: #555555; }
+    .rw-hint { font-size: 13px; color: var(--text-muted); margin: 0 0 12px; }
+    .song-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+    .song-card { background: var(--btn-bg); border: none; border-radius: 6px; padding: 10px 12px 12px; font: inherit; text-align: right; color: var(--text-dark); cursor: pointer; }
+    .song-card:hover { background: #e2e2e2; }
+    .song-card.locked { background: #ffffff; border: 1px dashed #dddddd; cursor: default; }
+    .song-card .mel-svg { width: 100%; height: 58px; direction: ltr; display: block; }
+    .song-name { font-size: 15px; font-weight: 500; margin-top: 4px; }
+    .song-card.locked .song-name { color: #bbbbbb; font-weight: 400; }
+    .song-by, .song-how { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    @media (max-width: 480px) {
+      .rw-stats { grid-template-columns: repeat(2, 1fr); row-gap: 14px; }
+      .song-grid { grid-template-columns: repeat(2, 1fr); }
+      .wk { gap: 7px; }
+    }
     .report-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
     .report-actions button { border: none; border-radius: 6px; padding: 12px 18px; font: inherit; cursor: pointer; background: var(--btn-bg); color: var(--text-dark); }
     .report-actions button.primary { background: #222222; color: #ffffff; }
@@ -722,6 +775,7 @@
 <div class="container">
   <div class="topbar">
     <span class="topscore"><span id="scoreLabel">ניקוד </span><span id="scoreDisplay">0</span></span>
+    <button class="reward-chip" id="rewardChip" onclick="Rewards.open()" aria-label="האוסף שלי"><span class="chip-row"><span class="chip-label">היום</span> <span class="chip-num">0/20</span></span><span class="chip-bar"><span></span></span></button>
     <nav class="mode-tabs" id="modeTabs">
       <button data-mode="read" onclick="setAppMode('read')">קריאה</button>
       <button data-mode="ear" onclick="setAppMode('ear')">חופשי</button>
@@ -828,6 +882,8 @@
   <div class="shared-note no-train" id="sharedNote" hidden></div>
 
   <div class="card training-panel" id="trainingPanel" style="display: none;"></div>
+
+  <div class="card training-panel rewards-panel" id="rewardsPanel" style="display: none;"></div>
 
   <div class="card practice-area" id="practiceArea">
     <div class="action-bar">
@@ -1012,6 +1068,7 @@ function buildSegmentedSettings() {
 buildSegmentedSettings();
 
 function setExType(type) {
+  if (window.Rewards && document.body.classList.contains('in-rewards')) Rewards.close();
   document.getElementById('sharedNote').hidden = true;
   document.getElementById('exType').value = type;
   onExerciseTypeChange();
@@ -1750,8 +1807,14 @@ function playFirstNoteOnly() {
 function triggerSuccessAndNext() {
   exerciseSolved = true;
   if (training) recordTrainingResult();
+  const unlocked = window.Rewards ? Rewards.solved(!firstWrong && !helpUsed) : [];
   // בלי השמעה חוזרת: הצליל דועך, רגע של שקט, ואז התרגיל הבא
   silenceAll(0.5);
+  if (unlocked.length) {
+    // שיר חדש באוסף: מנגנים אותו, והתרגיל הבא מגיע אחרי "המשך"
+    setTimeout(() => Rewards.showUnlock(unlocked, goToNextExercise), 900);
+    return;
+  }
   const isAudio = document.getElementById('displayMode').value === 'audio_only';
   setTimeout(goToNextExercise, isAudio ? 1500 : 1000);
 }
@@ -1800,6 +1863,7 @@ function startPractice() {
   typeAnsweredCorrectly = false;
   exerciseSolved = false;
   firstWrong = null;
+  helpUsed = false;
   currentPlayDirection = 'ascending';
   updateTopbarProgress();
 
@@ -2238,6 +2302,7 @@ const EAR_LEVELS = [
 let appMode = 'read';
 let training = null;
 let firstWrong = null;
+let helpUsed = false; // לרצף התשובות הנכונות: תשובה אחרי עזרה לא נספרת
 
 function noteWrong(label, kind = 'type') {
   if (!firstWrong) firstWrong = { label, kind };
@@ -2258,6 +2323,7 @@ function saveHistory(entry) {
 function setAppMode(mode, initial = false) {
   const spellingChanged = (appMode === 'read') !== (mode === 'read');
   appMode = mode;
+  if (window.Rewards && document.body.classList.contains('in-rewards')) Rewards.close();
   try { localStorage.setItem('mt_app_mode', mode); } catch (e) {}
   document.body.classList.remove('mode-read', 'mode-ear', 'mode-train', 'in-session');
   document.body.classList.add('mode-' + mode);
@@ -2342,6 +2408,7 @@ function recordTrainingResult() {
 }
 
 function skipExercise() {
+  if (!exerciseSolved && window.Rewards) Rewards.broke();
   if (training && !exerciseSolved) {
     noteWrong('דילוג', 'skip');
     exerciseSolved = true;
@@ -2401,6 +2468,7 @@ function showTrainingReport(partial = false) {
   const correct = results.filter(r => r.correct).length;
   const pct = total ? Math.round(100 * correct / total) : 0;
   if (!partial) saveHistory({ t: Date.now(), level: t.level, correct, total });
+  if (!partial && window.Rewards) Rewards.trainingDone(t.level, pct);
 
   const byCat = groupStats(results, r => r.category);
   const byItem = groupStats(results, r => r.item).sort((a, b) => a.correct / a.total - b.correct / b.total);
@@ -2591,6 +2659,7 @@ function showHelp() {
   if (!currentExercise) return;
   // באימון לפי שלבים נספרת רק תשובה ראשונה בלי עזרה
   if (training && !exerciseSolved) noteWrong('עזרה', 'help');
+  if (!exerciseSolved) helpUsed = true;
   // הרמזים נבנים מחדש בכל לחיצה, כדי לדלג על חלק שהתלמיד כבר ענה עליו נכון
   const steps = buildHintSteps().filter(st => !shownHints.has(st.key));
   const btn = document.getElementById('helpBtn');
@@ -2658,6 +2727,7 @@ if (!loadExerciseFromUrl() && appMode !== 'train') {
   startPractice();
 }
 </script>
+<script src="rewards.js"></script>
 <script src="update-check.js"></script>
 </body>
 </html>
