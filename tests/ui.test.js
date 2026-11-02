@@ -319,6 +319,19 @@ for (const vp of Object.keys(VIEWPORTS)) {
       await close();
     });
 
+    test('syllables switch shows konnakol under the notes in every exercise', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
+      await page.locator('#settingsBox summary').click();
+      await page.locator('#sylSeg button', { hasText: 'להציג' }).first().click();
+      assert.ok(await page.locator('#tiles svg text', { hasText: 'ta' }).count() >= 4, 'dictation options');
+      await page.locator('#kindRow button[data-kind="complete"]').click();
+      assert.ok(await page.locator('#bar svg text', { hasText: 'ta' }).count() >= 1, 'complete the bar');
+      await page.locator('#kindRow button[data-kind="tap"]').click();
+      assert.ok(await page.locator('.score-view svg text', { hasText: 'ta' }).count() >= 1, 'read and tap');
+      noErrors(errors);
+      await close();
+    });
+
     test('read and tap: start, tap, get a summary', async () => {
       const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
       await page.locator('#kindRow button[data-kind="tap"]').click();

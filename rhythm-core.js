@@ -526,8 +526,9 @@
     // סימוני דיוק מתחת לתווים: קו קצר, ונקודה שזזה שמאלה (מוקדם) או ימינה (מאוחר)
     // ספירה מתחת לתווים ("1 ו 2 ו") או מספרי הפעמות בלבד
     const hasText = !!(opts.counts || opts.beatNumbers);
+    const extra = opts.counts && opts.beatNumbers ? sp * 1.7 : 0;
     const ty = y + sp * 3.4;
-    const txt = (tx, s) => `<text direction="ltr" x="${r(tx)}" y="${r(ty)}" text-anchor="middle" font-family="Assistant, sans-serif" font-size="${r(sp * 1.35)}" fill="#8a8a8a">${s}</text>`;
+    const txt = (tx, s, yy = ty) => `<text direction="ltr" x="${r(tx)}" y="${r(yy)}" text-anchor="middle" font-family="Assistant, sans-serif" font-size="${r(sp * 1.35)}" fill="#8a8a8a">${s}</text>`;
     if (opts.counts) {
       for (let b = 0; b < ex.bars.length; b++) {
         const inBar = evList.filter(v => v.bar === b);
@@ -542,12 +543,12 @@
           const at = k * m.beatTicks;
           const v = evList.find(v => v.bar === b && v.at <= at && at < v.at + v.ticks);
           if (!v) continue;
-          svg += txt(v.x + sp * 0.6 + (at - v.at) / v.ticks * v.adv, String(k + 1));
+          svg += txt(v.x + sp * 0.6 + (at - v.at) / v.ticks * v.adv, String(k + 1), opts.counts ? ty + sp * 1.7 : ty);
         }
       }
     }
     if (opts.marks) {
-      const my = y + sp * (hasText ? 5.2 : 3.6);
+      const my = y + sp * (hasText ? 5.2 : 3.6) + extra;
       opts.marks.forEach((mk, i) => {
         const nx = notes[i] && notes[i].x;
         if (nx == null) return;
@@ -562,7 +563,7 @@
         }
       });
     }
-    const height = opts.marks ? y + sp * (hasText ? 6.2 : 4.6) : hasText ? y + sp * 4.2 : y + sp * 3;
+    const height = (opts.marks ? y + sp * (hasText ? 6.2 : 4.6) : hasText ? y + sp * 4.2 : y + sp * 3) + extra;
     return { svg, width, height, notes, y };
   }
 
