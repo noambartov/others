@@ -227,7 +227,8 @@
     .chip-bar > span { display: block; height: 100%; width: 0; background: #555555; transition: width .3s; }
     .reward-chip.done .chip-bar > span { background: #222222; }
     body.in-session .reward-chip, body:not(.in-session) .topscore { display: none; }
-    body.in-rewards .ex-types, body.in-rewards #sharedNote { display: none !important; }
+    body.in-rewards .ex-types, body.in-rewards #sharedNote, body.in-daily .ex-types { display: none !important; }
+    body.in-daily .mode-tabs button.active { color: var(--text-muted); }
     .reward-toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 12px); background: #222222; color: #ffffff; font-size: 14px; padding: 10px 18px; border-radius: 6px; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 60; white-space: nowrap; }
     .reward-toast.show { opacity: 1; transform: translate(-50%, 0); }
     .reward-box { text-align: center; }
@@ -271,6 +272,25 @@
       .rw-stats { grid-template-columns: repeat(2, 1fr); row-gap: 14px; }
       .song-grid { grid-template-columns: repeat(2, 1fr); }
       .wk { gap: 7px; }
+    }
+    .rw-daily { display: flex; align-items: center; gap: 14px; margin-top: 22px; font-size: 14px; color: var(--text-muted); }
+    .rw-daily button { border: none; border-radius: 6px; padding: 12px 22px; font: inherit; font-size: 15px; cursor: pointer; background: #222222; color: #ffffff; flex: none; }
+    .rw-daily button:disabled { background: #e6e6e6; color: #999999; cursor: default; }
+    .sk-group { margin-bottom: 14px; }
+    .sk-mode { font-size: 13px; color: var(--text-muted); margin: 0 0 4px; }
+    .sk-row { display: grid; grid-template-columns: 16px 1fr 66px 116px; align-items: center; gap: 12px; width: 100%; background: none; border: none; border-bottom: 1px solid #f2f2f2; padding: 10px 2px; font: inherit; font-size: 15px; text-align: right; color: #999999; cursor: pointer; }
+    .sk-row:hover { background: #fafafa; }
+    .sk-row.on { color: var(--text-dark); }
+    .sk-box { width: 14px; height: 14px; border-radius: 3px; border: 1px solid #cccccc; box-sizing: border-box; }
+    .sk-row.on .sk-box { background: #222222; border-color: #222222; }
+    .sk-meter { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; direction: rtl; }
+    .sk-meter > span { height: 6px; border-radius: 2px; background: #ececec; }
+    .sk-meter > span.f { background: #8a8a8a; }
+    .sk-row.on .sk-meter > span.f { background: #222222; }
+    .sk-level { font-size: 13px; color: var(--text-muted); text-align: left; white-space: nowrap; }
+    @media (max-width: 480px) {
+      .sk-row { grid-template-columns: 16px 1fr 54px 100px; gap: 8px; font-size: 14px; }
+      .rw-daily { flex-direction: column; align-items: stretch; text-align: center; gap: 8px; }
     }
     .report-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
     .report-actions button { border: none; border-radius: 6px; padding: 12px 18px; font: inherit; cursor: pointer; background: var(--btn-bg); color: var(--text-dark); }
@@ -1447,7 +1467,7 @@ function generateExercise(cfg = null) {
 
     if (note.absLine < -4 || note.absLine > 12) return generateExercise(cfg);
 
-    return { type, clef, notes: [note], correctNote: note };
+    return { type, clef, notes: [note], correctNote: note, category: cfg ? cfg.label : null };
   }
 
   const activeOptionPills = cfg ? cfg.pool.map(st => st.name) : Array.from(document.querySelectorAll('#optionsTags .tag-pill.active')).map(el => el.dataset.value);
@@ -1808,7 +1828,7 @@ function playFirstNoteOnly() {
 function triggerSuccessAndNext() {
   exerciseSolved = true;
   if (training) recordTrainingResult();
-  const unlocked = window.Rewards ? Rewards.solved(!firstWrong && !helpUsed) : [];
+  const unlocked = window.Rewards ? Rewards.solved(!firstWrong && !helpUsed, currentSkill()) : [];
   // בלי השמעה חוזרת: הצליל דועך, רגע של שקט, ואז התרגיל הבא
   silenceAll(0.5);
   if (unlocked.length) {
@@ -1840,6 +1860,8 @@ function startPractice() {
   // לא חוזרים על אותו תרגיל פעמיים ברצף, כדי שיהיה ברור שהתחלף
   const prevKey = currentExercise ? exerciseKey(currentExercise) : null;
   const cfg = training ? training.plan[training.index] : null;
+  // בתרגול היומי כל תרגיל קובע לעצמו אם הוא בקריאה (חמשה) או בשמיעה
+  if (cfg && cfg.display) document.getElementById('displayMode').value = cfg.display;
   let next = generateExercise(cfg);
   for (let i = 0; next && prevKey && exerciseKey(next) === prevKey && i < 20; i++) next = generateExercise(cfg);
   currentExercise = next;
@@ -2326,7 +2348,7 @@ function setAppMode(mode, initial = false) {
   appMode = mode;
   if (window.Rewards && document.body.classList.contains('in-rewards')) Rewards.close();
   try { localStorage.setItem('mt_app_mode', mode); } catch (e) {}
-  document.body.classList.remove('mode-read', 'mode-ear', 'mode-train', 'in-session');
+  document.body.classList.remove('mode-read', 'mode-ear', 'mode-train', 'in-session', 'in-daily');
   document.body.classList.add('mode-' + mode);
   document.querySelectorAll('#modeTabs button').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   document.body.dataset.section = mode === 'read' ? 'read' : 'ear';
@@ -2395,12 +2417,37 @@ function startTraining(level) {
   goToNextExercise();
 }
 
+// המיומנות של התרגיל הנוכחי, לפי מה שמוצג: חמשה = קריאה, השמעה בלבד = שמיעה
+function currentSkill() {
+  if (!currentExercise) return null;
+  const ear = document.getElementById('displayMode').value === 'audio_only';
+  return (ear ? 'ear:' : 'read:') + currentExercise.type;
+}
+
+// תרגול יומי: תוכנית מהמיומנויות שהמתרגל בחר (נבנית ב-rewards.js), ורצה כמו אימון עם דוח בסוף
+function startDailyMix(items) {
+  const invs = { chords: [0, 1, 2], septachords: [0, 1, 2, 3] };
+  const plan = items.map(it => ({
+    label: it.label, type: it.type, display: it.mode === 'read' ? 'both' : 'audio_only',
+    pool: it.type === 'note_id' ? [] : (it.mode === 'read' ? BASE_STRUCTURES[it.type] : earStructures(it.type)),
+    inversions: invs[it.type] || [0], play: null
+  }));
+  closeSettings();
+  document.getElementById('sharedNote').hidden = true;
+  training = { daily: true, level: null, plan, index: 0, results: [] };
+  document.body.classList.add('in-session', 'in-daily');
+  document.getElementById('trainingPanel').style.display = 'none';
+  document.getElementById('practiceArea').style.display = 'flex';
+  currentExercise = null;
+  goToNextExercise();
+}
+
 function recordTrainingResult() {
   const ex = currentExercise;
   const hasInv = ex.inversionsPool && ex.inversionsPool.length > 1 && !inversionIrrelevant(ex.type, ex.struct);
   training.results.push({
     category: ex.category,
-    item: ex.struct.name,
+    item: ex.struct ? ex.struct.name : ex.correctNote.name,
     inversion: hasInv ? INVERSIONS_DATA[ex.type].find(i => i.id === ex.inversion).name : null,
     correct: !firstWrong,
     wrong: firstWrong
@@ -2409,7 +2456,7 @@ function recordTrainingResult() {
 }
 
 function skipExercise() {
-  if (!exerciseSolved && window.Rewards) Rewards.broke();
+  if (!exerciseSolved && window.Rewards) Rewards.broke(currentSkill());
   if (training && !exerciseSolved) {
     noteWrong('דילוג', 'skip');
     exerciseSolved = true;
@@ -2468,8 +2515,8 @@ function showTrainingReport(partial = false) {
   const total = results.length;
   const correct = results.filter(r => r.correct).length;
   const pct = total ? Math.round(100 * correct / total) : 0;
-  if (!partial) saveHistory({ t: Date.now(), level: t.level, correct, total });
-  if (!partial && window.Rewards) Rewards.trainingDone(t.level, pct);
+  if (!partial && !t.daily) saveHistory({ t: Date.now(), level: t.level, correct, total });
+  if (!partial && !t.daily && window.Rewards) Rewards.trainingDone(t.level, pct);
 
   const byCat = groupStats(results, r => r.category);
   const byItem = groupStats(results, r => r.item).sort((a, b) => a.correct / a.total - b.correct / b.total);
@@ -2486,10 +2533,13 @@ function showTrainingReport(partial = false) {
 
   const strong = byItem.filter(g => g.correct === g.total && g.total >= 2).map(g => g.key);
   const weak = byItem.filter(g => g.correct / g.total < 0.7).map(g => g.key);
-  const hasNext = t.level < EAR_LEVELS.length - 1;
+  const hasNext = !t.daily && t.level < EAR_LEVELS.length - 1;
   let advice;
   if (partial) {
     advice = total ? `ענית על ${total} מתוך ${t.plan.length} תרגילים. ההמלצה לרמה הבאה תופיע בסוף האימון.` : 'עוד לא ענית על אף תרגיל.';
+  } else if (t.daily) {
+    const weakCats = byCat.filter(g => g.correct / g.total < 0.75).map(g => g.key);
+    advice = weakCats.length ? `כדאי לחזק: ${weakCats.join(', ')}. התרגול של מחר ייתן להן יותר מקום.` : 'מצוין. כל המיומנויות שבחרת עברו טוב.';
   } else if (pct >= 85) {
     advice = hasNext ? 'מצוין. אפשר לעבור לרמה הבאה.' : 'מצוין. סיימת את הרמה הגבוהה ביותר.';
   } else if (weak.length) {
@@ -2506,13 +2556,16 @@ function showTrainingReport(partial = false) {
   const panel = document.getElementById('trainingPanel');
   panel.style.display = 'block';
   updateTopbarProgress();
-  const actions = partial
+  const actions = partial || !t.daily ? null : `<button class="primary" onclick="Rewards.startDaily()">עוד סבב</button>
+      <button onclick="Rewards.open()">המיומנויות שלי</button>
+      <button onclick="setAppMode(appMode)">תרגול חופשי</button>`;
+  const actionsHtml = actions || (partial
     ? `<button class="primary" onclick="resumeTraining()">המשך אימון</button>
       <button onclick="endTraining()">סיום אימון</button>`
     : `${hasNext && pct >= 85 ? `<button class="primary" onclick="startTraining(${t.level + 1})">לרמה הבאה</button>` : ''}
       <button class="${hasNext && pct >= 85 ? '' : 'primary'}" onclick="startTraining(${t.level})">שוב ברמה הזו</button>
-      <button onclick="showLevelPicker()">כל הרמות</button>`;
-  panel.innerHTML = `<h2>${EAR_LEVELS[t.level].name}: ${partial ? 'דוח עד כה' : 'סיכום'}</h2>
+      <button onclick="showLevelPicker()">כל הרמות</button>`);
+  panel.innerHTML = `<h2>${t.daily ? 'תרגול יומי' : EAR_LEVELS[t.level].name}: ${partial ? 'דוח עד כה' : 'סיכום'}</h2>
     ${total ? `<div class="report-score">${pct}%</div>
     <p class="sub">${correct} נכונות מתוך ${total} בניסיון הראשון</p>` : ''}
     <div class="report-section"><p class="report-advice">${advice}</p></div>
@@ -2523,7 +2576,7 @@ function showTrainingReport(partial = false) {
     ${weak.length ? `<div class="report-section"><h3>לחיזוק</h3><p class="report-advice">${weak.join(', ')}</p></div>` : ''}
     ${confList ? `<div class="report-section"><h3>בלבולים נפוצים</h3><ul class="report-list">${confList}</ul></div>` : ''}
     <div class="report-actions">
-      ${actions}
+      ${actionsHtml}
     </div>`;
   window.scrollTo(0, 0);
 }
