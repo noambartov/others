@@ -107,6 +107,19 @@ test('scoreTaps: lenient window, steady device lag forgiven, missed and extra ta
   assert.strictEqual(r6.late, 1);
 });
 
+test('konnakol syllables follow the finest subdivision in each beat', () => {
+  const lab = (meter, cells) => {
+    let at = 0;
+    const evs = [];
+    cells.forEach(c => R.parseCell(c).forEach(e => { evs.push({ at, rest: e.rest, tuplet: e.tuplet }); at += e.ticks; }));
+    return R.countLabels(meter, evs).join(' ');
+  };
+  assert.strictEqual(lab('4/4', ['q', '8 8', '16 16 16 16', 'T8 8 8']), 'ta ta ka ta ka di mi ta ki ta');
+  assert.strictEqual(lab('2/4', ['8 16 16', '8. 16']), 'ta di mi ta mi');
+  assert.strictEqual(lab('4/4', ['8 q 8', 'R8 8', 'q']), 'ta ka ka  ka ta');
+  assert.strictEqual(lab('6/8', ['8 8 8', '16 16 8 8']), 'ta ki ta ta ka di ta');
+});
+
 test('rendering draws one notehead per sounding note and never throws', () => {
   const rnd = seeded(4);
   for (let level = 1; level <= R.LEVELS.length; level++) {
