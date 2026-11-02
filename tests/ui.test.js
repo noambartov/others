@@ -272,6 +272,9 @@ for (const vp of Object.keys(VIEWPORTS)) {
       await page.evaluate(() => { window.__firstEx = cur.d; });
       const i = await page.evaluate(() => cur.d.correct);
       await page.locator(`#tiles .tile[data-i="${i}"]`).click();
+      // התשובה הראשונה פותחת שיר באוסף: סוגרים אותו, והתרגול ממשיך לבד
+      await page.locator('#rewardDialog').waitFor({ state: 'visible', timeout: 3000 });
+      await page.evaluate(() => Rewards.closeUnlock());
       await page.waitForFunction(() => cur.d !== window.__firstEx, null, { timeout: 4000 });
       assert.strictEqual(await page.locator('#score').textContent(), '1 מתוך 1');
       noErrors(errors);
