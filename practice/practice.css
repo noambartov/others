@@ -79,7 +79,7 @@ body.theme-clean {
   --btn-bg: #efefef;
   --btn-color: #222222;
   --radius-btn: 6px;
-  --staff-line: #8c8c8c;
+  --staff-line: #aaaaaa;
 }
 body.theme-clean .container { max-width: 820px; }
 body.theme-clean .topbar {
@@ -697,3 +697,42 @@ footer {
   color: var(--text-muted);
 }
 footer a { color: var(--primary); text-decoration: none; }
+
+/* ---------- מראה האתר: גלולות עם מסגרת דקה כמו בדף הבית ---------- */
+.page-title { font-weight: 300; font-size: 36px; text-align: center; margin: 26px 0 0; color: #111111; }
+body.in-rewards .page-title { display: none; }
+@media (max-width: 560px) { .page-title { display: none; } }
+
+/* סוגי התרגיל: גלולות, הנבחר בשחור רך */
+body.theme-clean .ex-types { gap: 6px; padding-top: 14px; flex-wrap: wrap; justify-content: center; overflow: visible; }
+body.theme-clean .ex-types button { border: 1px solid #e3e3e3; border-radius: 999px; padding: 5px 14px; font-size: 14px; color: #888888; }
+body.theme-clean .ex-types button:hover { color: #222222; border-color: #c8c8c8; }
+body.theme-clean .ex-types button.active { background: #333333; border-color: #333333; color: #ffffff; }
+
+/* תשובות */
+body.theme-clean .opt-btn { background: #ffffff; border: 1px solid #d1d5db; border-radius: 999px; color: #222222; font-size: 16px; padding: 11px 6px; }
+body.theme-clean .opt-btn:hover { background: #f5f5f5; border-color: #9ca3af; }
+body.theme-clean .opt-btn.correct { border-color: #333333 !important; background: #333333 !important; }
+body.theme-clean .opt-btn.wrong { border: 1px solid #eeeeee !important; }
+body.theme-clean .acc-btn { background: #ffffff; border: 1px solid #d1d5db; border-radius: 999px; }
+body.theme-clean .acc-btn.selected { background: #333333; border-color: #333333; }
+
+/* כפתור ההשמעה הגדול */
+body.theme-clean .big-play { background: #ffffff; color: #222222; border: 1px solid #d1d5db; }
+body.theme-clean .big-play:hover { background: #f5f5f5; border-color: #9ca3af; }
+
+/* פעולות: גלולות קטנות */
+body.theme-clean .action-bar { gap: 8px; }
+body.theme-clean .play-btn,
+body.theme-clean .next-btn,
+body.theme-clean .help-btn,
+body.theme-clean .share-btn { border: 1px solid #e3e3e3; border-radius: 999px; padding: 6px 16px; font-weight: 400; }
+body.theme-clean .play-btn:hover,
+body.theme-clean .next-btn:hover,
+body.theme-clean .help-btn:hover,
+body.theme-clean .share-btn:hover { border-color: #c8c8c8; }
+
+/* בחירת שלב: לבחירה יש כותרת משלה, והשלבים במסגרת דקה */
+body.mode-train .page-title { display: none; }
+body.theme-clean .level-item { background: #ffffff; border: 1px solid #d1d5db; border-radius: 14px; }
+body.theme-clean .level-item:hover { background: #f5f5f5; border-color: #9ca3af; }
