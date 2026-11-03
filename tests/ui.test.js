@@ -377,12 +377,23 @@ for (const vp of Object.keys(VIEWPORTS)) {
       const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
       await page.locator('#kindRow button[data-kind="tap"]').click();
       await page.locator('#actions button', { hasText: 'עזרה' }).click();
-      await page.locator('#actions button', { hasText: 'רמז נוסף' }).click();
       assert.ok(await page.locator('.score-view svg text').count() >= 2, 'counting shown');
       await page.locator('#actions button', { hasText: 'ניסיון איטי' }).click();
+      assert.equal(await page.locator('#actions button', { hasText: 'ניסיון איטי' }).count(), 0, 'last help step used');
       await page.locator('#actions button', { hasText: 'התחל' }).click();
       await page.evaluate(() => finishTap());
       assert.ok(await page.locator('.summary').isVisible());
+      noErrors(errors);
+      await close();
+    });
+
+    test('no duplicate play buttons: dictation plays only from the big button', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html?ex=dictation');
+      for (const answer of ['choose', 'write']) {
+        await page.goto(page.url().split('?')[0] + '?ex=dictation&answer=' + answer);
+        await page.locator('#bigPlay').waitFor();
+        assert.equal(await page.locator('#actions button', { hasText: 'השמע' }).count(), 0, answer);
+      }
       noErrors(errors);
       await close();
     });
