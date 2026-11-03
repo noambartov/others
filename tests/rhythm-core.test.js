@@ -186,4 +186,46 @@ test('ties: tied note is held, not played again, and has no syllable', () => {
   assert.strictEqual(R.countLabels('4/4', [{ at: 0 }, { at: 6, tied: true }, { at: 12 }]).join(' '), 'ta  ta');
 });
 
+test('dictation by writing: every answer can be written from the pad, beat by beat', () => {
+  const rnd = seeded(11);
+  const all = ['h', 'q', '8', '16', 'T', 'tie'];
+  for (let k = 0; k < 300; k++) {
+    const level = 1 + (k % 6);
+    const ex = R.generate(level, 'dictation', rnd, null, all);
+    const pad = R.writeCells(ex.meter, level, all);
+    const entries = [];
+    ex.bars.forEach(bar => bar.forEach(c => {
+      const cell = pad.find(p => p.str === c.str);
+      assert.ok(cell, `${c.str} in the pad (${ex.meter})`);
+      const w = R.writtenExercise(ex.meter, ex.bars.length, entries);
+      assert.ok(R.allowedStartFor(ex.meter, cell, w.at.beat), `${c.str} allowed at beat ${w.at.beat}`);
+      entries.push({ cell, tie: !!c.events[0].tied });
+    }));
+    const w = R.writtenExercise(ex.meter, ex.bars.length, entries);
+    assert.ok(w.done);
+    assert.deepStrictEqual(R.wrongBeats(ex, w.ex), [], R.writtenKey(ex));
+    assert.strictEqual(R.writtenKey(w.ex), R.writtenKey(ex));
+  }
+});
+
+test('dictation by writing: wrong beats, sound equality, slots', () => {
+  const cell = s => { const ev = R.parseCell(s); return { str: s, events: ev, ticks: ev.reduce((a, e) => a + e.ticks, 0), beats: s === 'h' ? 2 : 1 }; };
+  const ans = { meter: '4/4', bars: [['q', '8 8', 'h'].map(cell)] };
+  // חצי = רבע ברבע בקשת: נשמע אותו דבר
+  const tied = R.writtenExercise('4/4', 1, [{ cell: cell('q') }, { cell: cell('8 8') }, { cell: cell('q') }, { cell: cell('q'), tie: true }]);
+  assert.deepStrictEqual(R.wrongBeats(ans, tied.ex), []);
+  const wrong = R.writtenExercise('4/4', 1, [{ cell: cell('q') }, { cell: cell('q') }, { cell: cell('h') }]);
+  assert.deepStrictEqual(R.wrongBeats(ans, wrong.ex).map(w => w.beat), [1]);
+  // חלקי: רק הפעמות שנכתבו נבדקות, והשאר משבצות
+  const part = R.writtenExercise('4/4', 1, [{ cell: cell('q') }]);
+  assert.deepStrictEqual(part.at, { bar: 0, beat: 1 });
+  assert.strictEqual(part.ex.bars[0].filter(c => c.slot).length, 3);
+  assert.deepStrictEqual(R.wrongBeats(ans, part.ex), []);
+  assert.strictEqual(R.answerCellAt(ans, 0, 2).cell.str, 'h');
+  assert.strictEqual(R.answerCellAt(ans, 0, 3), null);
+  // קשת להפסקה לא נכתבת
+  const restTie = R.writtenExercise('4/4', 1, [{ cell: cell('q') }, { cell: cell('Rq'), tie: true }]);
+  assert.ok(!R.flatten(restTie.ex).some(e => e.tie));
+});
+
 console.log(`rhythm-core: ${passed} tests passed`);

@@ -156,6 +156,20 @@
     .report-actions button:hover { border-color: #c8c8c8; color: #222222; }
     .report-actions button.primary { background: #333333; border-color: #333333; color: #ffffff; }
 
+    /* הכתבה בכתיבה: בוחרים מה נשמע בכל פעמה */
+    .cell-pad { direction: ltr; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; max-width: 620px; width: 100%; margin: 0 auto; }
+    .cell-btn { background: #ffffff; border: 1px solid #d1d5db; border-radius: 16px; color: #222222; cursor: pointer; min-height: 72px; padding: 6px 4px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+    @media (hover: hover) { .cell-btn:hover { background: #f5f5f5; border-color: #9ca3af; } }
+    .cell-btn:active { background: #f0f0f0; }
+    .cell-btn span { font-size: 12px; color: #999999; }
+    .cell-btn.off { opacity: 0.25; pointer-events: none; }
+    .cell-btn.away { display: none; }
+    .tie-row { display: flex; justify-content: center; }
+    .tie-row button { background: #ffffff; border: 1px solid #e3e3e3; border-radius: 999px; padding: 6px 16px; font-size: 14px; color: #888888; cursor: pointer; }
+    .tie-row button:hover { color: #222222; border-color: #c8c8c8; }
+    .tie-row button.on { background: #333333; border-color: #333333; color: #ffffff; }
+    .tie-row button:disabled { opacity: 0.35; pointer-events: none; }
+    .cmp-label { font-size: 13px; color: #999999; text-align: center; margin-bottom: -8px; }
     footer { text-align: center; font-size: 13px; color: #aaaaaa; padding: 24px 16px 8px; }
     footer a { color: #888888; text-decoration: none; }
 
@@ -169,6 +183,8 @@
       .tap-pad { height: 150px; }
       .mode-tabs { gap: 12px; }
       .mode-tabs button { font-size: 14px; }
+      .cell-pad { grid-template-columns: repeat(3, 1fr); }
+      .cell-btn { min-height: 66px; }
     }
   </style>
 </head>
@@ -187,6 +203,7 @@
       <div class="settings">
         <div class="setting no-train"><label>שלב</label><div class="seg" id="levelSeg"></div></div>
         <div class="setting no-train"><label>מרכיבים (אפשר לבחור כמה)</label><div class="seg" id="partsSeg"></div></div>
+        <div class="setting" id="answerSetting"><label>תשובה בהכתבה</label><div class="seg" id="answerSeg"></div></div>
         <div class="setting no-train"><label>מהירות (פעמות לדקה)</label><div class="seg" id="tempoSeg"></div></div>
         <div class="setting"><label>הברות ספירה (קונוקול) מתחת לתווים</label><div class="seg" id="sylSeg"></div></div>
         <div class="setting" id="metroSetting"><label>מטרונום בזמן ההשמעה</label><div class="seg" id="metroSeg"></div></div>
@@ -226,8 +243,9 @@ const PLAY_ICON = '<svg viewBox="0 0 24 24" width="36" height="36"><path d="M8 5
 const KINDS = ['dictation', 'tap', 'complete'];
 const TEMPOS = [60, 70, 80, 90, 100, 110, 120];
 const SETTINGS_KEY = 'mt_rhythm_settings';
+const ANSWERS = ['write', 'choose']; // הכתבה: כותבים את התווים, או בוחרים 1 מ-4
 
-const state = { kind: 'dictation', level: 1, tempo: 60, parts: R.DEFAULT_PARTS.slice(), metro: true, syllables: false, right: 0, total: 0 };
+const state = { kind: 'dictation', level: 1, tempo: 60, parts: R.DEFAULT_PARTS.slice(), metro: true, syllables: false, answer: 'write', right: 0, total: 0 };
 let cur = null; // התרגיל הנוכחי
 
 // ===== הגדרות =====
@@ -240,19 +258,21 @@ function loadSettings() {
     if (Array.isArray(s.parts)) state.parts = R.normParts(s.parts);
     if (typeof s.metro === 'boolean') state.metro = s.metro;
     if (typeof s.syllables === 'boolean') state.syllables = s.syllables;
+    if (ANSWERS.includes(s.answer)) state.answer = s.answer;
   } catch (e) {}
   const q = new URLSearchParams(location.search);
   if (KINDS.includes(q.get('ex'))) state.kind = q.get('ex');
   const lv = parseInt(q.get('level'), 10);
   if (lv >= 1 && lv <= R.LEVELS.length) { state.level = lv; state.tempo = R.LEVELS[lv - 1].tempo; }
   if (q.get('parts')) state.parts = R.normParts(q.get('parts').split(','));
+  if (ANSWERS.includes(q.get('answer'))) state.answer = q.get('answer');
   const tp = parseInt(q.get('tempo'), 10);
   if (TEMPOS.includes(tp)) state.tempo = tp;
 }
 function saveSettings() {
   // באימון השלב קובע רמה, מרכיבים, טמפו וסוג; נשמרות ההגדרות של התרגול החופשי
   const b = training ? training.saved : state;
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ kind: b.kind, level: b.level, tempo: b.tempo, parts: b.parts, metro: state.metro, syllables: state.syllables })); } catch (e) {}
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ kind: b.kind, level: b.level, tempo: b.tempo, parts: b.parts, metro: state.metro, syllables: state.syllables, answer: state.answer })); } catch (e) {}
 }
 
 function seg(id, items, current, onPick) {
@@ -277,6 +297,8 @@ function renderSettings() {
   seg('tempoSeg', TEMPOS.map(t => [t, t]), state.tempo, v => { state.tempo = +v; changed(false); });
   seg('metroSeg', [['1', 'עם'], ['0', 'בלי']], state.metro ? '1' : '0', v => { state.metro = v === '1'; changed(false); });
   seg('sylSeg', [['1', 'להציג'], ['0', 'לא להציג']], state.syllables ? '1' : '0', v => { state.syllables = v === '1'; changed(false); rerender(); });
+  seg('answerSeg', [['write', 'כתיבת התווים'], ['choose', 'בחירה מארבע']], state.answer, v => { state.answer = v; changed(state.kind === 'dictation'); });
+  document.getElementById('answerSetting').style.display = state.kind === 'dictation' ? '' : 'none';
   document.getElementById('metroSetting').style.display = state.kind === 'tap' ? 'none' : '';
   document.querySelectorAll('#kindRow button').forEach(b => b.classList.toggle('active', b.dataset.kind === state.kind));
   const L = R.LEVELS[state.level - 1];
@@ -297,6 +319,7 @@ function rerender() {
       : bigScore(cur.c.ex, Object.assign({ missing: cur.c.missing }, cur.hint ? { beatNumbers: true } : {}));
     return;
   }
+  if (cur.mode === 'write') { drawWrite(); return; }
   const svgs = sameScale(cur.d.options, { counts: state.syllables });
   document.querySelectorAll('#tiles .tile').forEach((t, i) => { t.innerHTML = svgs[i]; });
 }
@@ -535,7 +558,7 @@ function helpAction(steps) {
   return [HELP_LABELS[Math.min(cur.hint, 2)], () => { cur.helped = true; cur.hint++; applyHint(); }];
 }
 function applyHint() {
-  if (cur.kind === 'dictation') dictationHint();
+  if (cur.kind === 'dictation') cur.mode === 'write' ? writeHint() : dictationHint();
   else if (cur.kind === 'tap') tapHint();
   else completeHint();
 }
@@ -571,6 +594,7 @@ function setPrompt(s) { const el = document.getElementById('prompt'); if (el) el
 
 // --- הכתבה ---
 function newDictation(autoplay) {
+  if (state.answer === 'write') { newWriteDictation(autoplay); return; }
   const d = R.dictation(state.level, null, state.parts, stepMeter());
   cur = { kind: 'dictation', d, answered: false, counted: false, hint: 0, helped: false, slow: false };
   const stage = document.getElementById('stage');
@@ -641,6 +665,151 @@ function pickDictation(i, el) {
     count(false);
     el.classList.add('wrong');
     setPrompt('לא זה. אפשר להשמיע שוב');
+  }
+}
+
+// --- הכתבה בכתיבה: לכל פעמה בוחרים את הדמות שנשמעה בה ---
+function newWriteDictation(autoplay) {
+  const ex = R.generate(state.level, 'dictation', null, stepMeter(), state.parts);
+  const cells = R.writeCells(ex.meter, state.level, state.parts);
+  const hasTies = R.flatten(ex).some(e => e.tie);
+  cur = { kind: 'dictation', mode: 'write', d: { answer: ex }, cells, entries: [], tieOn: false, tieBtn: state.parts.includes('tie') || hasTies,
+    wrong: null, answered: false, counted: false, hint: 0, helped: false, slow: false };
+  const stage = document.getElementById('stage');
+  stage.innerHTML = `
+    <div class="big-play-wrap"><button class="big-play" id="bigPlay" aria-label="השמע">${PLAY_ICON}</button><div class="count muted" id="count"></div></div>
+    <div class="prompt" id="prompt">מה שמעתם? בחרו מה נשמע בכל פעמה. אחרי תיבת ספירה אחת מתחיל הקצב</div>
+    <div class="score-view" id="writeScore"></div>
+    <div class="cell-pad" id="cellPad">${cells.map((c, i) => `<button class="cell-btn" data-i="${i}" aria-label="${c.str}">${R.cellSvg(c, { height: 50 })}${c.beats > 1 ? `<span>${c.beats} פעמות</span>` : ''}</button>`).join('')}</div>
+    ${cur.tieBtn ? '<div class="tie-row"><button id="tieBtn" aria-pressed="false">קשת מהפעמה הקודמת</button></div>' : ''}`;
+  document.getElementById('bigPlay').onclick = playDictation;
+  stage.querySelectorAll('.cell-btn').forEach(b => b.onclick = () => writeCell(+b.dataset.i));
+  if (cur.tieBtn) document.getElementById('tieBtn').onclick = () => { cur.tieOn = !cur.tieOn; drawWrite(); };
+  drawWrite();
+  if (autoplay) playDictation();
+}
+
+function writtenNow(slots) { return R.writtenExercise(cur.d.answer.meter, cur.d.answer.bars.length, cur.entries, slots); }
+
+function drawWrite() {
+  const w = writtenNow();
+  const m = R.METERS[cur.d.answer.meter];
+  const shade = cur.wrong ? cur.wrong : undefined;
+  const score = document.getElementById('writeScore');
+  if (cur.answered) {
+    const mine = cur.entries.length ? `<div class="cmp-label">מה שכתבתם</div>${bigScore(w.ex, { shade, counts: false })}` : '';
+    score.innerHTML = cur.right ? bigScore(w.ex, { counts: state.syllables })
+      : `${mine}<div class="cmp-label">מה שהושמע</div>${bigScore(cur.d.answer)}`;
+  } else {
+    score.innerHTML = bigScore(w.ex, { shade, counts: false });
+  }
+  const lastCell = cur.entries.length ? cur.entries[cur.entries.length - 1].cell : null;
+  const tieable = !!lastCell && R.canTieFrom(lastCell) && !w.done;
+  if (!tieable) cur.tieOn = false;
+  const tb = document.getElementById('tieBtn');
+  if (tb) { tb.disabled = !tieable || cur.answered; tb.classList.toggle('on', cur.tieOn); tb.setAttribute('aria-pressed', String(cur.tieOn)); }
+  document.querySelectorAll('#cellPad .cell-btn').forEach(b => {
+    const c = cur.cells[+b.dataset.i];
+    const ok = !cur.answered && !w.done && R.allowedStartFor(cur.d.answer.meter, c, w.at.beat) && (!cur.tieOn || R.canTieTo(c));
+    b.classList.toggle('off', !ok);
+    // במשקל אי-זוגי הפעמות לא שוות: מסתירים תאים באורך של הפעמה האחרת
+    b.classList.toggle('away', !!m.odd && !w.done && c.ticks !== m.groups[w.at.beat]);
+  });
+  const padOff = cur.answered || w.done;
+  document.getElementById('cellPad').style.display = padOff ? 'none' : '';
+  const tr = document.querySelector('.tie-row');
+  if (tr) tr.style.display = padOff ? 'none' : '';
+  writeActions();
+}
+
+function writeActions() {
+  const w = writtenNow();
+  if (cur.answered) {
+    actions([cur.entries.length && w.done && !cur.right ? ['השמע את שלי', () => playExercise(writtenNow(false).ex)] : [null],
+      ['השמע שוב', playDictation], ['לתרגיל הבא', goNext, 'primary']]);
+    return;
+  }
+  actions([['השמע שוב', playDictation],
+    cur.wrong ? ['תיקון', fixWrite] : cur.entries.length ? ['מחיקה', () => { cur.entries.pop(); cur.tieOn = false; cur.wrong = null; drawWrite(); }] : [null],
+    helpAction(3),
+    w.done && !cur.wrong ? ['בדיקה', checkWrite, 'primary'] : ['לתרגיל הבא', goNext]]);
+}
+
+function writeCell(i) {
+  if (cur.answered) return;
+  cur.entries.push({ cell: cur.cells[i], tie: cur.tieOn });
+  cur.tieOn = false;
+  cur.wrong = null;
+  drawWrite();
+}
+
+function beatName(wb) {
+  return `פעמה ${wb.beat + 1}` + (cur.d.answer.bars.length > 1 ? ` בתיבה ${wb.bar + 1}` : '');
+}
+
+function checkWrite() {
+  const wrong = R.wrongBeats(cur.d.answer, writtenNow().ex);
+  if (!wrong.length) {
+    count(!cur.helped);
+    cur.answered = true;
+    cur.right = true;
+    cur.wrong = null;
+    setPrompt('נכון');
+    drawWrite();
+    scheduleNext();
+    return;
+  }
+  count(false);
+  cur.wrong = wrong;
+  setPrompt(wrong.length === 1 ? `${beatName(wrong[0])} לא נכונה. אפשר להשמיע שוב ולתקן` : `${wrong.length} פעמות לא נכונות, מסומנות באפור. אפשר להשמיע שוב ולתקן`);
+  drawWrite();
+}
+
+// תיקון: מוחקים מהפעמה השגויה הראשונה והלאה
+function fixWrite() {
+  const m = R.METERS[cur.d.answer.meter];
+  const first = cur.wrong[0];
+  const firstAbs = first.bar * m.beats + first.beat;
+  let abs = 0, keep = 0;
+  for (const en of cur.entries) {
+    if (abs + en.cell.beats > firstAbs) break;
+    abs += en.cell.beats;
+    keep++;
+  }
+  cur.entries = cur.entries.slice(0, keep);
+  cur.wrong = null;
+  cur.tieOn = false;
+  setPrompt('כתבו שוב מהפעמה המסומנת');
+  drawWrite();
+}
+
+function writeHint() {
+  if (cur.hint === 1) {
+    cur.slow = true;
+    setPrompt('לאט יותר, והמטרונום מכה גם את החלוקה');
+    playDictation();
+    writeActions();
+  } else if (cur.hint === 2) {
+    // רמז שני: אם יש טעות עד כאן, מסמנים אותה. אחרת כותבים את הפעמה הבאה
+    const w = writtenNow();
+    const wrong = R.wrongBeats(cur.d.answer, w.ex);
+    if (wrong.length) {
+      cur.wrong = wrong;
+      setPrompt(`עד כאן יש טעות: ${beatName(wrong[0])}`);
+    } else {
+      const next = !w.done && R.answerCellAt(cur.d.answer, w.at.bar, w.at.beat);
+      if (next) {
+        cur.entries.push({ cell: next.cell, tie: next.tie });
+        setPrompt(`עד כאן נכון. כתבנו לכם את ${beatName(w.at)}`);
+      } else setPrompt('עד כאן נכון');
+    }
+    drawWrite();
+  } else {
+    count(false);
+    cur.answered = true;
+    setPrompt('זו התשובה');
+    drawWrite();
+    playDictation();
   }
 }
 

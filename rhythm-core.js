@@ -426,6 +426,89 @@
     return PARTS.map(p => p.id).concat(['dot']).filter(id => s.has(id));
   }
 
+  // ===== הכתבה בכתיבה: התלמיד כותב פעמה אחר פעמה =====
+  // התאים לבחירה: כל התאים של השלב והמרכיבים, ועוד הפסקה באורך כל סוג פעמה
+  function writeCells(meter, level, parts) {
+    const pool = cellsFor(meter, level, parts);
+    [...new Set(METERS[meter].groups)].forEach(t => {
+      const str = t === 18 ? 'Rq.' : 'Rq';
+      if (!pool.some(c => c.str === str)) { const c = makeCell(str, '', meter); c.beats = 1; pool.push(c); }
+    });
+    return pool.map((c, i) => ({ c, i })).sort((a, b) => a.c.beats - b.c.beats || a.i - b.i).map(x => x.c);
+  }
+  const canTieFrom = c => { const e = c.events[c.events.length - 1]; return !e.rest && !e.tuplet; };
+  const canTieTo = c => { const e = c.events[0]; return !e.rest && !e.tuplet && e.type !== 'w'; };
+
+  // מה שנכתב עד עכשיו (entries = [{cell, tie}]) כתרגיל, עם משבצות ריקות בפעמות שנשארו.
+  // at = הפעמה הבאה לכתיבה, done = הכל מלא
+  function writtenExercise(meter, nBars, entries, slots) {
+    const m = METERS[meter];
+    const bars = [];
+    let b = 0, pos = 0, prev = null;
+    entries.forEach(en => {
+      const c = Object.assign({}, en.cell, { events: en.cell.events.map(e => Object.assign({}, e)) });
+      if (en.tie && prev && canTieFrom(prev) && canTieTo(c)) { prev.events[prev.events.length - 1].tie = true; c.events[0].tied = true; }
+      (bars[b] = bars[b] || []).push(c);
+      pos += c.beats;
+      if (pos >= m.beats) { b++; pos = 0; }
+      prev = c;
+    });
+    const at = { bar: b, beat: pos };
+    const done = b >= nBars;
+    if (slots !== false) {
+      for (let bb = b; bb < nBars; bb++) {
+        bars[bb] = bars[bb] || [];
+        for (let k = bb === b ? pos : 0; k < m.beats; k++) {
+          const t = m.groups[k];
+          const ev = { type: 'q', dots: t === 18 ? 1 : 0, rest: true, ticks: t, tuplet: 0, slot: true, active: bb === b && k === pos };
+          bars[bb].push({ str: '', slot: true, beats: 1, ticks: t, events: [ev] });
+        }
+      }
+    }
+    return { ex: { meter, bars: bars.filter(Boolean) }, at, done };
+  }
+
+  // מה שנשמע בכל יחידת זמן: N = תו מתחיל, H = תו נמשך (גם בקשת), R = הפסקה, S = משבצת ריקה
+  function soundTicks(ex) {
+    const out = [];
+    flatten(ex).forEach(e => {
+      const n = Math.round(e.ticks);
+      for (let k = 0; k < n; k++) out.push(e.slot ? 'S' : e.rest ? 'R' : k === 0 && !e.tied ? 'N' : 'H');
+    });
+    return out;
+  }
+  // הפעמות שבהן מה שנכתב נשמע אחרת מהתשובה (פעמות שעוד לא נכתבו לא נבדקות)
+  function wrongBeats(answer, written) {
+    const m = METERS[answer.meter];
+    const a = soundTicks(answer), w = soundTicks(written);
+    const out = [];
+    answer.bars.forEach((bar, b) => m.groups.forEach((g, k) => {
+      const from = b * m.barTicks + m.groupStarts[k];
+      const ws = w.slice(from, from + g), as = a.slice(from, from + g);
+      if (ws.length < g || ws.includes('S')) return;
+      if (ws.join('') !== as.join('')) out.push({ bar: b, beat: k, from: m.groupStarts[k], to: m.groupStarts[k] + g });
+    }));
+    return out;
+  }
+  // התא של התשובה שמתחיל בפעמה הזו (לרמז), או null אם שם ממשיך תא קודם
+  function answerCellAt(answer, bar, beat) {
+    let pos = 0;
+    for (const c of answer.bars[bar] || []) {
+      if (pos === beat) return { cell: c, tie: !!c.events[0].tied };
+      pos += c.beats;
+    }
+    return null;
+  }
+  // תא בודד לכפתור הבחירה: בלי הקו ובלי קו התיבה
+  function cellSvg(cell, opts) {
+    opts = opts || {};
+    const sp = opts.sp || 10;
+    const R = render({ meter: '4/4', bars: [[cell]] }, { sp, timeSig: false, final: false });
+    const body = R.svg.replace(/^<line[^>]*\/>/, '').replace(/<rect[^>]*height="[\d.]+" fill="[^"]*"\/>$/, '');
+    const w = R.width - sp * 1.9;
+    return `<svg viewBox="${r(sp * 0.1)} ${r(R.y - sp * 4.8)} ${r(w)} ${r(sp * 6.6)}" xmlns="http://www.w3.org/2000/svg" style="height:${opts.height || 52}px;width:auto;max-width:100%;display:block;margin:0 auto">${body}</svg>`;
+  }
+
   // ===== השלמת תיבה =====
   const NOTE_POOL = ['w', 'h.', 'h', 'q.', 'q', '8.', '8', '16'];
   const REST_POOL = ['Rh', 'Rq.', 'Rq', 'R8', 'R16'];
@@ -676,14 +759,14 @@
         const groups = beamGroups(cell);
         const pos = []; // לכל סימן: x של ראש התו, וקצה הגבעול
         cell.events.forEach((e, ei) => {
-          const isMissing = opts.missing && opts.missing.bar === b && opts.missing.cell === ci && opts.missing.ev === ei;
+          const isMissing = e.slot || (opts.missing && opts.missing.bar === b && opts.missing.cell === ci && opts.missing.ev === ei);
           const adv = advance(e, sp) * (opts.spread || 1);
           evList.push({ x, adv, at: tIn, ticks: e.ticks, e, bar: b, barStart });
           tIn += e.ticks;
           if (isMissing) {
             const w = Math.max(adv - sp * 0.8, sp * 2.4);
-            svg += `<rect x="${r(x - sp * 0.3)}" y="${r(y - sp * 2.2)}" width="${r(w)}" height="${r(sp * 4.4)}" rx="${r(sp * 0.4)}" fill="none" stroke="${faint}" stroke-width="${r(sp * 0.12)}" stroke-dasharray="${r(sp * 0.45)} ${r(sp * 0.35)}"/>`;
-            svg += `<text x="${r(x - sp * 0.3 + w / 2)}" y="${r(y + sp * 0.55)}" text-anchor="middle" font-family="Assistant, sans-serif" font-size="${r(sp * 1.8)}" fill="${faint}">?</text>`;
+            svg += `<rect x="${r(x - sp * 0.3)}" y="${r(y - sp * 2.2)}" width="${r(w)}" height="${r(sp * 4.4)}" rx="${r(sp * 0.4)}" fill="${e.active ? '#ececec' : 'none'}" stroke="${e.active ? '#555555' : faint}" stroke-width="${r(sp * 0.12)}" stroke-dasharray="${r(sp * 0.45)} ${r(sp * 0.35)}"/>`;
+            svg += `<text x="${r(x - sp * 0.3 + w / 2)}" y="${r(y + sp * 0.55)}" text-anchor="middle" font-family="Assistant, sans-serif" font-size="${r(sp * 1.8)}" fill="${faint}">${e.slot ? '' : '?'}</text>`;
             pos.push(null);
             if (!e.rest) noteIdx++;
             x += adv;
@@ -773,8 +856,22 @@
     const width = x + sp * 0.4;
     // קשת שממשיכה לשורה הבאה
     if (pendingTie !== null) svg += tieArc(pendingTie, width + sp * 0.2, y, sp, ink);
+    // רקע אפור מאחורי פעמות מסוימות (בהכתבה: הפעמות שנכתבו לא נכון)
+    let shade = '';
+    (opts.shade || []).forEach(sh => {
+      const xAt = t => {
+        const inBar = evList.filter(v => v.bar === sh.bar);
+        const v = inBar.find(v => v.at <= t && t < v.at + v.ticks);
+        if (v) return v.x + (t - v.at) / v.ticks * v.adv;
+        const z = inBar[inBar.length - 1];
+        return z ? z.x + z.adv : null;
+      };
+      const x1 = xAt(sh.from), x2 = xAt(sh.to);
+      if (x1 == null || x2 == null) return;
+      shade += `<rect x="${r(x1 - sp * 0.5)}" y="${r(y - sp * 4.4)}" width="${r(x2 - x1)}" height="${r(sp * 7)}" rx="${r(sp * 0.6)}" fill="#ececec"/>`;
+    });
     // הקו עצמו, מתחת לכל השאר
-    svg = `<line x1="0" x2="${r(width - (opts.final === false ? 0 : sp * 0.4))}" y1="${r(y)}" y2="${r(y)}" stroke="${lineCol}" stroke-width="${r(sp * 0.13)}"/>` + svg;
+    svg = shade + `<line x1="0" x2="${r(width - (opts.final === false ? 0 : sp * 0.4))}" y1="${r(y)}" y2="${r(y)}" stroke="${lineCol}" stroke-width="${r(sp * 0.13)}"/>` + svg;
 
     // סימוני דיוק מתחת לתווים: קו קצר, ונקודה שזזה שמאלה (מוקדם) או ימינה (מאוחר)
     // ספירה מתחת לתווים ("1 ו 2 ו") או מספרי הפעמות בלבד
@@ -856,6 +953,7 @@
         timeSig: li === 0, final: li === lines.length - 1 && opts.final !== false,
         marks: opts.marks ? opts.marks.slice(noteOffset, noteOffset + n) : undefined,
         noteStyle: opts.noteStyle ? opts.noteStyle.slice(noteOffset, noteOffset + n) : undefined,
+        shade: opts.shade ? opts.shade.filter(sh => idx.includes(sh.bar)).map(sh => Object.assign({}, sh, { bar: idx.indexOf(sh.bar) })) : undefined,
         missing: opts.missing && idx.includes(opts.missing.bar) ? Object.assign({}, opts.missing, { bar: idx.indexOf(opts.missing.bar) }) : undefined
       });
       // תו חסר לא נספר בסימונים, אבל נספר ב-onsets; זה בסדר כי אין סימונים בהשלמה
@@ -902,7 +1000,7 @@
     TPQ, METERS, LEVELS, STEPS, trainingPlan, exerciseParts, symbolPart, PARTS, DEFAULT_PARTS, normParts, beatTimes, parseCell, cellsFor, allowedStart, fillSpan, generate, variant, dictation, completion,
     lineCount: (ex, opts, maxWidth) => (svgLines(ex, opts, maxWidth).match(/<svg/g) || []).length,
     flatten, onsets, signature, writtenKey, beamGroups, timeline, barSeconds, scoreTaps, countLabels, render, svgFor, svgLines, naturalWidth, symbolSvg,
-    symbolTicks, eventSymbol, GLYPHS
+    symbolTicks, eventSymbol, GLYPHS, writeCells, writtenExercise, soundTicks, wrongBeats, answerCellAt, allowedStartFor: allowedStart, canTieFrom, canTieTo, cellSvg
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = RhythmCore;
   else root.RhythmCore = RhythmCore;
