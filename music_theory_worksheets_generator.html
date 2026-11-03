@@ -120,7 +120,16 @@
     .select-all-btn { font-size: 12px; color: #777777; cursor: pointer; margin-bottom: 6px; display: inline-block; }
     .select-all-btn:hover { color: #222222; }
 
-    .scale-controls-wrapper { display: flex; gap: 8px; align-items: center; }
+    .scale-controls-wrapper { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+    /* תפריט עם מעט אפשרויות מוצג כשורת כפתורים, כמו בהגדרות התרגול */
+    .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+    .seg button { font: inherit; font-size: 14px; padding: 7px 12px; border-radius: 6px; cursor: pointer;
+      background: #ffffff; border: 1px solid #e6e6e6; color: #999999; white-space: nowrap; }
+    .seg button:hover { color: #222222; }
+    .seg button.active { background: #e6e6e6; border-color: #e6e6e6; color: #222222; }
+    .seg.narrow button { padding: 7px 10px; min-width: 34px; }
+    select.segmented { display: none; }
+
 
     .btn-remove {
       background: none;
@@ -352,7 +361,7 @@ function addRow() {
       <span class="field-label">נושא</span>
       <select id="type_${id}" onchange="onSkillOrTypeChange(${id})">
         <option value="intervals" selected>מרווחים</option>
-        <option value="chords">אקורדים משולשים</option>
+        <option value="chords">משולשים</option>
         <option value="septachords">ספטאקורדים</option>
         <option value="scales">סולמות</option>
       </select>
@@ -360,8 +369,8 @@ function addRow() {
     <div class="field" id="given_voice_field_${id}" style="display:none;">
       <span class="field-label">צליל נתון</span>
       <select id="given_voice_${id}">
-        <option value="bass" selected>צליל בס</option>
-        <option value="soprano">צליל סופרן</option>
+        <option value="bass" selected>בס</option>
+        <option value="soprano">סופרן</option>
       </select>
     </div>
     <div id="sub_container_${id}"></div>
@@ -412,6 +421,7 @@ function addRow() {
   });
 
   container.appendChild(row);
+  ['skill_', 'type_', 'given_voice_'].forEach(p => segmentize(document.getElementById(p + id)));
   onSkillOrTypeChange(id);
   updateRowNumbers();
 }
@@ -425,6 +435,30 @@ function updateRowNumbers() {
   document.querySelectorAll('.row-control').forEach((r, idx) => {
     r.querySelector('.row-num').innerText = idx + 1;
   });
+}
+
+// תפריט נגלל עם מעט אפשרויות הופך לשורת כפתורים. ה-select נשאר מוסתר ומחזיק את הערך.
+function segmentize(sel, narrow) {
+  if (!sel || sel.classList.contains('segmented')) return;
+  sel.classList.add('segmented');
+  const seg = document.createElement('div');
+  seg.className = 'seg' + (narrow ? ' narrow' : '');
+  const paint = () => seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.v === sel.value));
+  [...sel.options].forEach(o => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.v = o.value;
+    b.textContent = o.textContent;
+    b.addEventListener('click', () => {
+      if (sel.value === o.value) return;
+      sel.value = o.value;
+      paint();
+      sel.dispatchEvent(new Event('change'));
+    });
+    seg.appendChild(b);
+  });
+  sel.after(seg);
+  paint();
 }
 
 function onSkillOrTypeChange(i) {
@@ -458,18 +492,19 @@ function onSkillOrTypeChange(i) {
           </div>
         </div>
         <div class="field">
-          <span class="field-label">סימני היתק</span>
+          <span class="field-label">עד כמה סימני היתק</span>
           <select id="max_acc_${i}">
-            <option value="6" selected>עד 6 היתקים</option>
-            <option value="0">0 היתקים</option>
-            <option value="1">עד 1 היתק</option>
-            <option value="2">עד 2 היתקים</option>
-            <option value="3">עד 3 היתקים</option>
-            <option value="4">עד 4 היתקים</option>
-            <option value="5">עד 5 היתקים</option>
+            <option value="0">0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6" selected>6</option>
           </select>
         </div>
       </div>`;
+    segmentize(document.getElementById(`max_acc_${i}`), true);
   } else {
     let itemsList = (type === 'intervals') ? INTERVALS_LIST : 
                     (type === 'chords' ? CHORDS_LIST : SEPTACHORDS_LIST);
