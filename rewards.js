@@ -459,6 +459,35 @@
     el._t = setTimeout(() => el.classList.remove('show'), 3200);
   }
 
+  // חגיגה כשנפתח שיר: "כל הכבוד!" גדול, החלון קופץ פנימה, ונצנצים בשחור ואפור מתפזרים ממנו
+  const celebrate = { bravo: true, sparkles: true };
+  const BRAVO = ['כל הכבוד!'];
+  const SPARKLE = 'M0 -10 C1.4 -1.4 1.4 -1.4 10 0 C1.4 1.4 1.4 1.4 0 10 C-1.4 1.4 -1.4 1.4 -10 0 C-1.4 -1.4 -1.4 -1.4 0 -10Z';
+  function sparkles(box) {
+    if (!celebrate.sparkles) return;
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const r = box.getBoundingClientRect();
+    const layer = document.createElement('div');
+    layer.className = 'rw-sparkles';
+    const cx = r.left + r.width / 2, cy = r.top + Math.min(70, r.height / 3);
+    const N = 34;
+    let html = '';
+    for (let i = 0; i < N; i++) {
+      const ang = (i / N) * Math.PI * 2 + Math.random() * 0.4;
+      const dist = 140 + Math.random() * 190;
+      const size = 12 + Math.random() * 20;
+      const dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist * 0.8 - 30;
+      const delay = Math.random() * 0.35 + (i % 3 === 0 ? 0.5 : 0);
+      const color = i % 3 === 1 ? '#9a9a9a' : (i % 3 === 2 ? '#c8c8c8' : '#222222');
+      html += `<svg class="rw-sparkle" viewBox="-10 -10 20 20" width="${size}" height="${size}"
+        style="left:${cx - size / 2}px;top:${cy - size / 2}px;--dx:${dx}px;--dy:${dy}px;--rot:${Math.round(Math.random() * 180 - 90)}deg;animation-delay:${delay.toFixed(2)}s">
+        <path d="${SPARKLE}" fill="${color}"/></svg>`;
+    }
+    layer.innerHTML = html;
+    document.body.appendChild(layer);
+    setTimeout(() => layer.remove(), 2600);
+  }
+
   let afterUnlock = null;
   function showUnlock(list, then) {
     afterUnlock = then || null;
@@ -472,7 +501,9 @@
       dlg.className = 'share-dialog rw-dialog';
       document.body.appendChild(dlg);
     }
-    dlg.innerHTML = `<div class="share-box reward-box" role="dialog">
+    const bravo = celebrate.bravo ? `<p class="reward-bravo">${BRAVO[Math.floor(Math.random() * BRAVO.length)]}</p>` : '';
+    dlg.innerHTML = `<div class="share-box reward-box${celebrate.bravo ? ' celebrate' : ''}" role="dialog">
+      ${bravo}
       <p class="reward-kicker">שיר חדש באוסף</p>
       <h3>${song.name}</h3>
       <p class="reward-by">${song.by}</p>
@@ -486,6 +517,7 @@
       </div>
     </div>`;
     dlg.hidden = false;
+    sparkles(dlg.querySelector('.reward-box'));
     setTimeout(() => playSong(a.song, document.getElementById('rewardStaff')), 250);
   }
   function closeUnlock() {
@@ -769,6 +801,6 @@
       </div>`;
   }
 
-  window.Rewards = { solved, broke, toggleSkill, startDaily, startRhythm, askReset, reset, dailyPlan, SKILLS, trainingDone, renderChip, open, close, setGoal, play: playSong, closeUnlock, showUnlock, SONGS, ACHIEVEMENTS, _load: load, _save: save, _svg: melodySvg };
+  window.Rewards = { solved, broke, toggleSkill, startDaily, startRhythm, askReset, reset, dailyPlan, SKILLS, trainingDone, renderChip, open, close, setGoal, play: playSong, closeUnlock, showUnlock, _celebrate: celebrate, SONGS, ACHIEVEMENTS, _load: load, _save: save, _svg: melodySvg };
   renderChip();
 })();

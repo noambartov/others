@@ -362,10 +362,10 @@
   }
 
   // ארבע אפשרויות להכתבה: התשובה ועוד שלוש שנשמעות אחרת
-  function dictation(level, rnd, parts) {
+  function dictation(level, rnd, parts, meter) {
     rnd = rnd || Math.random;
     for (let tries = 0; tries < 20; tries++) {
-      const ex = generate(level, 'dictation', rnd, null, parts);
+      const ex = generate(level, 'dictation', rnd, meter, parts);
       const opts = [ex];
       let guard = 0;
       while (opts.length < 4 && guard++ < 30) {
@@ -380,6 +380,52 @@
     return null;
   }
 
+  // ===== אימון לפי שלבים =====
+  // כל שלב = רמה + מרכיבים (ולפעמים משקלים וטמפו משלו). אימון = 12 תרגילים מעורבים
+  const STEPS = [
+    { level: 1, parts: ['h', 'q'], desc: 'רבעים וחצאים' },
+    { level: 1, parts: ['h', 'q', '8'], desc: 'נוספות שמיניות' },
+    { level: 2, parts: ['h', 'q', '8'], desc: 'שלושה רבעים' },
+    { level: 3, parts: ['h', 'q', '8'], desc: 'ארבע תיבות' },
+    { level: 3, parts: ['h', 'q', '8', 'tie'], desc: 'קשתות' },
+    { level: 3, parts: ['h', 'q', '8', '16', 'tie'], desc: 'שש-עשריות' },
+    { level: 4, parts: ['q', '8'], meters: ['6/8', '9/8'], tempo: 60, desc: 'משקל מורכב' },
+    { level: 4, parts: ['q', '8', '16'], meters: ['6/8', '9/8'], tempo: 60, desc: 'שש-עשריות במשקל מורכב' },
+    { level: 4, parts: ['q', '8', 'T'], meters: ['2/4', '3/4', '4/4'], desc: 'טריולות' },
+    { level: 5, parts: ['q', '8', '16', 'tie'], desc: 'גיוון וסינקופות' },
+    { level: 6, parts: ['q', '8', '16'], meters: ['5/8', '7/8'], tempo: 100, desc: '5/8 ו-7/8' },
+    { level: 6, parts: ['h', 'q', '8', '16', 'T', 'tie'], desc: 'הכל ביחד' }
+  ].map((st, i) => Object.assign({ n: i + 1, tempo: LEVELS[st.level - 1].tempo }, st));
+  const TRAINING_KINDS = ['dictation', 'dictation', 'dictation', 'dictation', 'dictation',
+    'complete', 'complete', 'complete', 'complete', 'tap', 'tap', 'tap'];
+
+  // סדר התרגילים באימון: מעורבב, בלי שתי הקשות ברצף
+  function trainingPlan(rnd) {
+    rnd = rnd || Math.random;
+    for (let t = 0; t < 50; t++) {
+      const plan = TRAINING_KINDS.map(k => ({ k, r: rnd() })).sort((a, b) => a.r - b.r).map(x => x.k);
+      if (plan.every((k, i) => i === 0 || !(k === 'tap' && plan[i - 1] === 'tap'))) return plan;
+    }
+    return TRAINING_KINDS.slice();
+  }
+
+  // מרכיב של סימן בודד (להשלמת תיבה)
+  function symbolPart(sym) {
+    const t = (sym[0] === 'R' ? sym.slice(1) : sym).replace('.', '');
+    return { w: 'h', h: 'h', q: 'q', '8': '8', '16': '16' }[t];
+  }
+  // מה יש בתרגיל, לדוח: המרכיבים, "מנוקדים" אם יש ערך עם נקודה
+  function exerciseParts(ex) {
+    const s = new Set();
+    flatten(ex).forEach(e => {
+      if (e.tuplet) s.add('T');
+      else s.add(symbolPart(e.type));
+      if (e.tie) s.add('tie');
+      if (e.dots && !e.rest) s.add('dot');
+    });
+    return PARTS.map(p => p.id).concat(['dot']).filter(id => s.has(id));
+  }
+
   // ===== השלמת תיבה =====
   const NOTE_POOL = ['w', 'h.', 'h', 'q.', 'q', '8.', '8', '16'];
   const REST_POOL = ['Rh', 'Rq.', 'Rq', 'R8', 'R16'];
@@ -387,10 +433,10 @@
   function eventSymbol(e) { return (e.rest ? 'R' : '') + e.type + (e.dots ? '.' : ''); }
 
   // סימן אחד חסר בתיבה. מחפשים סימן שאינו מחובר בקורה ואינו טריולה
-  function completion(level, rnd, parts) {
+  function completion(level, rnd, parts, meter) {
     rnd = rnd || Math.random;
     for (let tries = 0; tries < 60; tries++) {
-      const ex = generate(level, 'complete', rnd, null, parts);
+      const ex = generate(level, 'complete', rnd, meter, parts);
       const evs = flatten(ex).filter(e => e.tuplet === 0 && !isBeamed(ex, e) && !e.tie && !e.tied);
       if (evs.length === 0 || flatten(ex).length < 3) continue;
       const missing = evs[Math.floor(rnd() * evs.length)];
@@ -842,7 +888,7 @@
   }
 
   const RhythmCore = {
-    TPQ, METERS, LEVELS, PARTS, DEFAULT_PARTS, normParts, beatTimes, parseCell, cellsFor, allowedStart, fillSpan, generate, variant, dictation, completion,
+    TPQ, METERS, LEVELS, STEPS, trainingPlan, exerciseParts, symbolPart, PARTS, DEFAULT_PARTS, normParts, beatTimes, parseCell, cellsFor, allowedStart, fillSpan, generate, variant, dictation, completion,
     flatten, onsets, signature, writtenKey, beamGroups, timeline, barSeconds, scoreTaps, countLabels, render, svgFor, svgLines, naturalWidth, symbolSvg,
     symbolTicks, eventSymbol, GLYPHS
   };
