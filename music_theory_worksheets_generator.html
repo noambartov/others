@@ -137,6 +137,25 @@
     .multi-select-dropdown .select-all-btn:hover { color: #222222; }
     .multi-select-dropdown .select-all-btn.on { background: #e6e6e6; border-color: #e6e6e6; color: #222222; }
 
+
+    /* כל חמשה מוצגת כשורת סיכום אחת; רק החמשה שעורכים פתוחה עם הכפתורים */
+    .row-sum { display: none; flex: 1; min-width: 0; align-items: baseline; flex-wrap: wrap; column-gap: 10px; row-gap: 2px;
+      background: none; border: none; padding: 0; font: inherit; text-align: right; cursor: pointer; color: #222222; }
+    .row-sum .sum-main { font-size: 16px; }
+    .row-sum .sum-rest { font-size: 14px; color: var(--muted); }
+    .row-sum .sum-edit { font-size: 14px; color: #777777; margin-inline-start: auto; }
+    .row-sum:hover .sum-edit { color: #222222; }
+    .row-control.collapsed { align-items: center; }
+    .row-control.collapsed > :not(.drag-handle):not(.row-label):not(.row-sum):not(.btn-remove) { display: none !important; }
+    .row-control.collapsed .row-sum { display: flex; }
+    .row-control.collapsed .row-label, .row-control.collapsed .drag-handle, .row-control.collapsed .btn-remove { padding-bottom: 0; }
+    .row-control:not(.collapsed) { background: #fafafa; border-radius: 10px; padding: 12px; }
+    .rows-many .row-control:not(.collapsed) { margin: 4px 0; }
+    @media (max-width: 600px) {
+      .row-control.collapsed .btn-remove { top: 50%; transform: translateY(-50%); }
+      .row-control:not(.collapsed) { padding-left: 28px; }
+    }
+
     .scale-controls-wrapper { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
     /* תפריט עם מעט אפשרויות מוצג כשורת כפתורים, כמו בהגדרות התרגול */
     .seg { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -358,6 +377,7 @@ function addRow() {
   row.innerHTML = `
     <div class="drag-handle" title="גוררים כדי לשנות את סדר החמשות">⋮⋮</div>
     <div class="row-label">חמשה <span class="row-num"></span></div>
+    <button type="button" class="row-sum" onclick="editRow(${id})"></button>
     <div class="field">
       <span class="field-label">מפתח</span>
       <div class="multi-select-container">
@@ -439,9 +459,55 @@ function addRow() {
   });
 
   container.appendChild(row);
+  row.addEventListener('click', () => setTimeout(() => updateRowSummary(id)));
+  row.addEventListener('change', () => updateRowSummary(id));
   ['skill_', 'type_', 'given_voice_'].forEach(p => segmentize(document.getElementById(p + id)));
   onSkillOrTypeChange(id);
   updateRowNumbers();
+  editRow(id);
+}
+
+// פותח חמשה אחת לעריכה וסוגר את השאר לשורת סיכום
+function editRow(id) {
+  document.querySelectorAll('.row-control').forEach(r => {
+    const rid = r.id.split('_')[1];
+    r.classList.toggle('collapsed', rid !== String(id));
+    updateRowSummary(rid);
+  });
+}
+
+// מה נבחר בקבוצת כפתורים: "הכל", עד שני שמות, או "3 מתוך 4"
+function pickedText(labels, allText) {
+  const on = labels.filter(l => l.classList.contains('on'));
+  if (on.length === labels.length) return allText;
+  if (on.length === 0) return 'לא נבחר';
+  if (on.length <= 2) return on.map(l => l.textContent.trim()).join(', ');
+  return `${on.length} מתוך ${labels.length}`;
+}
+
+function updateRowSummary(id) {
+  const row = document.getElementById(`row_${id}`);
+  if (!row) return;
+  const optText = sel => sel ? sel.selectedOptions[0].textContent : '';
+  const skill = document.getElementById(`skill_${id}`);
+  const type = document.getElementById(`type_${id}`);
+  const main = `${optText(skill)} ${optText(type)}`;
+  const rest = [];
+  const clefs = [...row.querySelectorAll(`#clefs_${id} label`)].filter(l => l.classList.contains('on')).map(l => l.textContent.trim());
+  rest.push('מפתח ' + (clefs.length === 2 ? 'סול ופה' : clefs[0] || 'סול'));
+  const sub = document.getElementById(`sub_container_${id}`);
+  const t = type.value;
+  if (t === 'chords' || t === 'septachords') {
+    rest.push(pickedText([...sub.querySelectorAll('.pair-group[data-kind="base"] label')], 'כל הסוגים'));
+    rest.push(pickedText([...sub.querySelectorAll('.pair-group[data-kind="inv"] label')], 'כל ההיפוכים'));
+  } else {
+    rest.push(pickedText([...sub.querySelectorAll('.multi-select-dropdown label')], t === 'scales' ? 'כל הסולמות' : 'כל המרווחים'));
+  }
+  if (t === 'scales') rest.push(`עד ${document.getElementById(`max_acc_${id}`).value} היתקים`);
+  const voiceField = document.getElementById(`given_voice_field_${id}`);
+  if (voiceField && voiceField.style.display !== 'none') rest.push('צליל נתון ' + optText(document.getElementById(`given_voice_${id}`)));
+  row.querySelector('.row-sum').innerHTML =
+    `<span class="sum-main">${main}</span><span class="sum-rest">${rest.join(' · ')}</span><span class="sum-edit">עריכה</span>`;
 }
 
 function removeRow(id) {
