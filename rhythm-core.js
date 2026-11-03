@@ -22,48 +22,87 @@
   }
 
   // ===== משקלים =====
+  // groups = אורך כל פעמה ביחידות. במשקלים אי-זוגיים הפעמות לא שוות (5/8 = 2+3, 7/8 = 2+2+3).
+  // beatTicks = יחידת הטמפו (פעמה; במשקל מורכב רבע מנוקד, באי-זוגי רבע)
   const METERS = {
     '2/4': { num: 2, den: 4, beats: 2, beatTicks: 12, compound: false },
     '3/4': { num: 3, den: 4, beats: 3, beatTicks: 12, compound: false },
     '4/4': { num: 4, den: 4, beats: 4, beatTicks: 12, compound: false },
     '6/8': { num: 6, den: 8, beats: 2, beatTicks: 18, compound: true },
-    '9/8': { num: 9, den: 8, beats: 3, beatTicks: 18, compound: true }
+    '9/8': { num: 9, den: 8, beats: 3, beatTicks: 18, compound: true },
+    '5/8': { num: 5, den: 8, beats: 2, beatTicks: 12, compound: false, odd: true, groups: [12, 18] },
+    '7/8': { num: 7, den: 8, beats: 3, beatTicks: 12, compound: false, odd: true, groups: [12, 12, 18] }
   };
+  Object.keys(METERS).forEach(k => {
+    const m = METERS[k];
+    if (!m.groups) m.groups = new Array(m.beats).fill(m.beatTicks);
+    m.groupStarts = m.groups.map((g, i) => m.groups.slice(0, i).reduce((a, b) => a + b, 0));
+    m.barTicks = m.groups.reduce((a, b) => a + b, 0);
+  });
 
-  // ===== שלבים =====
-  const LEVELS = [
-    { n: 1, name: 'רבעים וחצאים', meters: ['4/4'] },
-    { n: 2, name: 'שמיניות', meters: ['2/4', '3/4', '4/4'] },
-    { n: 3, name: 'נקודה והפסקות', meters: ['2/4', '3/4', '4/4'] },
-    { n: 4, name: 'שש-עשריות', meters: ['2/4', '3/4', '4/4'] },
-    { n: 5, name: 'סינקופות וטריולות', meters: ['2/4', '3/4', '4/4'] },
-    { n: 6, name: 'משקל מורכב', meters: ['6/8', '9/8'] }
+  // ===== מרכיבים =====
+  // התלמיד בוחר אילו ערכים יופיעו. הפסקות של הערכים שנבחרו תמיד זמינות,
+  // וערכים עם נקודה נכנסים לבד כשיש את שני הערכים שהם בנויים מהם.
+  const PARTS = [
+    { id: 'h', name: 'חצאים' }, { id: 'q', name: 'רבעים' }, { id: '8', name: 'שמיניות' },
+    { id: '16', name: 'שש-עשריות' }, { id: 'T', name: 'טריולות' }, { id: 'tie', name: 'קשתות' }
   ];
-
-  // תאי קצב: כל תא ממלא פעמה אחת או יותר. level = השלב שבו התא נכנס
-  const SIMPLE_CELLS = [
-    ['q', 1], ['h', 1], ['w', 1],
-    ['8 8', 2],
-    ['q. 8', 3], ['h.', 3], ['Rq', 3], ['R8 8', 3], ['8 R8', 3], ['Rh', 3],
-    ['16 16 16 16', 4], ['8 16 16', 4], ['16 16 8', 4],
-    ['8. 16', 5], ['16 8 16', 5], ['8 q 8', 5], ['T8 8 8', 5]
-  ];
-  const COMPOUND_CELLS = [
-    ['q.', 6], ['8 8 8', 6], ['q 8', 6], ['8 q', 6], ['h.', 6], ['Rq.', 6], ['q R8', 6],
-    ['16 16 8 8', 6], ['8. 16 8', 6]
-  ];
-
-  function makeCell(str, level, meter) {
-    const events = parseCell(str);
-    const ticks = events.reduce((a, e) => a + e.ticks, 0);
-    return { str, level, events, ticks, beats: ticks / METERS[meter].beatTicks };
+  const DEFAULT_PARTS = ['h', 'q'];
+  const BASIC = ['h', 'q', '8', '16'];
+  function normParts(parts) {
+    const ids = PARTS.map(p => p.id);
+    const out = (parts || DEFAULT_PARTS).filter((p, i, a) => ids.includes(p) && a.indexOf(p) === i);
+    // צריך לפחות ערך רגיל אחד (טריולות וקשתות לבד לא מספיקות)
+    if (!out.some(p => BASIC.includes(p))) out.push(...(out.includes('T') ? ['q'] : DEFAULT_PARTS));
+    return ids.filter(id => out.includes(id));
   }
 
-  function cellsFor(meter, level) {
+  // ===== רמות =====
+  // כל רמה: משקלים, אורך (תיבות), גיוון (כמה דמויות קצב שונות ומה חוזר), וטמפו התחלתי
+  // form: מבנה התיבות. אות = דמות של תיבה, A' = A עם שינוי קטן
+  const LEVELS = [
+    { n: 1, name: 'פשוט וחוזר', meters: ['2/4', '4/4'], tap: 2, other: 1, palette: 2, form: ['A', 'A', "A'", 'A'], tempo: 60 },
+    { n: 2, name: 'שלושה רבעים', meters: ['2/4', '3/4', '4/4'], focus: ['3/4'], tap: 2, other: 1, palette: 3, form: ['A', 'B', 'A', 'B'], tempo: 70 },
+    { n: 3, name: 'ארבע תיבות', meters: ['2/4', '3/4', '4/4'], tap: 4, other: 2, palette: 4, form: ['A', "A'", 'A', 'B'], tempo: 80 },
+    { n: 4, name: 'משקל מורכב', meters: ['2/4', '3/4', '4/4', '6/8', '9/8'], focus: ['6/8', '9/8'], tap: 4, other: 2, palette: 4, form: ['A', "A'", 'A', 'B'], tempo: 90 },
+    { n: 5, name: 'גיוון וסינקופות', meters: ['2/4', '3/4', '4/4', '6/8', '9/8'], tap: 4, other: 2, palette: 6, form: ['A', 'B', "A'", 'C'], tempo: 100, sync: true },
+    { n: 6, name: 'משקלים אי-זוגיים', meters: ['2/4', '3/4', '4/4', '6/8', '9/8', '5/8', '7/8'], focus: ['5/8', '7/8'], tap: [4, 6], other: 2, palette: 99, form: ['A', 'B', 'C', 'D', 'E', 'F'], tempo: 110, sync: true }
+  ];
+
+  // תאי קצב: [תא, המרכיבים שהוא צריך, sync = סינקופה שחוצה פעמה (מרמה 5)]
+  const SIMPLE_CELLS = [
+    ['q', 'q'], ['Rq', 'q'], ['h', 'h'], ['Rh', 'h'], ['w', 'h'], ['h.', 'h'],
+    ['8 8', '8'], ['R8 8', '8'], ['8 R8', '8'],
+    ['q. 8', 'q 8'], ['8 q 8', 'q 8', 'sync'],
+    ['16 16 16 16', '16'], ['R16 16 16 16', '16'],
+    ['8 16 16', '8 16'], ['16 16 8', '8 16'], ['8. 16', '8 16'], ['16 8 16', '8 16'], ['R8 16 16', '8 16'],
+    ['T8 8 8', 'T']
+  ];
+  const COMPOUND_CELLS = [
+    ['q.', 'q'], ['Rq.', 'q'], ['q 8', 'q 8'], ['8 q', 'q 8'], ['q R8', 'q 8'], ['h.', 'h'],
+    ['8 8 8', '8'], ['R8 8 8', '8'], ['8 8 R8', '8'],
+    ['16 16 8 8', '8 16'], ['8 16 16 8', '8 16'], ['8 8 16 16', '8 16'], ['8. 16 8', '8 16'],
+    ['16 16 16 16 16 16', '16']
+  ];
+
+  function makeCell(str, need, meter) {
+    const events = parseCell(str);
+    const ticks = events.reduce((a, e) => a + e.ticks, 0);
     const m = METERS[meter];
-    const list = m.compound ? COMPOUND_CELLS : SIMPLE_CELLS;
-    return list.filter(([, l]) => l <= level).map(([s, l]) => makeCell(s, l, meter))
-      .filter(c => Number.isInteger(c.beats) && c.beats <= m.beats);
+    let beats = null;
+    if (m.odd) beats = ticks === 12 || ticks === 18 ? 1 : null; // תא אחד לכל פעמה
+    else if (Number.isInteger(ticks / m.beatTicks)) beats = ticks / m.beatTicks;
+    return { str, need: need || '', events, ticks, beats };
+  }
+
+  function cellsFor(meter, level, parts) {
+    parts = normParts(parts);
+    const m = METERS[meter];
+    const L = LEVELS[(level || 6) - 1];
+    const list = m.odd ? SIMPLE_CELLS.concat(COMPOUND_CELLS) : m.compound ? COMPOUND_CELLS : SIMPLE_CELLS;
+    return list.filter(([, need, flag]) => need.split(' ').every(p => parts.includes(p)) && (flag !== 'sync' || L.sync))
+      .map(([s, need]) => makeCell(s, need, meter))
+      .filter(c => c.beats !== null && c.beats <= m.beats);
   }
 
   // איפה בתיבה מותר לתא להתחיל, כדי שהכתיבה תראה את הפעמות (כמו שכותבים באמת)
@@ -71,6 +110,7 @@
     const m = METERS[meter];
     const len = cell.beats;
     if (start + len > m.beats) return false;
+    if (m.odd) return cell.ticks === m.groups[start];
     if (len === 1) return true;
     if (meter === '4/4') {
       if (len === 2) return start % 2 === 0;
@@ -85,11 +125,15 @@
     return start === 0;
   }
 
-  function cellWeight(cell, level) {
-    let w = cell.level === level ? 3 : 1;
+  const isRestCell = c => c.events.every(e => e.rest);
+  const hasNote = c => c.events.some(e => !e.rest);
+
+  function cellWeight(cell) {
+    let w = 1;
     if (cell.str === 'w') w = 0.4;
     if (cell.events.some(e => e.rest)) w *= 0.6;
-    if (cell.events.every(e => e.rest)) w *= 0.6;
+    if (isRestCell(cell)) w *= 0.6;
+    if (cell.need.includes(' ')) w *= 1.3;
     return w;
   }
 
@@ -100,26 +144,35 @@
     return list[list.length - 1];
   }
 
-  // ממלא פעמות [from, to) בתיבה בתאים אקראיים
-  function fillSpan(meter, level, from, to, rnd) {
-    const cells = cellsFor(meter, level);
+  // כשאין תא מתאים: הפסקה באורך הפעמה
+  function restFiller(meter, pos) {
+    const c = makeCell(METERS[meter].groups[pos] === 18 ? 'Rq.' : 'Rq', '', meter);
+    c.beats = 1;
+    return c;
+  }
+
+  // ממלא פעמות [from, to) בתיבה בתאים מתוך cells (ואם אין, מתוך backup)
+  function fillSpan(meter, cells, from, to, rnd, backup) {
     const out = [];
     let pos = from;
+    const fits = c => pos + c.beats <= to && allowedStart(meter, c, pos);
     while (pos < to) {
-      const ok = cells.filter(c => pos + c.beats <= to && allowedStart(meter, c, pos));
-      const c = pick(ok, ok.map(c => cellWeight(c, level)), rnd);
+      let ok = cells.filter(fits);
+      if (!ok.length && backup) ok = backup.filter(fits);
+      const c = ok.length ? pick(ok, ok.map(cellWeight), rnd) : restFiller(meter, pos);
       out.push(Object.assign({}, c, { start: pos }));
       pos += c.beats;
     }
     return out;
   }
 
-  function restCells(bar) { return bar.filter(c => c.events.every(e => e.rest)).length; }
+  function restCells(bar) { return bar.filter(isRestCell).length; }
+  function cloneBar(bar) { return bar.map(c => Object.assign({}, c, { events: c.events.map(e => Object.assign({}, e)) })); }
 
   // events בסדר, עם זמן התחלה ביחידות (מתחילת התרגיל)
   function flatten(ex) {
     const out = [];
-    const barTicks = METERS[ex.meter].beats * METERS[ex.meter].beatTicks;
+    const barTicks = METERS[ex.meter].barTicks;
     ex.bars.forEach((bar, b) => {
       let t = b * barTicks;
       bar.forEach((cell, ci) => cell.events.forEach((e, ei) => {
@@ -130,53 +183,176 @@
     return out;
   }
 
+  // תו שנמשך בקשת (tied) לא מושמע מחדש
   function onsets(ex) {
-    return flatten(ex).filter(e => !e.rest).map(e => e.at);
+    return flatten(ex).filter(e => !e.rest && !e.tied).map(e => e.at);
   }
   function signature(ex) { return onsets(ex).join(','); }
-  function writtenKey(ex) { return ex.bars.map(b => b.map(c => c.str).join('|')).join('||'); }
-
-  function barsFor(meter, kind) {
-    if (kind === 'tap') return METERS[meter].beats <= 2 ? 4 : 2;
-    return METERS[meter].beats <= 2 ? 2 : 1;
+  function writtenKey(ex) {
+    return ex.bars.map(b => b.map(c => c.str + c.events.map(e => e.tie ? '~' : '').join('')).join('|')).join('||');
   }
 
-  // תרגיל חדש: משקל מהשלב, תיבות, ולפחות תא אחד מהשלב עצמו
-  function generate(level, kind, rnd, meter) {
-    rnd = rnd || Math.random;
-    const L = LEVELS[level - 1];
-    meter = meter || L.meters[Math.floor(rnd() * L.meters.length)];
-    const nBars = barsFor(meter, kind);
-    let best = null;
-    for (let tries = 0; tries < 60; tries++) {
-      const bars = [];
-      for (let b = 0; b < nBars; b++) bars.push(fillSpan(meter, level, 0, METERS[meter].beats, rnd));
-      const ex = { meter, level, bars };
-      const notes = onsets(ex).length;
-      if (notes < 2 + nBars) continue;
-      if (bars.some(b => restCells(b) > 1)) continue;
-      if (bars.some(b => b.length === 1 && b[0].str === 'w') && rnd() < 0.7) continue;
-      best = ex;
-      const hasNew = bars.some(b => b.some(c => c.level === level));
-      if (hasNew || level === 1) break;
+  // ===== קשתות =====
+  // קשת מחברת את התו האחרון של תא לתו הראשון של התא הבא: מעבר לפעמה או לקו התיבה
+  function evSeq(ex) {
+    const out = [];
+    ex.bars.forEach(bar => bar.forEach(c => c.events.forEach(e => out.push(e))));
+    return out;
+  }
+  function tieCandidates(ex) {
+    const list = [];
+    ex.bars.forEach((bar, b) => bar.forEach((cell, ci) => {
+      let nb = b, nc = ci + 1;
+      if (nc >= bar.length) { nb = b + 1; nc = 0; }
+      if (nb >= ex.bars.length) return;
+      const e = cell.events[cell.events.length - 1];
+      const n = ex.bars[nb][nc].events[0];
+      if (e.rest || n.rest || e.tuplet || n.tuplet || e.tied || e.tie || n.tie || n.tied) return;
+      if (n.type === 'w') return;
+      list.push([e, n]);
+    }));
+    return list;
+  }
+  function fixTies(ex) {
+    const s = evSeq(ex);
+    s.forEach((e, i) => {
+      if (e.tie && !(s[i + 1] && s[i + 1].tied)) delete e.tie;
+      if (e.tied && !(s[i - 1] && s[i - 1].tie)) delete e.tied;
+    });
+  }
+  function addTies(ex, rnd, count) {
+    for (let k = 0; k < count; k++) {
+      const c = tieCandidates(ex);
+      if (!c.length || onsets(ex).length <= 3) return;
+      const [e, n] = c[Math.floor(rnd() * c.length)];
+      e.tie = true; n.tied = true;
     }
-    return best || { meter, level, bars: Array.from({ length: nBars }, () => fillSpan(meter, level, 0, METERS[meter].beats, rnd)) };
   }
 
-  // גרסה דומה עם שינוי קטן (תא אחד או שניים), שנשמעת אחרת
+  // ===== יצירת תרגיל =====
+  function viableMeter(meter, level, parts) {
+    const m = METERS[meter];
+    const cells = cellsFor(meter, level, parts).filter(hasNote);
+    if (m.odd) return [...new Set(m.groups)].every(len => cells.some(c => c.ticks === len));
+    return cells.some(c => allowedStart(meter, c, 0));
+  }
+  function chooseMeter(L, parts, rnd) {
+    let list = L.meters.filter(mt => viableMeter(mt, L.n, parts));
+    if (!list.length) list = L.meters;
+    const focus = (L.focus || []).filter(mt => list.includes(mt));
+    if (focus.length && rnd() < 0.5) list = focus;
+    return list[Math.floor(rnd() * list.length)];
+  }
+  function barsFor(L, meter, kind, rnd) {
+    let n = kind === 'tap' ? L.tap : L.other;
+    if (Array.isArray(n)) n = n[0] + Math.floor(rnd() * (n[1] - n[0] + 1));
+    if (METERS[meter].beats <= 2 && n < 4) n *= 2;
+    return n;
+  }
+
+  // דמויות הקצב של התרגיל: קודם תא לכל מרכיב שנבחר (כדי שכולם יופיעו), ואז עוד עד הגודל של הרמה
+  function choosePalette(pool, size, parts, rnd) {
+    const notes = pool.filter(hasNote);
+    const pal = [];
+    const order = parts.filter(p => p !== 'tie').map(p => ({ p, r: rnd() })).sort((a, b) => a.r - b.r).map(x => x.p);
+    order.forEach(p => {
+      if (pal.length >= size) return;
+      const cand = notes.filter(c => !pal.includes(c) && c.need.split(' ').includes(p));
+      if (cand.length) pal.push(pick(cand, cand.map(cellWeight), rnd));
+    });
+    while (pal.length < size) {
+      const cand = notes.filter(c => !pal.includes(c));
+      if (!cand.length) break;
+      pal.push(pick(cand, cand.map(cellWeight), rnd));
+    }
+    return pal;
+  }
+
+  // תיבה דומה עם שינוי של תא אחד
+  function mutate(meter, bar, use, pool, rnd) {
+    const key = b => b.map(x => x.str).join('|');
+    for (const src of [use, pool]) {
+      for (let t = 0; t < 20; t++) {
+        const i = Math.floor(rnd() * bar.length);
+        const c = bar[i];
+        const repl = fillSpan(meter, src, c.start, c.start + c.beats, rnd, pool);
+        const nb = bar.slice(0, i).concat(repl, bar.slice(i + 1));
+        if (key(nb) !== key(bar)) return nb;
+      }
+    }
+    return bar;
+  }
+
+  function partsUsed(ex) {
+    const s = new Set();
+    ex.bars.forEach(b => b.forEach(c => c.need.split(' ').forEach(p => p && hasNote(c) && s.add(p))));
+    if (evSeq(ex).some(e => e.tie)) s.add('tie');
+    return s.size;
+  }
+
+  // תרגיל חדש לפי הרמה (משקל, אורך, גיוון) והמרכיבים שנבחרו
+  function generate(level, kind, rnd, meter, parts) {
+    rnd = rnd || Math.random;
+    parts = normParts(parts);
+    const L = LEVELS[level - 1];
+    meter = meter || chooseMeter(L, parts, rnd);
+    const nBars = barsFor(L, meter, kind, rnd);
+    const pool = cellsFor(meter, level, parts);
+    const rests = pool.filter(isRestCell);
+    const beats = METERS[meter].beats;
+    const target = Math.min(L.palette, parts.length);
+    let best = null, bestScore = -Infinity;
+    for (let tries = 0; tries < 50; tries++) {
+      const pal = choosePalette(pool, L.palette, parts, rnd);
+      const use = pal.concat(rests.filter(c => !pal.includes(c)));
+      const made = {};
+      const bars = [];
+      for (let b = 0; b < nBars; b++) {
+        const f = L.form[b % L.form.length];
+        if (made[f]) bars.push(made[f]);
+        else if (f.length > 1 && made[f[0]]) { made[f] = mutate(meter, made[f[0]], use, pool, rnd); bars.push(made[f]); }
+        else { made[f] = fillSpan(meter, use, 0, beats, rnd, pool); bars.push(made[f]); }
+      }
+      const ex = { meter, level, parts, bars: bars.map(cloneBar) };
+      if (parts.includes('tie')) addTies(ex, rnd, Math.max(1, Math.round(nBars / 2)));
+      const used = partsUsed(ex);
+      const okNotes = onsets(ex).length >= Math.min(2 + nBars, 3 * nBars);
+      const okRests = !ex.bars.some(b => restCells(b) > 1 || b.every(isRestCell));
+      const okWhole = !ex.bars.some(b => b.length === 1 && b[0].str === 'w') || rnd() < 0.3;
+      const score = (okNotes ? 100 : 0) + (okRests ? 50 : 0) + (okWhole ? 20 : 0) + used * 5;
+      if (score > bestScore) { best = ex; bestScore = score; }
+      if (okNotes && okRests && okWhole && used >= target) break;
+    }
+    return best;
+  }
+
+  // גרסה דומה עם שינוי קטן (תא אחד או שניים, או קשת), שנשמעת אחרת
   function variant(ex, rnd, avoid) {
     rnd = rnd || Math.random;
+    const pool = cellsFor(ex.meter, ex.level, ex.parts);
     for (let tries = 0; tries < 80; tries++) {
-      const b = Math.floor(rnd() * ex.bars.length);
-      const bar = ex.bars[b];
-      const i = Math.floor(rnd() * bar.length);
-      let j = i;
-      if (rnd() < 0.4 && j + 1 < bar.length) j++;
-      const from = bar[i].start, to = bar[j].start + bar[j].beats;
-      const repl = fillSpan(ex.meter, ex.level, from, to, rnd);
-      const nb = bar.slice(0, i).concat(repl, bar.slice(j + 1));
-      if (restCells(nb) > 1) continue;
-      const v = { meter: ex.meter, level: ex.level, bars: ex.bars.map((x, k) => k === b ? nb : x) };
+      const v = { meter: ex.meter, level: ex.level, parts: ex.parts, bars: ex.bars.map(cloneBar) };
+      if (normParts(ex.parts).includes('tie') && rnd() < 0.3) {
+        // מוסיפים או מורידים קשת
+        const s = evSeq(v);
+        const ties = s.filter(e => e.tie);
+        if (ties.length && rnd() < 0.5) {
+          const e = ties[Math.floor(rnd() * ties.length)];
+          delete e.tie; delete s[s.indexOf(e) + 1].tied;
+        } else addTies(v, rnd, 1);
+      } else {
+        const b = Math.floor(rnd() * v.bars.length);
+        const bar = v.bars[b];
+        const i = Math.floor(rnd() * bar.length);
+        let j = i;
+        if (rnd() < 0.4 && j + 1 < bar.length) j++;
+        const from = bar[i].start, to = bar[j].start + bar[j].beats;
+        const repl = cloneBar(fillSpan(ex.meter, pool, from, to, rnd));
+        const nb = bar.slice(0, i).concat(repl, bar.slice(j + 1));
+        if (restCells(nb) > 1) continue;
+        v.bars[b] = nb;
+        fixTies(v);
+      }
       const sig = signature(v);
       if (onsets(v).length < 2) continue;
       if (avoid.some(a => signature(a) === sig)) continue;
@@ -186,10 +362,10 @@
   }
 
   // ארבע אפשרויות להכתבה: התשובה ועוד שלוש שנשמעות אחרת
-  function dictation(level, rnd) {
+  function dictation(level, rnd, parts) {
     rnd = rnd || Math.random;
     for (let tries = 0; tries < 20; tries++) {
-      const ex = generate(level, 'dictation', rnd);
+      const ex = generate(level, 'dictation', rnd, null, parts);
       const opts = [ex];
       let guard = 0;
       while (opts.length < 4 && guard++ < 30) {
@@ -211,11 +387,11 @@
   function eventSymbol(e) { return (e.rest ? 'R' : '') + e.type + (e.dots ? '.' : ''); }
 
   // סימן אחד חסר בתיבה. מחפשים סימן שאינו מחובר בקורה ואינו טריולה
-  function completion(level, rnd) {
+  function completion(level, rnd, parts) {
     rnd = rnd || Math.random;
     for (let tries = 0; tries < 60; tries++) {
-      const ex = generate(level, 'complete', rnd);
-      const evs = flatten(ex).filter(e => e.tuplet === 0 && !isBeamed(ex, e));
+      const ex = generate(level, 'complete', rnd, null, parts);
+      const evs = flatten(ex).filter(e => e.tuplet === 0 && !isBeamed(ex, e) && !e.tie && !e.tied);
       if (evs.length === 0 || flatten(ex).length < 3) continue;
       const missing = evs[Math.floor(rnd() * evs.length)];
       const sym = eventSymbol(missing);
@@ -252,9 +428,17 @@
   function timeline(ex, tempo) {
     const m = METERS[ex.meter];
     const sec = 60 / tempo / m.beatTicks;
-    return flatten(ex).map(e => ({ rest: e.rest, start: e.at * sec, dur: e.ticks * sec }));
+    const out = [];
+    flatten(ex).forEach(e => {
+      // תו בקשת: מאריכים את התו שלפניו
+      if (e.tied && out.length) { out[out.length - 1].dur += e.ticks * sec; return; }
+      out.push({ rest: e.rest, start: e.at * sec, dur: e.ticks * sec });
+    });
+    return out;
   }
-  function barSeconds(ex, tempo) { return METERS[ex.meter].beats * 60 / tempo; }
+  function barSeconds(ex, tempo) { const m = METERS[ex.meter]; return m.barTicks * 60 / tempo / m.beatTicks; }
+  // תחילת כל פעמה בתיבה, בשניות (במשקל אי-זוגי המרווחים לא שווים)
+  function beatTimes(meter, tempo) { const m = METERS[meter]; return m.groupStarts.map(t => t * 60 / tempo / m.beatTicks); }
 
   // ===== בדיקת הקשות =====
   // expected: זמני התווים, taps: זמני ההקשות (שניות, אותו שעון)
@@ -326,24 +510,26 @@
   const SYLLABLES = { 1: ['ta'], 2: ['ta', 'ka'], 3: ['ta', 'ki', 'ta'], 4: ['ta', 'ka', 'di', 'mi'], 6: ['ta', 'ka', 'di', 'mi', 'ta', 'ka'] };
   function countLabels(meter, events) {
     const m = METERS[meter];
-    const bt = m.beatTicks;
+    const gi = at => { let k = m.groups.length - 1; while (k > 0 && m.groupStarts[k] > at) k--; return k; };
     const grids = {};
     events.forEach(e => {
-      const beat = Math.floor(e.at / bt);
-      const f = e.at % bt;
-      let g = 1;
-      if (m.compound) g = f === 0 ? 1 : f % 6 === 0 ? 3 : 6;
+      const k = gi(e.at);
+      const gl = m.groups[k];
+      const f = e.at - m.groupStarts[k];
+      let g;
+      if (gl === 18) g = f === 0 ? 1 : f % 6 === 0 ? 3 : 6;
       else if (e.tuplet || f % 4 === 0 && f % 12 !== 0 && f % 6 !== 0) g = f === 0 ? 1 : 3;
       else g = f === 0 ? 1 : f % 6 === 0 ? 2 : 4;
-      if (e.tuplet && !m.compound) g = Math.max(g, 3);
+      if (e.tuplet && gl !== 18) g = Math.max(g, 3);
       // טריולה ושש-עשריות לא נפגשות באותה פעמה בתרגילים, אז הגדול קובע
-      grids[beat] = Math.max(grids[beat] || 1, g);
+      grids[k] = Math.max(grids[k] || 1, g);
     });
+    // הפסקות ותווים בקשת (שלא מקישים מחדש) לא מקבלים הברה
     return events.map(e => {
-      if (e.rest) return '';
-      const beat = Math.floor(e.at / bt);
-      const g = grids[beat];
-      const idx = Math.round((e.at % bt) / (bt / g));
+      if (e.rest || e.tied) return '';
+      const k = gi(e.at);
+      const g = grids[k];
+      const idx = Math.round((e.at - m.groupStarts[k]) / (m.groups[k] / g));
       return SYLLABLES[g][idx] || '';
     });
   }
@@ -379,6 +565,15 @@
   function glyph(name, x, y, sp, fill) {
     const s = (sp / 250).toFixed(5);
     return `<path d="${GLYPHS[name].d}" transform="translate(${r(x)} ${r(y)}) scale(${s} -${s})"${fill ? ` fill="${fill}"` : ''}/>`;
+  }
+  // קשת מתחת לראשי התווים (הגבעולים למעלה): חרמש מלא, עבה באמצע ודק בקצוות
+  function tieArc(x1, x2, y, sp, col) {
+    const a = x1 + sp * 0.5, b = x2 - sp * 0.5;
+    const mid = (a + b) / 2;
+    const y0 = y + sp * 0.75;
+    const h = Math.min(sp * 1.1, sp * 0.45 + (b - a) * 0.1);
+    const t = sp * 0.22;
+    return `<path d="M${r(a)} ${r(y0)} Q${r(mid)} ${r(y0 + h * 2)} ${r(b)} ${r(y0)} Q${r(mid)} ${r(y0 + h * 2 - t * 2)} ${r(a)} ${r(y0)}Z" fill="${col}"/>`;
   }
   function gw(name, sp) { return GLYPHS[name].w * sp / 250; }
   function r(v) { return Math.round(v * 100) / 100; }
@@ -419,14 +614,18 @@
       });
       x += tw + sp * 1.6;
     }
+    // שורה שמתחילה בתו בקשת מהשורה הקודמת: מקום לתחילת הקשת
+    const firstEv = ex.bars[0] && ex.bars[0][0] && ex.bars[0][0].events[0];
+    if (opts.timeSig === false && firstEv && firstEv.tied) x += sp * 2.2;
     const startX = x;
     let noteIdx = 0;
+    let pendingTie = null;
     const evList = []; // כל הסימנים: מיקום, רוחב וזמן בתוך התיבה (לספירה ולמספרי הפעמות)
 
     ex.bars.forEach((bar, b) => {
       const barStart = x;
       let tIn = 0;
-      const isWholeRest = bar.length === 1 && bar[0].events.length === 1 && bar[0].events[0].rest && bar[0].ticks === m.beats * m.beatTicks;
+      const isWholeRest = bar.length === 1 && bar[0].events.length === 1 && bar[0].events[0].rest && bar[0].ticks === m.barTicks;
       bar.forEach((cell, ci) => {
         const groups = beamGroups(cell);
         const pos = []; // לכל סימן: x של ראש התו, וקצה הגבעול
@@ -452,16 +651,22 @@
             if (e.dots) svg += glyph('augmentationDot', rx + gw(name, sp) + sp * 0.35, y - sp * 0.5, sp, ink);
             pos.push(null);
           } else {
-            const st = noteStyle[noteIdx] || {};
+            const st = e.tied ? {} : noteStyle[noteIdx] || {};
             const col = st.color || ink;
             const head = HEAD[e.type];
             svg += glyph(head, x, y, sp, col);
             const hw = gw(head, sp);
+            // קשת: מהתו הקודם (או מתחילת השורה, אם הוא בשורה הקודמת) אל התו הזה
+            if (e.tied) {
+              svg += tieArc(pendingTie !== null ? pendingTie : startX - sp * 2.4, x + hw / 2, y, sp, ink);
+              pendingTie = null;
+            }
+            if (e.tie) pendingTie = x + hw / 2;
             // בתו עם דגל הנקודה באה אחרי הדגל, כדי שלא תיגע בו
             const flagged = (e.type === '8' || e.type === '16') && !groups.some(g => g.includes(ei));
             const dotX = flagged ? x + hw - stemW + gw(e.type === '8' ? 'flag8thUp' : 'flag16thUp', sp) + sp * 0.25 : x + hw + sp * 0.35;
             if (e.dots) svg += glyph('augmentationDot', dotX, y - sp * 0.5, sp, col);
-            notes.push({ x: x + hw / 2 });
+            if (!e.tied) notes.push({ x: x + hw / 2 });
             let stem = null;
             if (e.type !== 'w') {
               const sx = x + hw - stemW;
@@ -473,7 +678,7 @@
               }
             }
             pos.push(stem);
-            noteIdx++;
+            if (!e.tied) noteIdx++;
           }
           x += adv;
         });
@@ -520,6 +725,8 @@
       }
     });
     const width = x + sp * 0.4;
+    // קשת שממשיכה לשורה הבאה
+    if (pendingTie !== null) svg += tieArc(pendingTie, width + sp * 0.2, y, sp, ink);
     // הקו עצמו, מתחת לכל השאר
     svg = `<line x1="0" x2="${r(width - (opts.final === false ? 0 : sp * 0.4))}" y1="${r(y)}" y2="${r(y)}" stroke="${lineCol}" stroke-width="${r(sp * 0.13)}"/>` + svg;
 
@@ -532,15 +739,15 @@
     if (opts.counts) {
       for (let b = 0; b < ex.bars.length; b++) {
         const inBar = evList.filter(v => v.bar === b);
-        const labels = countLabels(ex.meter, inBar.map(v => ({ at: v.at, rest: v.e.rest, tuplet: v.e.tuplet })));
+        const labels = countLabels(ex.meter, inBar.map(v => ({ at: v.at, rest: v.e.rest, tuplet: v.e.tuplet, tied: v.e.tied })));
         inBar.forEach((v, i) => { if (labels[i]) svg += txt(v.x + sp * 0.6, labels[i]); });
       }
     }
     if (opts.beatNumbers) {
       const nb = ex.bars.length;
       for (let b = 0; b < nb; b++) {
-        for (let k = 0; k < m.beats; k++) {
-          const at = k * m.beatTicks;
+        for (let k = 0; k < m.groups.length; k++) {
+          const at = m.groupStarts[k];
           const v = evList.find(v => v.bar === b && v.at <= at && at < v.at + v.ticks);
           if (!v) continue;
           svg += txt(v.x + sp * 0.6 + (at - v.at) / v.ticks * v.adv, String(k + 1), opts.counts ? ty + sp * 1.7 : ty);
@@ -635,7 +842,7 @@
   }
 
   const RhythmCore = {
-    TPQ, METERS, LEVELS, parseCell, cellsFor, allowedStart, fillSpan, generate, variant, dictation, completion,
+    TPQ, METERS, LEVELS, PARTS, DEFAULT_PARTS, normParts, beatTimes, parseCell, cellsFor, allowedStart, fillSpan, generate, variant, dictation, completion,
     flatten, onsets, signature, writtenKey, beamGroups, timeline, barSeconds, scoreTaps, countLabels, render, svgFor, svgLines, naturalWidth, symbolSvg,
     symbolTicks, eventSymbol, GLYPHS
   };

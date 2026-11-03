@@ -332,6 +332,25 @@ for (const vp of Object.keys(VIEWPORTS)) {
       await close();
     });
 
+    test('levels and components: level sets its tempo, components toggle, one basic value stays', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
+      await page.locator('#settingsBox summary').click();
+      await page.locator('#levelSeg button[data-v="4"]').click();
+      assert.ok((await page.locator('#tempoSeg button.active').textContent()).includes('90'));
+      await page.locator('#partsSeg button[data-v="8"]').click();
+      await page.locator('#partsSeg button[data-v="tie"]').click();
+      assert.match(await page.locator('#levelLine').textContent(), /שמיניות, קשתות/);
+      // מורידים חצאים ורבעים: השמיניות נשארות, ואי אפשר להוריד את הערך הרגיל האחרון
+      await page.locator('#partsSeg button[data-v="h"]').click();
+      await page.locator('#partsSeg button[data-v="q"]').click();
+      await page.locator('#partsSeg button[data-v="8"]').click();
+      assert.strictEqual(await page.locator('#partsSeg button.active').count(), 2);
+      const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('mt_rhythm_settings')).parts);
+      assert.deepStrictEqual(saved, ['8', 'tie']);
+      noErrors(errors);
+      await close();
+    });
+
     test('read and tap: start, tap, get a summary', async () => {
       const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
       await page.locator('#kindRow button[data-kind="tap"]').click();
