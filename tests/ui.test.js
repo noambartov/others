@@ -351,6 +351,32 @@ for (const vp of Object.keys(VIEWPORTS)) {
       await close();
     });
 
+    test('rhythm step-by-step training: pick a step, 12 mixed exercises, report, free settings kept', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
+      await page.locator('#modeTabs button[data-mode="train"]').click();
+      const steps = page.locator('#trainingPanel .level-item');
+      assert.strictEqual(await steps.count(), 12);
+      await steps.nth(1).click();
+      assert.match(await page.locator('#score').textContent(), /1 מתוך 12/);
+      assert.match(await page.locator('#levelLine').textContent(), /שלב 2/);
+      for (let i = 0; i < 12; i++) {
+        // הכתבה: עונים נכון; השאר: מדלגים (נספר כטעות)
+        const isDict = await page.evaluate(() => cur.kind === 'dictation');
+        if (isDict) await page.locator(`#tiles .tile[data-i="${await page.evaluate(() => cur.d.correct)}"]`).click();
+        await page.evaluate(() => trainingNext(false));
+      }
+      assert.ok(await page.locator('.report-score').isVisible(), 'report shown');
+      assert.match(await page.locator('#trainingPanel').textContent(), /לפי סוג תרגיל[\s\S]*לפי מרכיב/);
+      assert.match(await page.locator('#trainingPanel').textContent(), /42%/);
+      assert.deepStrictEqual(await page.evaluate(() => [state.level, state.parts.join(), state.tempo]), [1, 'h,q', 60], 'free settings back');
+      const hist = await page.evaluate(() => JSON.parse(localStorage.getItem('mt_rhythm_training_history')));
+      assert.strictEqual(hist.length, 1);
+      await page.locator('#modeTabs button[data-mode="free"]').click();
+      assert.ok(await page.locator('#kindRow').isVisible());
+      noErrors(errors);
+      await close();
+    });
+
     test('read and tap: start, tap, get a summary', async () => {
       const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
       await page.locator('#kindRow button[data-kind="tap"]').click();
