@@ -123,6 +123,7 @@
       <summary>הגדרות</summary>
       <div class="settings">
         <div class="setting"><label>שלב</label><div class="seg" id="levelSeg"></div></div>
+        <div class="setting"><label>מרכיבים (אפשר לבחור כמה)</label><div class="seg" id="partsSeg"></div></div>
         <div class="setting"><label>מהירות (פעמות לדקה)</label><div class="seg" id="tempoSeg"></div></div>
         <div class="setting"><label>הברות ספירה (קונוקול) מתחת לתווים</label><div class="seg" id="sylSeg"></div></div>
         <div class="setting" id="metroSetting"><label>מטרונום בזמן ההשמעה</label><div class="seg" id="metroSeg"></div></div>
@@ -156,10 +157,10 @@
 const R = window.RhythmCore;
 const PLAY_ICON = '<svg viewBox="0 0 24 24" width="36" height="36"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>';
 const KINDS = ['dictation', 'tap', 'complete'];
-const TEMPOS = [60, 80, 100, 120];
+const TEMPOS = [60, 70, 80, 90, 100, 110, 120];
 const SETTINGS_KEY = 'mt_rhythm_settings';
 
-const state = { kind: 'dictation', level: 1, tempo: 80, metro: true, syllables: false, right: 0, total: 0 };
+const state = { kind: 'dictation', level: 1, tempo: 60, parts: R.DEFAULT_PARTS.slice(), metro: true, syllables: false, right: 0, total: 0 };
 let cur = null; // התרגיל הנוכחי
 
 // ===== הגדרות =====
@@ -169,16 +170,20 @@ function loadSettings() {
     if (KINDS.includes(s.kind)) state.kind = s.kind;
     if (s.level >= 1 && s.level <= R.LEVELS.length) state.level = s.level;
     if (TEMPOS.includes(s.tempo)) state.tempo = s.tempo;
+    if (Array.isArray(s.parts)) state.parts = R.normParts(s.parts);
     if (typeof s.metro === 'boolean') state.metro = s.metro;
     if (typeof s.syllables === 'boolean') state.syllables = s.syllables;
   } catch (e) {}
   const q = new URLSearchParams(location.search);
   if (KINDS.includes(q.get('ex'))) state.kind = q.get('ex');
   const lv = parseInt(q.get('level'), 10);
-  if (lv >= 1 && lv <= R.LEVELS.length) state.level = lv;
+  if (lv >= 1 && lv <= R.LEVELS.length) { state.level = lv; state.tempo = R.LEVELS[lv - 1].tempo; }
+  if (q.get('parts')) state.parts = R.normParts(q.get('parts').split(','));
+  const tp = parseInt(q.get('tempo'), 10);
+  if (TEMPOS.includes(tp)) state.tempo = tp;
 }
 function saveSettings() {
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ kind: state.kind, level: state.level, tempo: state.tempo, metro: state.metro, syllables: state.syllables })); } catch (e) {}
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ kind: state.kind, level: state.level, tempo: state.tempo, parts: state.parts, metro: state.metro, syllables: state.syllables })); } catch (e) {}
 }
 
 function seg(id, items, current, onPick) {
@@ -188,14 +193,26 @@ function seg(id, items, current, onPick) {
 }
 
 function renderSettings() {
-  seg('levelSeg', R.LEVELS.map(l => [l.n, `${l.n}. ${l.name}`]), state.level, v => { state.level = +v; changed(); });
+  // שינוי רמה מחזיר את הטמפו ההתחלתי שלה (ואפשר לשנות אחר כך)
+  seg('levelSeg', R.LEVELS.map(l => [l.n, `${l.n}. ${l.name}`]), state.level, v => { state.level = +v; state.tempo = R.LEVELS[state.level - 1].tempo; changed(); });
+  // מרכיבים: בחירה מרובה. חייב להישאר לפחות ערך רגיל אחד (טריולות או קשתות לבד לא מספיקות)
+  const pEl = document.getElementById('partsSeg');
+  pEl.innerHTML = R.PARTS.map(p => `<button data-v="${p.id}" class="${state.parts.includes(p.id) ? 'active' : ''}" aria-pressed="${state.parts.includes(p.id)}">${p.name}</button>`).join('');
+  pEl.querySelectorAll('button').forEach(b => b.onclick = () => {
+    const id = b.dataset.v;
+    const next = state.parts.includes(id) ? state.parts.filter(p => p !== id) : state.parts.concat([id]);
+    if (!next.some(p => ['h', 'q', '8', '16'].includes(p))) return;
+    state.parts = R.normParts(next);
+    changed();
+  });
   seg('tempoSeg', TEMPOS.map(t => [t, t]), state.tempo, v => { state.tempo = +v; changed(false); });
   seg('metroSeg', [['1', 'עם'], ['0', 'בלי']], state.metro ? '1' : '0', v => { state.metro = v === '1'; changed(false); });
   seg('sylSeg', [['1', 'להציג'], ['0', 'לא להציג']], state.syllables ? '1' : '0', v => { state.syllables = v === '1'; changed(false); rerender(); });
   document.getElementById('metroSetting').style.display = state.kind === 'tap' ? 'none' : '';
   document.querySelectorAll('#kindRow button').forEach(b => b.classList.toggle('active', b.dataset.kind === state.kind));
   const L = R.LEVELS[state.level - 1];
-  document.getElementById('levelLine').innerHTML = `שלב ${L.n}: ${L.name} · ${L.meters.map(m => `<span dir="ltr">${m}</span>`).join(' ')} · ${state.tempo} לדקה`;
+  const names = R.PARTS.filter(p => state.parts.includes(p.id)).map(p => p.name).join(', ');
+  document.getElementById('levelLine').innerHTML = `שלב ${L.n}: ${L.name} · ${names} · ${state.tempo} לדקה`;
 }
 
 // מתג ההברות: מציירים מחדש את התרגיל הנוכחי בלי להחליף אותו
@@ -358,16 +375,19 @@ function tapSound(t) {
 }
 
 // פעמות המטרונום מ-t0, לאורך bars תיבות. במשקל מורכב, או כשמבקשים חלוקה, גם צליל חלש בין הפעמות
+// במשקל אי-זוגי (5/8, 7/8) הפעמות לא שוות, ותמיד נשמעות גם השמיניות
 function metronome(ex, t0, bars, vol, tempo = state.tempo, subdivide = false) {
   const m = R.METERS[ex.meter];
-  const beat = 60 / tempo;
+  const bt = R.beatTimes(ex.meter, tempo);
+  const bar = R.barSeconds(ex, tempo);
   for (let b = 0; b < bars; b++) {
-    for (let i = 0; i < m.beats; i++) {
-      const t = t0 + (b * m.beats + i) * beat;
+    bt.forEach((off, i) => {
+      const t = t0 + b * bar + off;
+      const len = m.groups[i] * 60 / tempo / m.beatTicks;
       click(t, i === 0 ? 'accent' : 'beat', vol);
-      if (m.compound) { click(t + beat / 3, 'sub', vol); click(t + beat * 2 / 3, 'sub', vol); }
-      else if (subdivide) click(t + beat / 2, 'sub', vol * 1.6);
-    }
+      if (m.groups[i] === 18) { click(t + len / 3, 'sub', vol); click(t + len * 2 / 3, 'sub', vol); }
+      else if (subdivide || m.odd) click(t + len / 2, 'sub', vol * (subdivide ? 1.6 : 1));
+    });
   }
 }
 
@@ -391,12 +411,12 @@ function playExercise(ex, { countIn = true, metro = state.metro, onEnd, tempo = 
 function countDisplay(ex, t0, tempo = state.tempo) {
   const el = document.getElementById('count');
   if (!el) return;
-  const m = R.METERS[ex.meter];
-  const beat = 60 / tempo;
-  for (let i = 0; i <= m.beats; i++) {
-    const ms = (t0 + i * beat - audioCtx.currentTime) * 1000;
+  const bt = R.beatTimes(ex.meter, tempo).concat([R.barSeconds(ex, tempo)]);
+  const nb = bt.length - 1;
+  for (let i = 0; i <= nb; i++) {
+    const ms = (t0 + bt[i] - audioCtx.currentTime) * 1000;
     timers.push(setTimeout(() => {
-      el.textContent = i < m.beats ? String(i + 1) : '';
+      el.textContent = i < nb ? String(i + 1) : '';
       el.classList.toggle('muted', false);
     }, Math.max(0, ms)));
   }
@@ -465,7 +485,7 @@ function setPrompt(s) { const el = document.getElementById('prompt'); if (el) el
 
 // --- הכתבה ---
 function newDictation(autoplay) {
-  const d = R.dictation(state.level);
+  const d = R.dictation(state.level, null, state.parts);
   cur = { kind: 'dictation', d, answered: false, counted: false, hint: 0, helped: false, slow: false };
   const stage = document.getElementById('stage');
   stage.innerHTML = `
@@ -540,7 +560,7 @@ function pickDictation(i, el) {
 
 // --- השלמת תיבה ---
 function newComplete() {
-  const c = R.completion(state.level);
+  const c = R.completion(state.level, null, state.parts);
   cur = { kind: 'complete', c, answered: false, counted: false, hint: 0, helped: false };
   const stage = document.getElementById('stage');
   stage.innerHTML = `
@@ -562,7 +582,7 @@ function missingText(c) {
   const m = R.METERS[c.ex.meter];
   const ticks = R.symbolTicks(c.answer);
   const words = { 0.25: 'רבע פעמה', 0.5: 'חצי פעמה', 0.75: 'שלושה רבעים של פעמה', 1: 'פעמה אחת', 1.5: 'פעמה וחצי', 2: 'שתי פעמות', 3: 'שלוש פעמות', 4: 'ארבע פעמות' };
-  if (m.compound) {
+  if (m.compound || m.odd) {
     const e = ticks / 6;
     const w = { 0.5: 'חצי שמינית', 1: 'שמינית אחת', 1.5: 'שמינית וחצי', 2: 'שתי שמיניות', 3: 'שלוש שמיניות', 6: 'שש שמיניות' }[e];
     return w ? `חסרות ${w}`.replace('חסרות שמינית אחת', 'חסרה שמינית אחת').replace('חסרות חצי', 'חסרה חצי').replace('חסרות שמינית וחצי', 'חסרה שמינית וחצי') : '';
@@ -627,7 +647,7 @@ function symbolName(sym) {
 let tapRun = null;
 
 function newTap() {
-  const ex = R.generate(state.level, 'tap');
+  const ex = R.generate(state.level, 'tap', null, null, state.parts);
   cur = { kind: 'tap', ex, counted: false, hint: 0, helped: false, counts: false, guided: false };
   renderTap();
 }

@@ -13,13 +13,15 @@ function seeded(seed) {
   return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
 }
 
-const barTicks = meter => R.METERS[meter].beats * R.METERS[meter].beatTicks;
+const barTicks = meter => R.METERS[meter].barTicks;
+const PART_SETS = [['h', 'q'], ['q', '8'], ['8', '16', 'tie'], ['q', '8', 'T'], ['h', 'q', '8', '16', 'T', 'tie'], ['16'], ['T', 'tie'], ['8', 'tie']];
 
 test('every generated bar fills its meter exactly, with cells on allowed beats', () => {
   const rnd = seeded(1);
   for (let level = 1; level <= R.LEVELS.length; level++) {
     for (let k = 0; k < 300; k++) {
-      const ex = R.generate(level, ['dictation', 'tap', 'complete'][k % 3], rnd);
+      const parts = PART_SETS[k % PART_SETS.length];
+      const ex = R.generate(level, ['dictation', 'tap', 'complete'][k % 3], rnd, null, parts);
       assert.ok(R.LEVELS[level - 1].meters.includes(ex.meter));
       ex.bars.forEach(bar => {
         const sum = bar.reduce((a, c) => a + c.events.reduce((b, e) => b + e.ticks, 0), 0);
@@ -28,7 +30,8 @@ test('every generated bar fills its meter exactly, with cells on allowed beats',
         bar.forEach(c => {
           assert.strictEqual(c.start, pos);
           assert.ok(R.allowedStart(ex.meter, c, c.start), `${c.str} at ${c.start} in ${ex.meter}`);
-          assert.ok(c.level <= level);
+          // רק תאים מהמרכיבים שנבחרו (או הפסקת פעמה כשאין תא מתאים)
+          assert.ok(c.need === '' ? c.events.every(e => e.rest) : c.need.split(' ').every(p => R.normParts(parts).includes(p)), `${c.str} with ${parts}`);
           pos += c.beats;
         });
       });
@@ -46,7 +49,7 @@ test('dictation gives four options that all sound different, one of them the ans
   const rnd = seeded(2);
   for (let level = 1; level <= R.LEVELS.length; level++) {
     for (let k = 0; k < 150; k++) {
-      const d = R.dictation(level, rnd);
+      const d = R.dictation(level, rnd, PART_SETS[k % PART_SETS.length]);
       assert.ok(d, 'level ' + level);
       assert.strictEqual(d.options.length, 4);
       const sigs = new Set(d.options.map(R.signature));
@@ -61,7 +64,7 @@ test('completion: exactly one option has the missing duration', () => {
   const rnd = seeded(3);
   for (let level = 1; level <= R.LEVELS.length; level++) {
     for (let k = 0; k < 150; k++) {
-      const c = R.completion(level, rnd);
+      const c = R.completion(level, rnd, PART_SETS[k % PART_SETS.length]);
       assert.ok(c, 'level ' + level);
       const ev = c.ex.bars[c.missing.bar][c.missing.cell].events[c.missing.ev];
       assert.strictEqual(R.eventSymbol(ev), c.answer);
@@ -75,7 +78,8 @@ test('completion: exactly one option has the missing duration', () => {
 });
 
 test('timeline in seconds follows the tempo; in 6/8 the beat is a dotted quarter', () => {
-  const ex = { meter: '6/8', level: 6, bars: [[R.cellsFor('6/8', 6).find(c => c.str === '8 8 8'), R.cellsFor('6/8', 6).find(c => c.str === 'q.')]] };
+  const cells = R.cellsFor('6/8', 6, ['q', '8']);
+  const ex = { meter: '6/8', level: 6, bars: [[cells.find(c => c.str === '8 8 8'), cells.find(c => c.str === 'q.')]] };
   const t = R.timeline(ex, 60);
   assert.deepStrictEqual(t.map(n => +n.start.toFixed(4)), [0, 0.3333, 0.6667, 1]);
   assert.strictEqual(R.barSeconds(ex, 60), 2);
@@ -124,7 +128,7 @@ test('rendering draws one notehead per sounding note and never throws', () => {
   const rnd = seeded(4);
   for (let level = 1; level <= R.LEVELS.length; level++) {
     for (let k = 0; k < 60; k++) {
-      const ex = R.generate(level, 'tap', rnd);
+      const ex = R.generate(level, 'tap', rnd, null, PART_SETS[k % PART_SETS.length]);
       const out = R.render(ex);
       assert.strictEqual(out.notes.length, R.onsets(ex).length);
       assert.ok(!/NaN|undefined/.test(out.svg));
@@ -132,6 +136,54 @@ test('rendering draws one notehead per sounding note and never throws', () => {
       assert.ok(!/NaN|undefined/.test(lines));
     }
   }
+});
+
+test('levels: meters, length and variety grow; tempo starts at the level tempo', () => {
+  const rnd = seeded(5);
+  assert.deepStrictEqual(R.LEVELS.map(l => l.tempo), [60, 70, 80, 90, 100, 110]);
+  // רמה 1: לכל היותר שתי דמויות קצב בתרגיל
+  for (let k = 0; k < 200; k++) {
+    const ex = R.generate(1, 'tap', rnd, null, ['h', 'q', '8', '16']);
+    const figs = new Set(ex.bars.flat().filter(c => c.events.some(e => !e.rest)).map(c => c.str));
+    assert.ok(figs.size <= 2, R.writtenKey(ex));
+    assert.ok(['2/4', '4/4'].includes(ex.meter));
+  }
+  // רמה 3 ומעלה: ארבע תיבות לפחות בהקשה
+  for (let k = 0; k < 50; k++) assert.ok(R.generate(3, 'tap', rnd, '4/4').bars.length === 4);
+  const odd = new Set();
+  for (let k = 0; k < 200; k++) odd.add(R.generate(6, 'tap', rnd, null, ['q', '8']).meter);
+  assert.ok(odd.has('5/8') && odd.has('7/8'));
+});
+
+test('odd meters: beats are 2+3 and 2+2+3 eighths, metronome times follow them', () => {
+  assert.deepStrictEqual(R.METERS['7/8'].groups, [12, 12, 18]);
+  assert.deepStrictEqual(R.beatTimes('7/8', 60), [0, 1, 2]);
+  assert.strictEqual(R.barSeconds({ meter: '5/8' }, 60), 2.5);
+  const rnd = seeded(6);
+  for (let k = 0; k < 100; k++) {
+    const ex = R.generate(6, 'dictation', rnd, '5/8', ['q', '8', '16']);
+    ex.bars.forEach(b => assert.deepStrictEqual(b.map(c => c.ticks), [12, 18], R.writtenKey(ex)));
+  }
+});
+
+test('ties: tied note is held, not played again, and has no syllable', () => {
+  const rnd = seeded(7);
+  let seen = 0;
+  for (let k = 0; k < 200; k++) {
+    const ex = R.generate(3, 'tap', rnd, '4/4', ['q', '8', 'tie']);
+    const flat = R.flatten(ex);
+    const tied = flat.filter(e => e.tied);
+    if (!tied.length) continue;
+    seen++;
+    const t = R.timeline(ex, 60);
+    const total = t.reduce((a, n) => a + n.dur, 0);
+    assert.ok(Math.abs(total - R.barSeconds(ex, 60) * ex.bars.length) < 1e-9);
+    assert.strictEqual(t.filter(n => !n.rest).length, R.onsets(ex).length);
+    assert.strictEqual(R.render(ex).notes.length, R.onsets(ex).length);
+    flat.forEach((e, i) => { if (e.tie) assert.ok(flat[i + 1].tied && !flat[i + 1].rest); });
+  }
+  assert.ok(seen > 150, 'ties appear when selected');
+  assert.strictEqual(R.countLabels('4/4', [{ at: 0 }, { at: 6, tied: true }, { at: 12 }]).join(' '), 'ta  ta');
 });
 
 console.log(`rhythm-core: ${passed} tests passed`);
