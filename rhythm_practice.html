@@ -605,7 +605,8 @@ function playDictation() {
 }
 
 function dictationActions() {
-  actions([['השמע שוב', playDictation], helpAction(3), ['לתרגיל הבא', goNext, 'primary']]);
+  // ההשמעה בכפתור הגדול שמעל התשובות, בלי כפתור כפול כאן
+  actions([helpAction(3), ['לתרגיל הבא', goNext, 'primary']]);
 }
 
 function dictationHint() {
@@ -716,10 +717,10 @@ function writeActions() {
   const w = writtenNow();
   if (cur.answered) {
     actions([cur.entries.length && w.done && !cur.right ? ['השמע את שלי', () => playExercise(writtenNow(false).ex)] : [null],
-      ['השמע שוב', playDictation], ['לתרגיל הבא', goNext, 'primary']]);
+      ['לתרגיל הבא', goNext, 'primary']]);
     return;
   }
-  actions([['השמע שוב', playDictation],
+  actions([
     cur.wrong ? ['תיקון', fixWrite] : cur.entries.length ? ['מחיקה', () => { cur.entries.pop(); cur.tieOn = false; cur.wrong = null; drawWrite(); }] : [null],
     helpAction(3),
     w.done && !cur.wrong ? ['בדיקה', checkWrite, 'primary'] : ['לתרגיל הבא', goNext]]);
@@ -920,19 +921,21 @@ function renderTap(result) {
   tapActions();
 }
 
+// עזרה בהקשה: קודם הספירה מתחת לתווים (אם היא עוד לא מוצגת), ואז ניסיון איטי.
+// השמעת הקצב לא נכללת כאן, כי יש לה כפתור משלה
+function tapHintSteps() { return state.syllables ? ['guided'] : ['counts', 'guided']; }
 function tapActions() {
-  const help = cur.hint < 3 ? [HELP_LABELS[cur.hint] === 'תשובה' ? 'ניסיון איטי' : HELP_LABELS[cur.hint], () => { cur.helped = true; cur.hint++; applyHint(); }] : [null];
+  const steps = tapHintSteps();
+  const next = steps[cur.hint];
+  const help = next ? [next === 'guided' && cur.hint > 0 ? 'ניסיון איטי' : 'עזרה', () => { cur.helped = true; cur.hint++; applyHint(); }] : [null];
   actions(cur.result
     ? [['נסו שוב', () => { renderTap(); startTap(); }, 'primary'], ['השמע איך זה נשמע', playTapExample], help, ['לתרגיל הבא', goNextQuiet]]
     : [['התחל', startTap, 'primary'], ['השמע איך זה נשמע', playTapExample], help, ['לתרגיל הבא', goNextQuiet]]);
 }
 
 function tapHint() {
-  if (cur.hint === 1) {
-    if (cur.result) renderTap();
-    setPrompt('כך זה נשמע. אחר כך לחצו "התחל"');
-    playTapExample();
-  } else if (cur.hint === 2) {
+  stopAll();
+  if (tapHintSteps()[cur.hint - 1] === 'counts') {
     cur.counts = true;
     renderTap();
     setPrompt('הספירה מתחת לתווים. ספרו בקול והקישו על התווים');
@@ -940,7 +943,6 @@ function tapHint() {
     cur.guided = true;
     renderTap();
   }
-  tapActions();
 }
 
 function summaryHtml(res) {
