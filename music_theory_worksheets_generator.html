@@ -120,6 +120,23 @@
     .select-all-btn { font-size: 12px; color: #777777; cursor: pointer; margin-bottom: 6px; display: inline-block; }
     .select-all-btn:hover { color: #222222; }
 
+
+    /* בחירה מרובה: כל האפשרויות גלויות ככפתורים, כמו "מה לתרגל" בתרגול. תיבות הסימון מוסתרות ומחזיקות את הבחירה */
+    .row-control .field.multi { flex-basis: 100%; }
+    [id^="sub_container_"] { display: flex; flex-direction: column; gap: 10px; flex-basis: 100%; }
+    .multi-select-btn { display: none; }
+    .multi-select-dropdown { display: flex; flex-wrap: wrap; gap: 4px; position: static; width: auto; max-height: none;
+      overflow: visible; background: none; border: none; box-shadow: none; padding: 0; }
+    .multi-select-dropdown label { display: block; padding: 7px 12px; font-size: 14px; border-radius: 6px; cursor: pointer;
+      background: #ffffff; border: 1px solid #e6e6e6; color: #999999; white-space: nowrap; user-select: none; }
+    .multi-select-dropdown label:hover { color: #222222; }
+    .multi-select-dropdown label.on { background: #e6e6e6; border-color: #e6e6e6; color: #222222; }
+    .multi-select-dropdown input { display: none; }
+    .multi-select-dropdown .select-all-btn { margin: 0; padding: 7px 12px; font-size: 14px; border-radius: 6px;
+      border: 1px solid #e6e6e6; color: #999999; background: #ffffff; user-select: none; }
+    .multi-select-dropdown .select-all-btn:hover { color: #222222; }
+    .multi-select-dropdown .select-all-btn.on { background: #e6e6e6; border-color: #e6e6e6; color: #222222; }
+
     .scale-controls-wrapper { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
     /* תפריט עם מעט אפשרויות מוצג כשורת כפתורים, כמו בהגדרות התרגול */
     .seg { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -315,8 +332,9 @@ function buildNotesForStructure(givenLine, givenAcc, item, clef, givenVoice = 'b
 let rowCounter = 0;
 let draggedRow = null;
 
-const CLEFS_LIST = [{ val: 'sol', label: 'מפתח סול' }, { val: 'fa', label: 'מפתח פה' }];
+const CLEFS_LIST = [{ val: 'sol', label: 'סול' }, { val: 'fa', label: 'פה' }];
 const INTERVALS_LIST = DEFINED_STRUCTURES.intervals.map(s => s.name);
+const INTERVAL_ABBR = Object.fromEntries(DEFINED_STRUCTURES.intervals.map(s => [s.name, s.abbr || s.name]));
 const CHORDS_LIST = DEFINED_STRUCTURES.chords.map(s => s.name);
 const SEPTACHORDS_LIST = DEFINED_STRUCTURES.septachords.map(s => s.name);
 
@@ -345,7 +363,7 @@ function addRow() {
       <div class="multi-select-container">
         <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, 'clefs_${id}')">סול, פה</div>
         <div class="multi-select-dropdown" id="clefs_${id}">
-          <span class="select-all-btn" onclick="toggleAll('clefs_${id}')">סמן הכל / הסר הכל</span>
+          <span class="select-all-btn" onclick="toggleAll('clefs_${id}')">הכל</span>
           ${CLEFS_LIST.map(c => `<label><input type="checkbox" value="${c.val}" checked> ${c.label}</label>`).join('')}
         </div>
       </div>
@@ -461,6 +479,45 @@ function segmentize(sel, narrow) {
   paint();
 }
 
+// אקורדים: שתי שורות כפתורים, סוג האקורד וההיפוך. התרגילים הם כל הצירופים של מה שנבחר בשתיהן.
+// תיבות הסימון (מוסתרות) נשארות המקור של הבחירה, כמו בשאר הבחירות.
+function pairPickerHtml(i, type) {
+  const bases = T.CATALOG[type].map(c => c.name);
+  const invs = type === 'chords' ? INVERSION_NAMES_TRIADS : INVERSION_NAMES_SEPTS;
+  const what = type === 'chords' ? 'אילו אקורדים' : 'אילו ספטאקורדים';
+  const group = (kind, label, list) => `
+      <div class="field multi">
+        <span class="field-label">${label}</span>
+        <div class="multi-select-dropdown pair-group" data-kind="${kind}">
+          <span class="select-all-btn on" onclick="pairPick(${i}, '${type}', '${kind}', null)">הכל</span>
+          ${list.map((n, k) => `<label class="on" onclick="pairPick(${i}, '${type}', '${kind}', ${k})">${n}</label>`).join('')}
+        </div>
+      </div>`;
+  return group('base', what, bases) + group('inv', 'אילו היפוכים', invs) +
+    `<div class="pair-boxes" id="${type}_${i}" hidden>${DEFINED_STRUCTURES[type].map(s => `<input type="checkbox" value="${s.name}" checked>`).join('')}</div>`;
+}
+
+function pairPick(i, type, kind, k) {
+  const container = document.getElementById(`sub_container_${i}`);
+  const grp = container.querySelector(`.pair-group[data-kind="${kind}"]`);
+  const labels = [...grp.querySelectorAll('label')];
+  if (k === null) {
+    const all = labels.every(l => l.classList.contains('on'));
+    labels.forEach(l => l.classList.toggle('on', !all));
+  } else {
+    labels[k].classList.toggle('on');
+  }
+  grp.querySelector('.select-all-btn').classList.toggle('on', labels.every(l => l.classList.contains('on')));
+  const picked = g => [...container.querySelectorAll(`.pair-group[data-kind="${g}"] label`)]
+    .map((l, idx) => l.classList.contains('on') ? idx : -1).filter(x => x >= 0);
+  const bases = picked('base'), invs = picked('inv');
+  const nInv = type === 'chords' ? INVERSION_NAMES_TRIADS.length : INVERSION_NAMES_SEPTS.length;
+  // הסדר של DEFINED_STRUCTURES: לכל אקורד כל ההיפוכים שלו ברצף
+  document.querySelectorAll(`#${type}_${i} input`).forEach((cb, idx) => {
+    cb.checked = bases.includes(Math.floor(idx / nInv)) && invs.includes(idx % nInv);
+  });
+}
+
 function onSkillOrTypeChange(i) {
   const type = document.getElementById(`type_${i}`).value;
   const skill = document.getElementById(`skill_${i}`).value;
@@ -481,12 +538,12 @@ function onSkillOrTypeChange(i) {
 
     container.innerHTML = `
       <div class="scale-controls-wrapper">
-        <div class="field">
+        <div class="field multi">
           <span class="field-label">אילו סולמות</span>
           <div class="multi-select-container">
             <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, '${type}_${i}')">הכל</div>
             <div class="multi-select-dropdown" id="${type}_${i}">
-              <span class="select-all-btn" onclick="toggleAll('${type}_${i}')">סמן הכל / הסר הכל</span>
+              <span class="select-all-btn" onclick="toggleAll('${type}_${i}')">הכל</span>
               ${scalesList.map(item => `<label><input type="checkbox" value="${item}" checked> ${item}</label>`).join('')}
             </div>
           </div>
@@ -509,19 +566,22 @@ function onSkillOrTypeChange(i) {
     let itemsList = (type === 'intervals') ? INTERVALS_LIST : 
                     (type === 'chords' ? CHORDS_LIST : SEPTACHORDS_LIST);
 
-    const what = { intervals: 'אילו מרווחים', chords: 'אילו אקורדים', septachords: 'אילו ספטאקורדים' }[type];
+    if (type !== 'intervals') {
+      container.innerHTML = pairPickerHtml(i, type);
+    } else {
     container.innerHTML = `
-      <div class="field">
-        <span class="field-label">${what}</span>
+      <div class="field multi">
+        <span class="field-label">אילו מרווחים</span>
         <div class="multi-select-container">
-          <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, '${type}_${i}')">הכל</div>
           <div class="multi-select-dropdown" id="${type}_${i}">
-            <span class="select-all-btn" onclick="toggleAll('${type}_${i}')">סמן הכל / הסר הכל</span>
-            ${itemsList.map(item => `<label><input type="checkbox" value="${item}" checked> ${item}</label>`).join('')}
+            <span class="select-all-btn" onclick="toggleAll('${type}_${i}')">הכל</span>
+            ${itemsList.map(item => `<label title="${item}"><input type="checkbox" value="${item}" checked> ${INTERVAL_ABBR[item]}</label>`).join('')}
           </div>
         </div>
       </div>`;
+    }
   }
+  document.querySelectorAll(`#row_${i} .multi-select-dropdown[id]`).forEach(d => updateSelectSummary(d.id));
 }
 
 function toggleDropdown(e, id) {
@@ -545,18 +605,12 @@ function toggleAll(dropdownId) {
   updateSelectSummary(dropdownId);
 }
 
-// הכפתור של בחירה מרובה מראה מה נבחר: "הכל", שמות (עד שניים) או מספר
+// בחירה מרובה: כפתור נבחר מסומן באפור, ו"הכל" מסומן כשהכל נבחר
 function updateSelectSummary(dropdownId) {
   const dropdown = document.getElementById(dropdownId);
   const boxes = Array.from(dropdown.querySelectorAll('input[type="checkbox"]'));
-  const chosen = boxes.filter(cb => cb.checked).map(cb => cb.parentElement.textContent.trim().replace(/^מפתח /, ''));
-  let text;
-  if (dropdownId.startsWith('clefs_')) text = chosen.length ? chosen.join(', ') : 'לא נבחר';
-  else if (chosen.length === boxes.length) text = 'הכל';
-  else if (chosen.length === 0) text = 'לא נבחר';
-  else if (chosen.length <= 2) text = chosen.join(', ');
-  else text = `${chosen.length} נבחרו`;
-  dropdown.previousElementSibling.textContent = text;
+  boxes.forEach(cb => cb.parentElement.classList.toggle('on', cb.checked));
+  dropdown.querySelector('.select-all-btn')?.classList.toggle('on', boxes.every(cb => cb.checked));
 }
 
 document.addEventListener('change', e => {
