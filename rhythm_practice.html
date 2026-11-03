@@ -67,7 +67,7 @@
     .tiles.symbols { grid-template-columns: repeat(4, 1fr); max-width: 520px; width: 100%; margin: 0 auto; }
     .tile {
       background: #efefef; color: #222222; border: none; border-radius: 6px; cursor: pointer;
-      padding: 14px 10px 8px; display: flex; align-items: center; justify-content: center; min-height: 92px;
+      padding: 14px 10px 8px; display: flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center; min-height: 92px;
     }
     .tile:hover { background: #e2e2e2; }
     .tile.correct, .tile.correct:hover { background: #222222; color: #ffffff; }
@@ -97,6 +97,78 @@
     .action-bar button.primary { color: #222222; }
     .action-bar button[hidden] { display: none; }
 
+
+    /* מראה האתר: גלולות עם מסגרת דקה כמו בדף הבית */
+    .page-title { font-weight: 300; font-size: 36px; text-align: center; margin: 26px 0 0; color: #111111; }
+    body.in-rewards .page-title { display: none; }
+    .ex-types { gap: 6px; padding-top: 14px; flex-wrap: wrap; }
+    .ex-types button { border: 1px solid #e3e3e3; border-radius: 999px; padding: 5px 14px; font-size: 14px; color: #888888; }
+    .ex-types button:hover { color: #222222; border-color: #c8c8c8; }
+    .ex-types button.active { background: #333333; border-color: #333333; color: #ffffff; }
+    .big-play { background: #ffffff; color: #222222; border: 1px solid #d1d5db; }
+    .big-play:hover { background: #f5f5f5; border-color: #9ca3af; }
+    .tile { background: #ffffff; border: 1px solid #d1d5db; border-radius: 18px; }
+    .tile:hover { background: #f5f5f5; border-color: #9ca3af; }
+    .tile.correct, .tile.correct:hover { background: #333333; border-color: #333333; color: #ffffff; }
+    .tile.wrong, .tile.wrong:hover { background: #ffffff; border-color: #eeeeee; box-shadow: none; }
+    .tap-pad { background: #ffffff; border: 1px solid #d1d5db; border-radius: 24px; }
+    .tap-pad.hit { background: #f0f0f0; }
+    .action-bar { gap: 8px; }
+    .action-bar button { border: 1px solid #e3e3e3; border-radius: 999px; padding: 6px 16px; font-weight: 400; }
+    .action-bar button:hover { border-color: #c8c8c8; }
+    .action-bar button.primary { border-color: #9ca3af; }
+
+    /* חופשי / לפי שלבים, באמצע הסרגל העליון כמו בתרגול השמיעה */
+    .mode-tabs { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); display: flex; gap: 18px; white-space: nowrap; }
+    .mode-tabs button { background: none; border: none; padding: 2px 0; font: inherit; font-size: 15px; color: #999999; cursor: pointer; transition: color .15s; }
+    .mode-tabs button:hover, .mode-tabs button.active { color: #222222; }
+    body.mode-train .no-train { display: none !important; }
+    body.mode-train #kindRow, body.mode-train:not(.in-session) .level-line,
+    body.mode-train:not(.in-session) #stage, body.mode-train:not(.in-session) #actions { display: none; }
+    body.mode-train .page-title { display: none; }
+    body:not(.in-session) .train-only { display: none !important; }
+    .level-line .train-end { margin-inline-start: 10px; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: #dddddd; }
+    .training-panel { text-align: right; padding: 28px 0 24px; }
+    .training-panel[hidden] { display: none; }
+    .training-panel h2 { font-size: 20px; font-weight: 500; margin: 0 0 4px; }
+    .training-panel .sub { color: #999999; font-size: 14px; margin: 0 0 20px; line-height: 1.5; }
+    .level-list { display: grid; gap: 8px; }
+    .level-item {
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      background: #ffffff; border: 1px solid #d1d5db; border-radius: 14px; padding: 14px 16px;
+      font: inherit; text-align: right; cursor: pointer; color: #222222;
+    }
+    .level-item:hover { background: #f5f5f5; border-color: #9ca3af; }
+    .level-item .lv-name { font-size: 16px; font-weight: 500; }
+    .level-item .lv-desc { font-size: 13px; color: #999999; margin-top: 2px; }
+    .level-item .lv-best { font-size: 13px; color: #999999; white-space: nowrap; }
+    .report-score { font-size: 44px; font-weight: 300; margin: 8px 0 0; }
+    .report-section { margin-top: 26px; }
+    .report-section h3 { font-size: 13px; font-weight: 400; color: #999999; margin: 0 0 10px; border-bottom: 1px solid #eeeeee; padding-bottom: 6px; }
+    .report-row { display: grid; grid-template-columns: minmax(90px, 160px) 1fr 44px; align-items: center; gap: 12px; font-size: 14px; padding: 5px 0; }
+    .report-bar { height: 6px; background: #efefef; border-radius: 3px; overflow: hidden; }
+    .report-bar > span { display: block; height: 100%; background: #333333; }
+    .report-row .num { color: #999999; text-align: left; font-size: 13px; }
+    .report-advice { font-size: 15px; line-height: 1.6; margin: 0; }
+    .report-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+    .report-actions button { border: 1px solid #e3e3e3; border-radius: 999px; padding: 8px 18px; font: inherit; font-size: 15px; cursor: pointer; background: #ffffff; color: #555555; }
+    .report-actions button:hover { border-color: #c8c8c8; color: #222222; }
+    .report-actions button.primary { background: #333333; border-color: #333333; color: #ffffff; }
+
+    /* הכתבה בכתיבה: בוחרים מה נשמע בכל פעמה */
+    .cell-pad { direction: ltr; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; max-width: 620px; width: 100%; margin: 0 auto; }
+    .cell-btn { background: #ffffff; border: 1px solid #d1d5db; border-radius: 16px; color: #222222; cursor: pointer; min-height: 72px; padding: 6px 4px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+    @media (hover: hover) { .cell-btn:hover { background: #f5f5f5; border-color: #9ca3af; } }
+    .cell-btn:active { background: #f0f0f0; }
+    .cell-btn span { font-size: 12px; color: #999999; }
+    .cell-btn.off { opacity: 0.25; pointer-events: none; }
+    .cell-btn.away { display: none; }
+    .tie-row { display: flex; justify-content: center; }
+    .tie-row button { background: #ffffff; border: 1px solid #e3e3e3; border-radius: 999px; padding: 6px 16px; font-size: 14px; color: #888888; cursor: pointer; }
+    .tie-row button:hover { color: #222222; border-color: #c8c8c8; }
+    .tie-row button.on { background: #333333; border-color: #333333; color: #ffffff; }
+    .tie-row button:disabled { opacity: 0.35; pointer-events: none; }
+    .cmp-label { font-size: 13px; color: #999999; text-align: center; margin-bottom: -8px; }
     footer { text-align: center; font-size: 13px; color: #aaaaaa; padding: 24px 16px 8px; }
     footer a { color: #888888; text-decoration: none; }
 
@@ -104,11 +176,14 @@
       .tiles { grid-template-columns: 1fr; }
       .tiles.symbols { grid-template-columns: repeat(4, 1fr); }
       .tile { min-height: 78px; }
-      .ex-types { gap: 14px; }
-      .ex-types button { font-size: 14px; }
+      .page-title { display: none; }
       .tap-pad { font-size: 15px; }
       .big-play { width: 84px; height: 84px; }
       .tap-pad { height: 150px; }
+      .mode-tabs { gap: 12px; }
+      .mode-tabs button { font-size: 14px; }
+      .cell-pad { grid-template-columns: repeat(3, 1fr); }
+      .cell-btn { min-height: 66px; }
     }
   </style>
 </head>
@@ -118,22 +193,33 @@
   <div class="topbar">
     <span class="topscore" id="score">0 מתוך 0</span>
     <button class="reward-chip" id="rewardChip" onclick="Rewards.open()" aria-label="האוסף שלי"><span class="chip-row"><span class="chip-label">היום</span> <span class="chip-num">0/20</span></span><span class="chip-bar"><span></span></span></button>
+    <nav class="mode-tabs" id="modeTabs">
+      <button data-mode="free" onclick="setMode('free')">חופשי</button>
+      <button data-mode="train" onclick="setMode('train')">לפי שלבים</button>
+    </nav>
     <details id="settingsBox">
       <summary>הגדרות</summary>
       <div class="settings">
-        <div class="setting"><label>שלב</label><div class="seg" id="levelSeg"></div></div>
-        <div class="setting"><label>מהירות (פעמות לדקה)</label><div class="seg" id="tempoSeg"></div></div>
+        <div class="setting no-train"><label>שלב</label><div class="seg" id="levelSeg"></div></div>
+        <div class="setting no-train"><label>מרכיבים (אפשר לבחור כמה)</label><div class="seg" id="partsSeg"></div></div>
+        <div class="setting" id="answerSetting"><label>תשובה בהכתבה</label><div class="seg" id="answerSeg"></div></div>
+        <div class="setting no-train"><label>מהירות (פעמות לדקה)</label><div class="seg" id="tempoSeg"></div></div>
+        <div class="setting"><label>הברות ספירה (קונוקול) מתחת לתווים</label><div class="seg" id="sylSeg"></div></div>
         <div class="setting" id="metroSetting"><label>מטרונום בזמן ההשמעה</label><div class="seg" id="metroSeg"></div></div>
       </div>
     </details>
   </div>
+
+  <h1 class="page-title">תרגול קצב</h1>
 
   <nav class="ex-types" id="kindRow">
     <button data-kind="dictation">הכתבה</button>
     <button data-kind="tap">קריאה והקשה</button>
     <button data-kind="complete">השלמת תיבה</button>
   </nav>
-  <div class="level-line"><button id="levelLine" onclick="openSettings()"></button></div>
+  <div class="level-line"><button id="levelLine" onclick="openSettings()"></button><button class="train-only train-end" onclick="endTraining()">סיום אימון</button></div>
+
+  <div class="training-panel" id="trainingPanel" hidden></div>
 
   <div class="stage" id="stage"></div>
 
@@ -154,10 +240,11 @@
 const R = window.RhythmCore;
 const PLAY_ICON = '<svg viewBox="0 0 24 24" width="36" height="36"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>';
 const KINDS = ['dictation', 'tap', 'complete'];
-const TEMPOS = [60, 80, 100, 120];
+const TEMPOS = [60, 70, 80, 90, 100, 110, 120];
 const SETTINGS_KEY = 'mt_rhythm_settings';
+const ANSWERS = ['write', 'choose']; // הכתבה: כותבים את התווים, או בוחרים 1 מ-4
 
-const state = { kind: 'dictation', level: 1, tempo: 80, metro: true, right: 0, total: 0 };
+const state = { kind: 'dictation', level: 1, tempo: 60, parts: R.DEFAULT_PARTS.slice(), metro: true, syllables: false, answer: 'write', right: 0, total: 0 };
 let cur = null; // התרגיל הנוכחי
 
 // ===== הגדרות =====
@@ -167,15 +254,24 @@ function loadSettings() {
     if (KINDS.includes(s.kind)) state.kind = s.kind;
     if (s.level >= 1 && s.level <= R.LEVELS.length) state.level = s.level;
     if (TEMPOS.includes(s.tempo)) state.tempo = s.tempo;
+    if (Array.isArray(s.parts)) state.parts = R.normParts(s.parts);
     if (typeof s.metro === 'boolean') state.metro = s.metro;
+    if (typeof s.syllables === 'boolean') state.syllables = s.syllables;
+    if (ANSWERS.includes(s.answer)) state.answer = s.answer;
   } catch (e) {}
   const q = new URLSearchParams(location.search);
   if (KINDS.includes(q.get('ex'))) state.kind = q.get('ex');
   const lv = parseInt(q.get('level'), 10);
-  if (lv >= 1 && lv <= R.LEVELS.length) state.level = lv;
+  if (lv >= 1 && lv <= R.LEVELS.length) { state.level = lv; state.tempo = R.LEVELS[lv - 1].tempo; }
+  if (q.get('parts')) state.parts = R.normParts(q.get('parts').split(','));
+  if (ANSWERS.includes(q.get('answer'))) state.answer = q.get('answer');
+  const tp = parseInt(q.get('tempo'), 10);
+  if (TEMPOS.includes(tp)) state.tempo = tp;
 }
 function saveSettings() {
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ kind: state.kind, level: state.level, tempo: state.tempo, metro: state.metro })); } catch (e) {}
+  // באימון השלב קובע רמה, מרכיבים, טמפו וסוג; נשמרות ההגדרות של התרגול החופשי
+  const b = training ? training.saved : state;
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ kind: b.kind, level: b.level, tempo: b.tempo, parts: b.parts, metro: state.metro, syllables: state.syllables, answer: state.answer })); } catch (e) {}
 }
 
 function seg(id, items, current, onPick) {
@@ -185,13 +281,46 @@ function seg(id, items, current, onPick) {
 }
 
 function renderSettings() {
-  seg('levelSeg', R.LEVELS.map(l => [l.n, `${l.n}. ${l.name}`]), state.level, v => { state.level = +v; changed(); });
+  // שינוי רמה מחזיר את הטמפו ההתחלתי שלה (ואפשר לשנות אחר כך)
+  seg('levelSeg', R.LEVELS.map(l => [l.n, `${l.n}. ${l.name}`]), state.level, v => { state.level = +v; state.tempo = R.LEVELS[state.level - 1].tempo; changed(); });
+  // מרכיבים: בחירה מרובה. חייב להישאר לפחות ערך רגיל אחד (טריולות או קשתות לבד לא מספיקות)
+  const pEl = document.getElementById('partsSeg');
+  pEl.innerHTML = R.PARTS.map(p => `<button data-v="${p.id}" class="${state.parts.includes(p.id) ? 'active' : ''}" aria-pressed="${state.parts.includes(p.id)}">${p.name}</button>`).join('');
+  pEl.querySelectorAll('button').forEach(b => b.onclick = () => {
+    const id = b.dataset.v;
+    const next = state.parts.includes(id) ? state.parts.filter(p => p !== id) : state.parts.concat([id]);
+    if (!next.some(p => ['h', 'q', '8', '16'].includes(p))) return;
+    state.parts = R.normParts(next);
+    changed();
+  });
   seg('tempoSeg', TEMPOS.map(t => [t, t]), state.tempo, v => { state.tempo = +v; changed(false); });
   seg('metroSeg', [['1', 'עם'], ['0', 'בלי']], state.metro ? '1' : '0', v => { state.metro = v === '1'; changed(false); });
+  seg('sylSeg', [['1', 'להציג'], ['0', 'לא להציג']], state.syllables ? '1' : '0', v => { state.syllables = v === '1'; changed(false); rerender(); });
+  seg('answerSeg', [['write', 'כתיבת התווים'], ['choose', 'בחירה מארבע']], state.answer, v => { state.answer = v; changed(state.kind === 'dictation'); });
+  document.getElementById('answerSetting').style.display = state.kind === 'dictation' ? '' : 'none';
   document.getElementById('metroSetting').style.display = state.kind === 'tap' ? 'none' : '';
   document.querySelectorAll('#kindRow button').forEach(b => b.classList.toggle('active', b.dataset.kind === state.kind));
   const L = R.LEVELS[state.level - 1];
-  document.getElementById('levelLine').innerHTML = `שלב ${L.n}: ${L.name} · ${L.meters.map(m => `<span dir="ltr">${m}</span>`).join(' ')} · ${state.tempo} לדקה`;
+  const names = R.PARTS.filter(p => state.parts.includes(p.id)).map(p => p.name).join(', ');
+  document.getElementById('levelLine').innerHTML = training
+    ? `שלב ${training.step + 1}: ${R.STEPS[training.step].desc} · ${KIND_NAMES[state.kind]} · ${state.tempo} לדקה`
+    : `רמה ${L.n}: ${L.name} · ${names} · ${state.tempo} לדקה`;
+  document.querySelectorAll('#modeTabs button').forEach(b => b.classList.toggle('active', b.dataset.mode === appMode));
+}
+
+// מתג ההברות: מציירים מחדש את התרגיל הנוכחי בלי להחליף אותו
+function rerender() {
+  if (!cur) return;
+  if (cur.kind === 'tap') { if (!tapRun) renderTap(cur.result || undefined); return; }
+  if (cur.kind === 'complete') {
+    const bar = document.getElementById('bar');
+    if (bar) bar.innerHTML = cur.answered ? bigScore(cur.c.ex, cur.hint ? { beatNumbers: true } : {})
+      : bigScore(cur.c.ex, Object.assign({ missing: cur.c.missing }, cur.hint ? { beatNumbers: true } : {}));
+    return;
+  }
+  if (cur.mode === 'write') { drawWrite(); return; }
+  const svgs = sameScale(cur.d.options, { counts: state.syllables });
+  document.querySelectorAll('#tiles .tile').forEach((t, i) => { t.innerHTML = svgs[i]; });
 }
 
 function changed(regenerate = true) {
@@ -213,18 +342,27 @@ document.querySelectorAll('#kindRow button').forEach(b => b.onclick = () => {
 });
 
 function updateScore() {
-  document.getElementById('score').textContent = `${state.right} מתוך ${state.total}`;
+  document.getElementById('score').textContent = training
+    ? `${Math.min(training.index + 1, training.plan.length)} מתוך ${training.plan.length}`
+    : `${state.right} מתוך ${state.total}`;
 }
 function count(ok) {
   if (cur.counted) return;
   // מערכת התגמולים: התשובה הראשונה בכל תרגיל נספרת במיומנות הקצב (rewards.js)
   if (window.Rewards) {
     const unlocked = Rewards.solved(ok, 'rhythm:' + cur.kind);
-    // שיר חדש באוסף עוצר את המעבר האוטומטי, ולכן בהכתבה נכונה "המשך" מביא את התרגיל הבא
-    const then = ok && cur.kind === 'dictation' ? goNext : null;
-    if (unlocked.length) setTimeout(() => { stopAll(); Rewards.showUnlock(unlocked, then); }, 1200);
+    if (unlocked.length) {
+      // שיר חדש נפתח: עוצרים, מציגים אותו, ואחרי הסגירה ממשיכים לתרגיל הבא אם היה אמור לעבור
+      const ex = cur;
+      setTimeout(() => {
+        if (cur !== ex) return;
+        stopAll();
+        Rewards.showUnlock(unlocked, () => { if (cur === ex && ex.nextOnResume) ex.nextOnResume(); });
+      }, 1200);
+    }
   }
   cur.counted = true;
+  if (training) recordResult(ok);
   state.total++;
   if (ok) state.right++;
   updateScore();
@@ -305,21 +443,22 @@ function click(t, kind, vol = 1) {
 
 // צליל הקצב: מוחזק לאורך כל המשך, כדי שישמעו את ההבדל בין חצי לרבע והפסקה
 function tone(t, dur, vol = 1) {
+  // צליל רך: סינוס על סול 4 עם שלוש הרמוניות חלשות, מוחזק לאורך המשך (נבחר מהדוגמאות, 12)
   const ctx = audioCtx;
-  const len = Math.max(0.05, dur * 0.88 - 0.02);
+  const len = Math.max(0.06, dur * 0.88 - 0.02);
   const g = ctx.createGain();
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(0.3 * vol, t + 0.006);
-  g.gain.exponentialRampToValueAtTime(0.17 * vol, t + Math.min(0.12, len));
-  g.gain.setValueAtTime(0.17 * vol, t + len);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.04);
+  g.gain.exponentialRampToValueAtTime(0.35 * vol, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.22 * vol, t + Math.min(0.15, len));
+  g.gain.setValueAtTime(0.22 * vol, t + len);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.06);
   g.connect(master);
-  [[523.25, 'triangle', 1], [1046.5, 'sine', 0.25]].forEach(([f, type, a]) => {
+  [[392, 1], [784, 0.18], [1176, 0.07], [1568, 0.03]].forEach(([f, a]) => {
     const o = ctx.createOscillator();
-    o.type = type; o.frequency.value = f;
+    o.type = 'sine'; o.frequency.value = f;
     const og = ctx.createGain(); og.gain.value = a;
     o.connect(og); og.connect(g);
-    o.start(t); o.stop(t + len + 0.06);
+    o.start(t); o.stop(t + len + 0.08);
     scheduled.push(o);
   });
 }
@@ -333,16 +472,19 @@ function tapSound(t) {
 }
 
 // פעמות המטרונום מ-t0, לאורך bars תיבות. במשקל מורכב, או כשמבקשים חלוקה, גם צליל חלש בין הפעמות
+// במשקל אי-זוגי (5/8, 7/8) הפעמות לא שוות, ותמיד נשמעות גם השמיניות
 function metronome(ex, t0, bars, vol, tempo = state.tempo, subdivide = false) {
   const m = R.METERS[ex.meter];
-  const beat = 60 / tempo;
+  const bt = R.beatTimes(ex.meter, tempo);
+  const bar = R.barSeconds(ex, tempo);
   for (let b = 0; b < bars; b++) {
-    for (let i = 0; i < m.beats; i++) {
-      const t = t0 + (b * m.beats + i) * beat;
+    bt.forEach((off, i) => {
+      const t = t0 + b * bar + off;
+      const len = m.groups[i] * 60 / tempo / m.beatTicks;
       click(t, i === 0 ? 'accent' : 'beat', vol);
-      if (m.compound) { click(t + beat / 3, 'sub', vol); click(t + beat * 2 / 3, 'sub', vol); }
-      else if (subdivide) click(t + beat / 2, 'sub', vol * 1.6);
-    }
+      if (m.groups[i] === 18) { click(t + len / 3, 'sub', vol); click(t + len * 2 / 3, 'sub', vol); }
+      else if (subdivide || m.odd) click(t + len / 2, 'sub', vol * (subdivide ? 1.6 : 1));
+    });
   }
 }
 
@@ -366,12 +508,12 @@ function playExercise(ex, { countIn = true, metro = state.metro, onEnd, tempo = 
 function countDisplay(ex, t0, tempo = state.tempo) {
   const el = document.getElementById('count');
   if (!el) return;
-  const m = R.METERS[ex.meter];
-  const beat = 60 / tempo;
-  for (let i = 0; i <= m.beats; i++) {
-    const ms = (t0 + i * beat - audioCtx.currentTime) * 1000;
+  const bt = R.beatTimes(ex.meter, tempo).concat([R.barSeconds(ex, tempo)]);
+  const nb = bt.length - 1;
+  for (let i = 0; i <= nb; i++) {
+    const ms = (t0 + bt[i] - audioCtx.currentTime) * 1000;
     timers.push(setTimeout(() => {
-      el.textContent = i < m.beats ? String(i + 1) : '';
+      el.textContent = i < nb ? String(i + 1) : '';
       el.classList.toggle('muted', false);
     }, Math.max(0, ms)));
   }
@@ -388,8 +530,12 @@ function newExercise(autoplay) {
   else newComplete();
 }
 
-function goNext() { newExercise(true); }
-function scheduleNext(ms = NEXT_DELAY) { timers.push(setTimeout(goNext, ms)); }
+function goNext() { if (training) trainingNext(true); else newExercise(true); }
+function goNextQuiet() { if (training) trainingNext(false); else newExercise(false); }
+function scheduleNext(ms = NEXT_DELAY, fn = goNext) {
+  cur.nextOnResume = fn;
+  timers.push(setTimeout(fn, ms));
+}
 
 function actions(list) {
   const el = document.getElementById('actions');
@@ -411,7 +557,7 @@ function helpAction(steps) {
   return [HELP_LABELS[Math.min(cur.hint, 2)], () => { cur.helped = true; cur.hint++; applyHint(); }];
 }
 function applyHint() {
-  if (cur.kind === 'dictation') dictationHint();
+  if (cur.kind === 'dictation') cur.mode === 'write' ? writeHint() : dictationHint();
   else if (cur.kind === 'tap') tapHint();
   else completeHint();
 }
@@ -420,30 +566,41 @@ function scoreSvg(ex, opts) {
   return R.svgFor(ex, Object.assign({ line: '#9a9a9a' }, opts));
 }
 
-// תווים גדולים: בטלפון התיבות נשברות לשורות כדי שהתווים לא יהיו זעירים
+// גודל התווים קבוע בכל התרגילים (לפי המסך, לא לפי כמה תווים יש):
+// תרגיל ארוך נשבר לעוד שורות, ותיבה צפופה מקבלת מרווחים קטנים יותר במקום תווים קטנים
+const SCORE_PX = { phone: 1.1, wide: 1.6 };   // פיקסלים ליחידה בתווים הגדולים
+const TILE_PX = { phone: 0.7, wide: 0.95 };  // באפשרויות ההכתבה
+function containerWidth() { return Math.min(820, document.querySelector('.container').clientWidth || 820); }
+function isPhone() { return containerWidth() < 600; }
 function bigScore(ex, opts) {
-  const avail = Math.min(820, document.querySelector('.container').clientWidth || 820);
-  const maxNatural = avail < 600 ? avail / 0.95 : avail / 1.1;
-  return R.svgLines(ex, Object.assign({ line: '#9a9a9a', scale: 1.7 }, opts), maxNatural);
+  const px = isPhone() ? SCORE_PX.phone : SCORE_PX.wide;
+  return R.svgLines(ex, Object.assign({ line: '#9a9a9a', px, counts: state.syllables }, opts), containerWidth() / px);
 }
 
-// כמה אפשרויות באותו קנה מידה
+// אפשרויות ההכתבה: כולן באותו גודל, ואפשרות ארוכה נשברת לשתי שורות בתוך האריח
 function sameScale(list, opts) {
-  const W = Math.max(...list.map(ex => R.naturalWidth(ex, opts)));
-  return list.map(ex => scoreSvg(ex, Object.assign({ boxWidth: W }, opts)));
+  const avail = containerWidth();
+  const tile = (isPhone() ? avail : (avail - 8) / 2) - 24;
+  const px = isPhone() ? TILE_PX.phone : TILE_PX.wide;
+  const o = Object.assign({ line: '#9a9a9a', px }, opts);
+  // כל האפשרויות באותו מספר שורות: לפי האפשרות שצריכה הכי הרבה
+  const lines = Math.max(...list.map(ex => R.lineCount(ex, o, tile / px)));
+  const perLine = Math.ceil(list[0].bars.length / lines);
+  return list.map(ex => R.svgLines(ex, Object.assign({ perLine }, o), tile / px));
 }
 
 function setPrompt(s) { const el = document.getElementById('prompt'); if (el) el.textContent = s; }
 
 // --- הכתבה ---
 function newDictation(autoplay) {
-  const d = R.dictation(state.level);
+  if (state.answer === 'write') { newWriteDictation(autoplay); return; }
+  const d = R.dictation(state.level, null, state.parts, stepMeter());
   cur = { kind: 'dictation', d, answered: false, counted: false, hint: 0, helped: false, slow: false };
   const stage = document.getElementById('stage');
   stage.innerHTML = `
     <div class="big-play-wrap"><button class="big-play" id="bigPlay" aria-label="השמע">${PLAY_ICON}</button><div class="count muted" id="count"></div></div>
     <div class="prompt" id="prompt">מה שמעתם? אחרי תיבת ספירה אחת מתחיל הקצב</div>
-    <div class="tiles" id="tiles">${sameScale(d.options, { scale: 1.25 }).map((svg, i) => `<button class="tile" data-i="${i}">${svg}</button>`).join('')}</div>`;
+    <div class="tiles" id="tiles">${sameScale(d.options, { counts: state.syllables }).map((svg, i) => `<button class="tile" data-i="${i}">${svg}</button>`).join('')}</div>`;
   document.getElementById('bigPlay').onclick = playDictation;
   stage.querySelectorAll('.tile').forEach(t => t.onclick = () => pickDictation(+t.dataset.i, t));
   dictationActions();
@@ -457,7 +614,8 @@ function playDictation() {
 }
 
 function dictationActions() {
-  actions([['השמע שוב', playDictation], helpAction(3), ['לתרגיל הבא', goNext, 'primary']]);
+  // ההשמעה בכפתור הגדול שמעל התשובות, בלי כפתור כפול כאן
+  actions([helpAction(3), ['לתרגיל הבא', goNext, 'primary']]);
 }
 
 function dictationHint() {
@@ -510,9 +668,154 @@ function pickDictation(i, el) {
   }
 }
 
+// --- הכתבה בכתיבה: לכל פעמה בוחרים את הדמות שנשמעה בה ---
+function newWriteDictation(autoplay) {
+  const ex = R.generate(state.level, 'dictation', null, stepMeter(), state.parts);
+  const cells = R.writeCells(ex.meter, state.level, state.parts);
+  const hasTies = R.flatten(ex).some(e => e.tie);
+  cur = { kind: 'dictation', mode: 'write', d: { answer: ex }, cells, entries: [], tieOn: false, tieBtn: state.parts.includes('tie') || hasTies,
+    wrong: null, answered: false, counted: false, hint: 0, helped: false, slow: false };
+  const stage = document.getElementById('stage');
+  stage.innerHTML = `
+    <div class="big-play-wrap"><button class="big-play" id="bigPlay" aria-label="השמע">${PLAY_ICON}</button><div class="count muted" id="count"></div></div>
+    <div class="prompt" id="prompt">מה שמעתם? בחרו מה נשמע בכל פעמה. אחרי תיבת ספירה אחת מתחיל הקצב</div>
+    <div class="score-view" id="writeScore"></div>
+    <div class="cell-pad" id="cellPad">${cells.map((c, i) => `<button class="cell-btn" data-i="${i}" aria-label="${c.str}">${R.cellSvg(c, { height: 50 })}${c.beats > 1 ? `<span>${c.beats} פעמות</span>` : ''}</button>`).join('')}</div>
+    ${cur.tieBtn ? '<div class="tie-row"><button id="tieBtn" aria-pressed="false">קשת מהפעמה הקודמת</button></div>' : ''}`;
+  document.getElementById('bigPlay').onclick = playDictation;
+  stage.querySelectorAll('.cell-btn').forEach(b => b.onclick = () => writeCell(+b.dataset.i));
+  if (cur.tieBtn) document.getElementById('tieBtn').onclick = () => { cur.tieOn = !cur.tieOn; drawWrite(); };
+  drawWrite();
+  if (autoplay) playDictation();
+}
+
+function writtenNow(slots) { return R.writtenExercise(cur.d.answer.meter, cur.d.answer.bars.length, cur.entries, slots); }
+
+function drawWrite() {
+  const w = writtenNow();
+  const m = R.METERS[cur.d.answer.meter];
+  const shade = cur.wrong ? cur.wrong : undefined;
+  const score = document.getElementById('writeScore');
+  if (cur.answered) {
+    const mine = cur.entries.length ? `<div class="cmp-label">מה שכתבתם</div>${bigScore(w.ex, { shade, counts: false })}` : '';
+    score.innerHTML = cur.right ? bigScore(w.ex, { counts: state.syllables })
+      : `${mine}<div class="cmp-label">מה שהושמע</div>${bigScore(cur.d.answer)}`;
+  } else {
+    score.innerHTML = bigScore(w.ex, { shade, counts: false });
+  }
+  const lastCell = cur.entries.length ? cur.entries[cur.entries.length - 1].cell : null;
+  const tieable = !!lastCell && R.canTieFrom(lastCell) && !w.done;
+  if (!tieable) cur.tieOn = false;
+  const tb = document.getElementById('tieBtn');
+  if (tb) { tb.disabled = !tieable || cur.answered; tb.classList.toggle('on', cur.tieOn); tb.setAttribute('aria-pressed', String(cur.tieOn)); }
+  document.querySelectorAll('#cellPad .cell-btn').forEach(b => {
+    const c = cur.cells[+b.dataset.i];
+    const ok = !cur.answered && !w.done && R.allowedStartFor(cur.d.answer.meter, c, w.at.beat) && (!cur.tieOn || R.canTieTo(c));
+    b.classList.toggle('off', !ok);
+    // במשקל אי-זוגי הפעמות לא שוות: מסתירים תאים באורך של הפעמה האחרת
+    b.classList.toggle('away', !!m.odd && !w.done && c.ticks !== m.groups[w.at.beat]);
+  });
+  const padOff = cur.answered || w.done;
+  document.getElementById('cellPad').style.display = padOff ? 'none' : '';
+  const tr = document.querySelector('.tie-row');
+  if (tr) tr.style.display = padOff ? 'none' : '';
+  writeActions();
+}
+
+function writeActions() {
+  const w = writtenNow();
+  if (cur.answered) {
+    actions([cur.entries.length && w.done && !cur.right ? ['השמע את שלי', () => playExercise(writtenNow(false).ex)] : [null],
+      ['לתרגיל הבא', goNext, 'primary']]);
+    return;
+  }
+  actions([
+    cur.wrong ? ['תיקון', fixWrite] : cur.entries.length ? ['מחיקה', () => { cur.entries.pop(); cur.tieOn = false; cur.wrong = null; drawWrite(); }] : [null],
+    helpAction(3),
+    w.done && !cur.wrong ? ['בדיקה', checkWrite, 'primary'] : ['לתרגיל הבא', goNext]]);
+}
+
+function writeCell(i) {
+  if (cur.answered) return;
+  cur.entries.push({ cell: cur.cells[i], tie: cur.tieOn });
+  cur.tieOn = false;
+  cur.wrong = null;
+  drawWrite();
+}
+
+function beatName(wb) {
+  return `פעמה ${wb.beat + 1}` + (cur.d.answer.bars.length > 1 ? ` בתיבה ${wb.bar + 1}` : '');
+}
+
+function checkWrite() {
+  const wrong = R.wrongBeats(cur.d.answer, writtenNow().ex);
+  if (!wrong.length) {
+    count(!cur.helped);
+    cur.answered = true;
+    cur.right = true;
+    cur.wrong = null;
+    setPrompt('נכון');
+    drawWrite();
+    scheduleNext();
+    return;
+  }
+  count(false);
+  cur.wrong = wrong;
+  setPrompt(wrong.length === 1 ? `${beatName(wrong[0])} לא נכונה. אפשר להשמיע שוב ולתקן` : `${wrong.length} פעמות לא נכונות, מסומנות באפור. אפשר להשמיע שוב ולתקן`);
+  drawWrite();
+}
+
+// תיקון: מוחקים מהפעמה השגויה הראשונה והלאה
+function fixWrite() {
+  const m = R.METERS[cur.d.answer.meter];
+  const first = cur.wrong[0];
+  const firstAbs = first.bar * m.beats + first.beat;
+  let abs = 0, keep = 0;
+  for (const en of cur.entries) {
+    if (abs + en.cell.beats > firstAbs) break;
+    abs += en.cell.beats;
+    keep++;
+  }
+  cur.entries = cur.entries.slice(0, keep);
+  cur.wrong = null;
+  cur.tieOn = false;
+  setPrompt('כתבו שוב מהפעמה המסומנת');
+  drawWrite();
+}
+
+function writeHint() {
+  if (cur.hint === 1) {
+    cur.slow = true;
+    setPrompt('לאט יותר, והמטרונום מכה גם את החלוקה');
+    playDictation();
+    writeActions();
+  } else if (cur.hint === 2) {
+    // רמז שני: אם יש טעות עד כאן, מסמנים אותה. אחרת כותבים את הפעמה הבאה
+    const w = writtenNow();
+    const wrong = R.wrongBeats(cur.d.answer, w.ex);
+    if (wrong.length) {
+      cur.wrong = wrong;
+      setPrompt(`עד כאן יש טעות: ${beatName(wrong[0])}`);
+    } else {
+      const next = !w.done && R.answerCellAt(cur.d.answer, w.at.bar, w.at.beat);
+      if (next) {
+        cur.entries.push({ cell: next.cell, tie: next.tie });
+        setPrompt(`עד כאן נכון. כתבנו לכם את ${beatName(w.at)}`);
+      } else setPrompt('עד כאן נכון');
+    }
+    drawWrite();
+  } else {
+    count(false);
+    cur.answered = true;
+    setPrompt('זו התשובה');
+    drawWrite();
+    playDictation();
+  }
+}
+
 // --- השלמת תיבה ---
 function newComplete() {
-  const c = R.completion(state.level);
+  const c = R.completion(state.level, null, state.parts, stepMeter());
   cur = { kind: 'complete', c, answered: false, counted: false, hint: 0, helped: false };
   const stage = document.getElementById('stage');
   stage.innerHTML = `
@@ -534,7 +837,7 @@ function missingText(c) {
   const m = R.METERS[c.ex.meter];
   const ticks = R.symbolTicks(c.answer);
   const words = { 0.25: 'רבע פעמה', 0.5: 'חצי פעמה', 0.75: 'שלושה רבעים של פעמה', 1: 'פעמה אחת', 1.5: 'פעמה וחצי', 2: 'שתי פעמות', 3: 'שלוש פעמות', 4: 'ארבע פעמות' };
-  if (m.compound) {
+  if (m.compound || m.odd) {
     const e = ticks / 6;
     const w = { 0.5: 'חצי שמינית', 1: 'שמינית אחת', 1.5: 'שמינית וחצי', 2: 'שתי שמיניות', 3: 'שלוש שמיניות', 6: 'שש שמיניות' }[e];
     return w ? `חסרות ${w}`.replace('חסרות שמינית אחת', 'חסרה שמינית אחת').replace('חסרות חצי', 'חסרה חצי').replace('חסרות שמינית וחצי', 'חסרה שמינית וחצי') : '';
@@ -569,6 +872,7 @@ function showCompleteAnswer(right) {
   setPrompt(`${right ? 'נכון: ' : 'התשובה: '}${symbolName(c.answer)}`);
   completeActions();
   // התיבה המלאה מתנגנת, ואחרי תשובה נכונה עוברים לתרגיל הבא
+  if (right) cur.nextOnResume = goNext;
   playExercise(c.ex, { countIn: true, onEnd: right ? () => scheduleNext(600) : null });
 }
 
@@ -598,7 +902,7 @@ function symbolName(sym) {
 let tapRun = null;
 
 function newTap() {
-  const ex = R.generate(state.level, 'tap');
+  const ex = R.generate(state.level, 'tap', null, stepMeter(), state.parts);
   cur = { kind: 'tap', ex, counted: false, hint: 0, helped: false, counts: false, guided: false };
   renderTap();
 }
@@ -615,7 +919,7 @@ function renderTap(result) {
     ? 'ניסיון איטי: הקצב מתנגן חלש, ומקישים יחד איתו'
     : 'לחצו "התחל". אחרי תיבת ספירה אחת מקישים את הקצב עם המטרונום';
   stage.innerHTML = `
-    <div class="score-view">${bigScore(ex, { marks, noteStyle, counts: cur.counts })}</div>
+    <div class="score-view">${bigScore(ex, { marks, noteStyle, counts: cur.counts || state.syllables })}</div>
     ${result ? summaryHtml(result) : `<div class="prompt" id="prompt">${intro}</div><div class="count muted" id="count"></div>`}
     ${result ? '' : `<button class="tap-pad" id="tapPad">הקישו כאן את הקצב, או במקש רווח</button>`}`;
   if (!result) {
@@ -626,19 +930,21 @@ function renderTap(result) {
   tapActions();
 }
 
+// עזרה בהקשה: קודם הספירה מתחת לתווים (אם היא עוד לא מוצגת), ואז ניסיון איטי.
+// השמעת הקצב לא נכללת כאן, כי יש לה כפתור משלה
+function tapHintSteps() { return state.syllables ? ['guided'] : ['counts', 'guided']; }
 function tapActions() {
-  const help = cur.hint < 3 ? [HELP_LABELS[cur.hint] === 'תשובה' ? 'ניסיון איטי' : HELP_LABELS[cur.hint], () => { cur.helped = true; cur.hint++; applyHint(); }] : [null];
+  const steps = tapHintSteps();
+  const next = steps[cur.hint];
+  const help = next ? [next === 'guided' && cur.hint > 0 ? 'ניסיון איטי' : 'עזרה', () => { cur.helped = true; cur.hint++; applyHint(); }] : [null];
   actions(cur.result
-    ? [['נסו שוב', () => { renderTap(); startTap(); }, 'primary'], ['השמע איך זה נשמע', playTapExample], help, ['לתרגיל הבא', () => newExercise(false)]]
-    : [['התחל', startTap, 'primary'], ['השמע איך זה נשמע', playTapExample], help, ['לתרגיל הבא', () => newExercise(false)]]);
+    ? [['נסו שוב', () => { renderTap(); startTap(); }, 'primary'], ['השמע איך זה נשמע', playTapExample], help, ['לתרגיל הבא', goNextQuiet]]
+    : [['התחל', startTap, 'primary'], ['השמע איך זה נשמע', playTapExample], help, ['לתרגיל הבא', goNextQuiet]]);
 }
 
 function tapHint() {
-  if (cur.hint === 1) {
-    if (cur.result) renderTap();
-    setPrompt('כך זה נשמע. אחר כך לחצו "התחל"');
-    playTapExample();
-  } else if (cur.hint === 2) {
+  stopAll();
+  if (tapHintSteps()[cur.hint - 1] === 'counts') {
     cur.counts = true;
     renderTap();
     setPrompt('הספירה מתחת לתווים. ספרו בקול והקישו על התווים');
@@ -646,7 +952,6 @@ function tapHint() {
     cur.guided = true;
     renderTap();
   }
-  tapActions();
 }
 
 function summaryHtml(res) {
@@ -702,10 +1007,11 @@ function finishTap() {
   const run = tapRun;
   tapRun = null;
   const res = R.scoreTaps(run.expected, run.taps, { beat: 60 / run.tempo });
+  cur.tapRes = res;
   count(res.passed && !cur.helped);
   renderTap(res);
   // הכול בזמן: עוברים לבד לתרגיל הבא
-  if (res.passed) timers.push(setTimeout(() => newExercise(false), 1800));
+  if (res.passed) scheduleNext(1800, goNextQuiet);
 }
 
 document.addEventListener('keydown', e => {
@@ -717,11 +1023,227 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// ===== אימון לפי שלבים =====
+const KIND_NAMES = { dictation: 'הכתבה', tap: 'קריאה והקשה', complete: 'השלמת תיבה' };
+const TRAIN_HISTORY_KEY = 'mt_rhythm_training_history';
+const PASS_PCT = 80;
+let appMode = 'free';
+let training = null;
+
+function loadTrainHistory() {
+  try { return JSON.parse(localStorage.getItem(TRAIN_HISTORY_KEY)) || []; } catch (e) { return []; }
+}
+function saveTrainHistory(entry) {
+  try {
+    const h = loadTrainHistory();
+    h.push(entry);
+    localStorage.setItem(TRAIN_HISTORY_KEY, JSON.stringify(h.slice(-200)));
+  } catch (e) {}
+}
+
+// במשקלים של השלב (אם יש לו), אחרת לפי הרמה
+function stepMeter() {
+  const st = training && R.STEPS[training.step];
+  return st && st.meters ? st.meters[Math.floor(Math.random() * st.meters.length)] : null;
+}
+
+function setMode(mode, initial = false) {
+  if (window.Rewards && document.body.classList.contains('in-rewards')) Rewards.close();
+  stopAll();
+  tapRun = null;
+  if (training) leaveTraining();
+  appMode = mode;
+  try { localStorage.setItem('mt_rhythm_mode', mode); } catch (e) {}
+  document.body.classList.toggle('mode-train', mode === 'train');
+  document.getElementById('settingsBox').open = false;
+  renderSettings();
+  updateScore();
+  if (mode === 'train') { showStepPicker(); return; }
+  document.getElementById('trainingPanel').hidden = true;
+  if (!initial) newExercise(false);
+}
+
+function showStepPicker() {
+  const panel = document.getElementById('trainingPanel');
+  const history = loadTrainHistory();
+  const items = R.STEPS.map((st, i) => {
+    const runs = history.filter(h => h.step === i);
+    const best = runs.length ? Math.max(...runs.map(h => Math.round(100 * h.correct / h.total))) : null;
+    const meters = st.meters || R.LEVELS[st.level - 1].meters;
+    return `<button class="level-item" data-step="${i}">
+      <div><div class="lv-name">שלב ${st.n}: ${st.desc}</div><div class="lv-desc"><span dir="ltr">${meters.join(' ')}</span> · ${R.PARTS.filter(p => st.parts.includes(p.id)).map(p => p.name).join(', ')}</div></div>
+      <div class="lv-best">${best === null ? '' : 'שיא ' + best + '%'}</div>
+    </button>`;
+  }).join('');
+  panel.innerHTML = `<h2>אימון קצב</h2>
+    <p class="sub">בוחרים שלב ומקבלים ${R.trainingPlan().length} תרגילים מעורבים: הכתבה, השלמת תיבה וקריאה והקשה. נספרת רק התשובה הראשונה, ובסוף מקבלים דוח.</p>
+    <div class="level-list">${items}</div>`;
+  panel.querySelectorAll('.level-item').forEach(b => b.onclick = () => startTraining(+b.dataset.step));
+  panel.hidden = false;
+  window.scrollTo(0, 0);
+}
+
+function startTraining(i) {
+  stopAll();
+  if (training) leaveTraining();
+  const st = R.STEPS[i];
+  training = {
+    step: i, plan: R.trainingPlan(), index: 0, results: [],
+    saved: { kind: state.kind, level: state.level, parts: state.parts.slice(), tempo: state.tempo }
+  };
+  state.level = st.level;
+  state.parts = R.normParts(st.parts);
+  state.tempo = st.tempo;
+  state.kind = training.plan[0];
+  document.body.classList.add('in-session');
+  document.getElementById('trainingPanel').hidden = true;
+  renderSettings();
+  updateScore();
+  newExercise(false);
+  window.scrollTo(0, 0);
+}
+
+// מחזירים את ההגדרות של התרגול החופשי
+function leaveTraining() {
+  Object.assign(state, training.saved);
+  training = null;
+  document.body.classList.remove('in-session');
+}
+
+function recordResult(ok) {
+  const c = cur;
+  const r = { kind: c.kind, ok };
+  if (c.kind === 'dictation') { r.parts = R.exerciseParts(c.d.answer); r.meter = c.d.answer.meter; }
+  else if (c.kind === 'complete') {
+    r.parts = [R.symbolPart(c.c.answer)].concat(c.c.answer.endsWith('.') ? ['dot'] : []);
+    r.meter = c.c.ex.meter;
+  } else {
+    r.parts = R.exerciseParts(c.ex);
+    r.meter = c.ex.meter;
+    if (c.tapRes) r.tap = { errors: c.tapRes.errors, good: c.tapRes.good };
+  }
+  training.results.push(r);
+}
+
+function trainingNext(autoplay) {
+  if (!training) return;
+  stopAll();
+  // דילוג נספר באימון כטעות (במערכת התגמולים לא נרשם כלום)
+  if (cur && !cur.counted) { cur.counted = true; recordResult(false); }
+  training.index++;
+  if (training.index >= training.plan.length) { showTrainingReport(); return; }
+  state.kind = training.plan[training.index];
+  renderSettings();
+  updateScore();
+  newExercise(autoplay && state.kind === 'dictation');
+}
+
+function endTraining() {
+  stopAll();
+  tapRun = null;
+  if (training && training.results.length) showTrainingReport();
+  else setMode('train');
+}
+
+const PART_NAMES = Object.assign({ dot: 'ערכים מנוקדים' }, Object.fromEntries(R.PARTS.map(p => [p.id, p.name])));
+
+function statRow(g) {
+  const pct = Math.round(100 * g.correct / g.total);
+  return `<div class="report-row"><div>${g.key}</div><div class="report-bar"><span style="width:${pct}%"></span></div><div class="num">${g.correct}/${g.total}</div></div>`;
+}
+function groupBy(results, keysFn) {
+  const map = new Map();
+  results.forEach(r => keysFn(r).forEach(k => {
+    if (!map.has(k)) map.set(k, { key: k, total: 0, correct: 0 });
+    const g = map.get(k);
+    g.total++;
+    if (r.ok) g.correct++;
+  }));
+  return [...map.values()];
+}
+
+// הקשה: כמה תווים בזמן, ונטייה להקדים או לאחר
+function tapSummary(results) {
+  const errs = [];
+  let notes = 0, onTime = 0;
+  results.forEach(r => {
+    if (!r.tap) return;
+    r.tap.errors.forEach(e => {
+      notes++;
+      if (e !== null) { errs.push(e); if (Math.abs(e) <= r.tap.good) onTime++; }
+    });
+  });
+  if (!notes) return '';
+  let lean = '';
+  if (errs.length >= 4) {
+    const mean = errs.reduce((a, b) => a + b, 0) / errs.length;
+    if (mean < -0.03) lean = ` · נטייה להקדים (בממוצע ${Math.round(-mean * 1000)} אלפיות שנייה)`;
+    else if (mean > 0.03) lean = ` · נטייה לאחר (בממוצע ${Math.round(mean * 1000)} אלפיות שנייה)`;
+    else lean = ' · בלי נטייה להקדים או לאחר';
+  }
+  return `<p class="report-advice">${onTime} מתוך ${notes} תווים בזמן${lean}</p>`;
+}
+
+function showTrainingReport() {
+  const t = training;
+  const results = t.results;
+  const total = results.length;
+  const correct = results.filter(r => r.ok).length;
+  const pct = total ? Math.round(100 * correct / total) : 0;
+  const st = R.STEPS[t.step];
+  saveTrainHistory({ t: Date.now(), step: t.step, correct, total });
+  // במערכת התגמולים "עברת שלב" נספר מ-85%; כאן ההמלצה להתקדם היא מ-80%, אז שלב שעבר נרשם כעובר
+  if (window.Rewards) Rewards.trainingDone('rhythm:' + t.step, pct >= PASS_PCT ? Math.max(pct, 85) : pct);
+
+  const byKind = groupBy(results, r => [KIND_NAMES[r.kind]]);
+  const order = R.PARTS.map(p => p.id).concat(['dot']);
+  const byPart = groupBy(results, r => r.parts)
+    .sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key))
+    .map(g => Object.assign(g, { key: PART_NAMES[g.key] }));
+  const byMeter = groupBy(results, r => [r.meter]);
+  const weak = byPart.filter(g => g.correct / g.total < 0.7).map(g => g.key);
+  const hasNext = t.step < R.STEPS.length - 1;
+  const passed = pct >= PASS_PCT;
+  let advice;
+  if (passed) advice = hasNext ? 'מצוין. אפשר לעבור לשלב הבא.' : 'מצוין. סיימת את השלב האחרון.';
+  else if (weak.length) advice = `כדאי לחזור על השלב הזה, עם דגש על ${weak.join(', ')}.`;
+  else advice = 'כמעט שם. עוד סבב אחד בשלב הזה ואפשר להתקדם.';
+  const tapHtml = tapSummary(results);
+
+  leaveTraining();
+  renderSettings();
+  updateScore();
+  const panel = document.getElementById('trainingPanel');
+  panel.innerHTML = `<h2>שלב ${st.n}: ${st.desc} · סיכום</h2>
+    <div class="report-score">${pct}%</div>
+    <p class="sub">${correct} נכונות מתוך ${total} בניסיון הראשון</p>
+    <div class="report-section"><p class="report-advice">${advice}</p></div>
+    <div class="report-section"><h3>לפי סוג תרגיל</h3>${byKind.map(statRow).join('')}</div>
+    <div class="report-section"><h3>לפי מרכיב</h3>${byPart.map(statRow).join('')}</div>
+    ${byMeter.length > 1 ? `<div class="report-section"><h3>לפי משקל</h3>${byMeter.map(g => statRow(Object.assign({}, g, { key: `<span dir="ltr">${g.key}</span>` }))).join('')}</div>` : ''}
+    ${tapHtml ? `<div class="report-section"><h3>הקשה</h3>${tapHtml}</div>` : ''}
+    <div class="report-actions">
+      ${hasNext && passed ? `<button class="primary" onclick="startTraining(${t.step + 1})">לשלב הבא</button>` : ''}
+      <button class="${hasNext && passed ? '' : 'primary'}" onclick="startTraining(${t.step})">שוב בשלב הזה</button>
+      <button onclick="showStepPicker()">כל השלבים</button>
+    </div>`;
+  panel.hidden = false;
+  window.scrollTo(0, 0);
+}
+
 // ===== התחלה =====
 loadSettings();
+(function initialMode() {
+  let mode = 'free';
+  try { if (localStorage.getItem('mt_rhythm_mode') === 'train') mode = 'train'; } catch (e) {}
+  const q = new URLSearchParams(location.search).get('mode');
+  if (q === 'train' || q === 'free') mode = q;
+  if (new URLSearchParams(location.search).get('ex')) mode = q || 'free';
+  setMode(mode, true);
+})();
 renderSettings();
 updateScore();
-newExercise(false);
+if (appMode === 'free') newExercise(false);
 </script>
 <script src="update-check.js"></script>
 </body>

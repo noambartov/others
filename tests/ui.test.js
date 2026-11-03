@@ -251,12 +251,80 @@ for (const vp of Object.keys(VIEWPORTS)) {
 for (const vp of Object.keys(VIEWPORTS)) {
   describe(`rhythm practice (${vp})`, () => {
     test('dictation: play and pick the right bar', async () => {
-      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html?answer=choose');
       await page.locator('#kindRow button[data-kind="dictation"]').click();
       await page.locator('#bigPlay').click();
       const i = await page.evaluate(() => cur.d.correct);
       await page.locator(`#tiles .tile[data-i="${i}"]`).click();
       assert.ok(await page.locator('#tiles .tile.correct').count() === 1, 'marked correct');
+      noErrors(errors);
+      await close();
+    });
+
+    // לוחצים על התאים של התשובה, פעמה אחר פעמה (עם קשת כשצריך)
+    async function writeAnswer(page, upto) {
+      const plan = await page.evaluate(() => {
+        const out = [];
+        cur.d.answer.bars.forEach(bar => bar.forEach(c => out.push({ i: cur.cells.findIndex(x => x.str === c.str), tie: !!c.events[0].tied })));
+        return out;
+      });
+      for (const step of plan.slice(0, upto)) {
+        assert.ok(step.i >= 0, 'cell in the pad');
+        if (step.tie) await page.locator('#tieBtn').click();
+        await page.locator(`#cellPad .cell-btn[data-i="${step.i}"]`).click();
+      }
+      return plan.length;
+    }
+
+    test('dictation by writing: write the beats, check, right', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html?ex=dictation&level=3');
+      assert.ok(await page.locator('#cellPad .cell-btn').count() >= 4, 'cells to pick');
+      assert.strictEqual(await page.locator('#writeScore svg rect[stroke-dasharray]').count() > 0, true, 'empty beats shown');
+      await writeAnswer(page);
+      await page.locator('#actions button', { hasText: 'בדיקה' }).click();
+      assert.strictEqual(await page.locator('#prompt').textContent(), 'נכון');
+      assert.match(await page.locator('#score').textContent(), /^1 מתוך 1/);
+      noErrors(errors);
+      await close();
+    });
+
+    test('dictation by writing: a wrong beat is marked and can be fixed', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html?ex=dictation&level=2&parts=q,8');
+      // כותבים הכל הפסקות רבע: לפחות פעמה אחת לא נכונה
+      const rest = await page.evaluate(() => cur.cells.findIndex(c => c.str === 'Rq'));
+      const beats = await page.evaluate(() => cur.d.answer.bars.length * R.METERS[cur.d.answer.meter].beats);
+      for (let k = 0; k < beats; k++) await page.locator(`#cellPad .cell-btn[data-i="${rest}"]`).click();
+      await page.locator('#actions button', { hasText: 'בדיקה' }).click();
+      assert.match(await page.locator('#prompt').textContent(), /לא נכונ/);
+      assert.ok(await page.locator('#writeScore svg rect[fill="#ececec"]').count() >= 1, 'wrong beat shaded');
+      assert.strictEqual(await page.locator('#score').textContent(), '0 מתוך 1');
+      await page.locator('#actions button', { hasText: 'תיקון' }).click();
+      assert.ok(await page.evaluate(() => cur.entries.length) < beats, 'entries removed from the wrong beat');
+      noErrors(errors);
+      await close();
+    });
+
+    test('dictation by writing: help writes the next beat, then shows the answer', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html?ex=dictation&level=1');
+      await page.locator('#actions button', { hasText: 'עזרה' }).click();
+      await page.locator('#actions button', { hasText: 'רמז נוסף' }).click();
+      assert.strictEqual(await page.evaluate(() => cur.entries.length), 1, 'one beat written');
+      await page.locator('#actions button', { hasText: 'תשובה' }).click();
+      assert.ok(await page.locator('.cmp-label', { hasText: 'מה שהושמע' }).isVisible());
+      assert.strictEqual(await page.locator('#score').textContent(), '0 מתוך 1');
+      noErrors(errors);
+      await close();
+    });
+
+    test('dictation by writing: ties from the previous beat', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html?ex=dictation&level=3&parts=q,8,tie');
+      for (let k = 0; k < 20; k++) {
+        if (await page.evaluate(() => R.flatten(cur.d.answer).some(e => e.tie))) break;
+        await page.evaluate(() => newExercise(false));
+      }
+      await writeAnswer(page);
+      await page.locator('#actions button', { hasText: 'בדיקה' }).click();
+      assert.strictEqual(await page.locator('#prompt').textContent(), 'נכון');
       noErrors(errors);
       await close();
     });
@@ -272,14 +340,14 @@ for (const vp of Object.keys(VIEWPORTS)) {
     });
 
     test('dictation: a right answer moves on by itself', async () => {
-      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html?answer=choose');
       await page.locator('#kindRow button[data-kind="dictation"]').click();
       await page.evaluate(() => { window.__firstEx = cur.d; });
       const i = await page.evaluate(() => cur.d.correct);
       await page.locator(`#tiles .tile[data-i="${i}"]`).click();
-      // בתשובה הנכונה הראשונה נפתח שיר חדש באוסף; "המשך" מביא את התרגיל הבא
-      await page.waitForFunction(() => cur.d !== window.__firstEx || (d => d && !d.hidden)(document.getElementById('rewardDialog')), null, { timeout: 4000 });
-      if (await page.locator('#rewardDialog:not([hidden])').count()) await page.locator('#rewardDialog .primary').click();
+      // התשובה הראשונה פותחת שיר באוסף: סוגרים אותו, והתרגול ממשיך לבד
+      await page.locator('#rewardDialog').waitFor({ state: 'visible', timeout: 3000 });
+      await page.evaluate(() => Rewards.closeUnlock());
       await page.waitForFunction(() => cur.d !== window.__firstEx, null, { timeout: 4000 });
       assert.strictEqual(await page.locator('#score').textContent(), '1 מתוך 1');
       noErrors(errors);
@@ -287,7 +355,7 @@ for (const vp of Object.keys(VIEWPORTS)) {
     });
 
     test('dictation: stepped help, then the answer, not counted as right', async () => {
-      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html?answer=choose');
       await page.locator('#kindRow button[data-kind="dictation"]').click();
       await page.locator('#actions button', { hasText: 'עזרה' }).click();
       await page.locator('#actions button', { hasText: 'רמז נוסף' }).click();
@@ -314,12 +382,81 @@ for (const vp of Object.keys(VIEWPORTS)) {
       const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
       await page.locator('#kindRow button[data-kind="tap"]').click();
       await page.locator('#actions button', { hasText: 'עזרה' }).click();
-      await page.locator('#actions button', { hasText: 'רמז נוסף' }).click();
       assert.ok(await page.locator('.score-view svg text').count() >= 2, 'counting shown');
       await page.locator('#actions button', { hasText: 'ניסיון איטי' }).click();
+      assert.equal(await page.locator('#actions button', { hasText: 'ניסיון איטי' }).count(), 0, 'last help step used');
       await page.locator('#actions button', { hasText: 'התחל' }).click();
       await page.evaluate(() => finishTap());
       assert.ok(await page.locator('.summary').isVisible());
+      noErrors(errors);
+      await close();
+    });
+
+    test('no duplicate play buttons: dictation plays only from the big button', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html?ex=dictation');
+      for (const answer of ['choose', 'write']) {
+        await page.goto(page.url().split('?')[0] + '?ex=dictation&answer=' + answer);
+        await page.locator('#bigPlay').waitFor();
+        assert.equal(await page.locator('#actions button', { hasText: 'השמע' }).count(), 0, answer);
+      }
+      noErrors(errors);
+      await close();
+    });
+
+    test('syllables switch shows konnakol under the notes in every exercise', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html?answer=choose');
+      await page.locator('#settingsBox summary').click();
+      await page.locator('#sylSeg button', { hasText: 'להציג' }).first().click();
+      assert.ok(await page.locator('#tiles svg text', { hasText: 'ta' }).count() >= 4, 'dictation options');
+      await page.locator('#kindRow button[data-kind="complete"]').click();
+      assert.ok(await page.locator('#bar svg text', { hasText: 'ta' }).count() >= 1, 'complete the bar');
+      await page.locator('#kindRow button[data-kind="tap"]').click();
+      assert.ok(await page.locator('.score-view svg text', { hasText: 'ta' }).count() >= 1, 'read and tap');
+      noErrors(errors);
+      await close();
+    });
+
+    test('levels and components: level sets its tempo, components toggle, one basic value stays', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
+      await page.locator('#settingsBox summary').click();
+      await page.locator('#levelSeg button[data-v="4"]').click();
+      assert.ok((await page.locator('#tempoSeg button.active').textContent()).includes('90'));
+      await page.locator('#partsSeg button[data-v="8"]').click();
+      await page.locator('#partsSeg button[data-v="tie"]').click();
+      assert.match(await page.locator('#levelLine').textContent(), /שמיניות, קשתות/);
+      // מורידים חצאים ורבעים: השמיניות נשארות, ואי אפשר להוריד את הערך הרגיל האחרון
+      await page.locator('#partsSeg button[data-v="h"]').click();
+      await page.locator('#partsSeg button[data-v="q"]').click();
+      await page.locator('#partsSeg button[data-v="8"]').click();
+      assert.strictEqual(await page.locator('#partsSeg button.active').count(), 2);
+      const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('mt_rhythm_settings')).parts);
+      assert.deepStrictEqual(saved, ['8', 'tie']);
+      noErrors(errors);
+      await close();
+    });
+
+    test('rhythm step-by-step training: pick a step, 12 mixed exercises, report, free settings kept', async () => {
+      const { page, errors, close } = await openPage(vp, 'rhythm_practice.html?answer=choose');
+      await page.locator('#modeTabs button[data-mode="train"]').click();
+      const steps = page.locator('#trainingPanel .level-item');
+      assert.strictEqual(await steps.count(), 12);
+      await steps.nth(1).click();
+      assert.match(await page.locator('#score').textContent(), /1 מתוך 12/);
+      assert.match(await page.locator('#levelLine').textContent(), /שלב 2/);
+      for (let i = 0; i < 12; i++) {
+        // הכתבה: עונים נכון; השאר: מדלגים (נספר כטעות)
+        const isDict = await page.evaluate(() => cur.kind === 'dictation');
+        if (isDict) await page.locator(`#tiles .tile[data-i="${await page.evaluate(() => cur.d.correct)}"]`).click();
+        await page.evaluate(() => trainingNext(false));
+      }
+      assert.ok(await page.locator('.report-score').isVisible(), 'report shown');
+      assert.match(await page.locator('#trainingPanel').textContent(), /לפי סוג תרגיל[\s\S]*לפי מרכיב/);
+      assert.match(await page.locator('#trainingPanel').textContent(), /42%/);
+      assert.deepStrictEqual(await page.evaluate(() => [state.level, state.parts.join(), state.tempo]), [1, 'h,q', 60], 'free settings back');
+      const hist = await page.evaluate(() => JSON.parse(localStorage.getItem('mt_rhythm_training_history')));
+      assert.strictEqual(hist.length, 1);
+      await page.locator('#modeTabs button[data-mode="free"]').click();
+      assert.ok(await page.locator('#kindRow').isVisible());
       noErrors(errors);
       await close();
     });
