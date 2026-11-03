@@ -98,6 +98,27 @@
     .action-bar button.primary { color: #222222; }
     .action-bar button[hidden] { display: none; }
 
+
+    /* מראה האתר: גלולות עם מסגרת דקה כמו בדף הבית */
+    .page-title { font-weight: 300; font-size: 36px; text-align: center; margin: 26px 0 0; color: #111111; }
+    body.in-rewards .page-title { display: none; }
+    .ex-types { gap: 6px; padding-top: 14px; flex-wrap: wrap; }
+    .ex-types button { border: 1px solid #e3e3e3; border-radius: 999px; padding: 5px 14px; font-size: 14px; color: #888888; }
+    .ex-types button:hover { color: #222222; border-color: #c8c8c8; }
+    .ex-types button.active { background: #333333; border-color: #333333; color: #ffffff; }
+    .big-play { background: #ffffff; color: #222222; border: 1px solid #d1d5db; }
+    .big-play:hover { background: #f5f5f5; border-color: #9ca3af; }
+    .tile { background: #ffffff; border: 1px solid #d1d5db; border-radius: 18px; }
+    .tile:hover { background: #f5f5f5; border-color: #9ca3af; }
+    .tile.correct, .tile.correct:hover { background: #333333; border-color: #333333; color: #ffffff; }
+    .tile.wrong, .tile.wrong:hover { background: #ffffff; border-color: #eeeeee; box-shadow: none; }
+    .tap-pad { background: #ffffff; border: 1px solid #d1d5db; border-radius: 24px; }
+    .tap-pad.hit { background: #f0f0f0; }
+    .action-bar { gap: 8px; }
+    .action-bar button { border: 1px solid #e3e3e3; border-radius: 999px; padding: 6px 16px; font-weight: 400; }
+    .action-bar button:hover { border-color: #c8c8c8; }
+    .action-bar button.primary { border-color: #9ca3af; }
+
     footer { text-align: center; font-size: 13px; color: #aaaaaa; padding: 24px 16px 8px; }
     footer a { color: #888888; text-decoration: none; }
 
@@ -105,8 +126,7 @@
       .tiles { grid-template-columns: 1fr; }
       .tiles.symbols { grid-template-columns: repeat(4, 1fr); }
       .tile { min-height: 78px; }
-      .ex-types { gap: 14px; }
-      .ex-types button { font-size: 14px; }
+      .page-title { display: none; }
       .tap-pad { font-size: 15px; }
       .big-play { width: 84px; height: 84px; }
       .tap-pad { height: 150px; }
@@ -129,6 +149,8 @@
       </div>
     </details>
   </div>
+
+  <h1 class="page-title">תרגול קצב</h1>
 
   <nav class="ex-types" id="kindRow">
     <button data-kind="dictation">הכתבה</button>

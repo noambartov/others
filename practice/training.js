@@ -87,6 +87,7 @@ function setAppMode(mode, initial = false) {
   document.querySelectorAll('#modeTabs button').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   document.body.dataset.section = mode === 'read' ? 'read' : 'ear';
   if (window.SiteNav) SiteNav.setActive(document.body.dataset.section);
+  document.getElementById('pageTitle').textContent = mode === 'read' ? 'תרגול קריאה' : 'תרגול שמיעה';
   document.getElementById('displayMode').value = mode === 'read' ? 'both' : 'audio_only';
   training = null;
   const exType = document.getElementById('exType');
