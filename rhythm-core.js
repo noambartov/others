@@ -921,7 +921,9 @@
     opts = opts || {};
     const W = Math.max(R.width, opts.boxWidth || 0);
     const dx = (W - R.width) / 2;
-    return `<svg viewBox="${r(-dx)} 0 ${r(W)} ${r(R.height)}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:${r(W * (opts.scale || 1.6))}px;height:auto;display:block;margin:0 auto">${R.svg}</svg>`;
+    // px: גודל קבוע לכל יחידה, כך שכל התרגילים באותו גודל תווים, קצרים כארוכים
+    const size = opts.px ? `width:${r(W * opts.px)}px;max-width:100%` : `width:100%;max-width:${r(W * (opts.scale || 1.6))}px`;
+    return `<svg viewBox="${r(-dx)} 0 ${r(W)} ${r(R.height)}" xmlns="http://www.w3.org/2000/svg" style="${size};height:auto;display:block;margin:0 auto">${R.svg}</svg>`;
   }
 
   function svgFor(ex, opts) { return svgWrap(render(ex, opts), opts); }
@@ -935,6 +937,8 @@
     const lines = [];
     let cur = [];
     ex.bars.forEach((bar, b) => {
+      // perLine: מספר תיבות קבוע בשורה (כדי שכמה אפשרויות ייראו אותו דבר)
+      if (opts.perLine) { if (cur.length === opts.perLine) { lines.push(cur); cur = []; } cur.push(b); return; }
       const tryBars = cur.concat([b]);
       const sub = { meter: ex.meter, level: ex.level, bars: tryBars.map(i => ex.bars[i]) };
       const w = naturalWidth(sub, { sp: opts.sp, timeSig: lines.length === 0 });
@@ -955,13 +959,20 @@
       // תו חסר לא נספר בסימונים, אבל נספר ב-onsets; זה בסדר כי אין סימונים בהשלמה
       noteOffset += n;
       let R = render(sub, o);
+      // גודל קבוע (opts.px): תיבה שלא נכנסת בשורה לא מוקטנת, אלא המרווחים בין התווים מתכווצים (עד חצי)
+      if (opts.px && R.width > maxWidth) {
+        const half = render(sub, Object.assign({}, o, { spread: 0.5 })).width;
+        const spread = Math.max(0.5, 1 - 0.5 * (R.width - maxWidth) / (R.width - half));
+        o.spread = spread;
+        R = render(sub, o);
+      }
       // שורות מלאות ברוחב אחיד, כמו בדפוס: מרווחים בין התווים נמתחים עד הרוחב של השורה הארוכה
       if (lines.length > 1) R.sub = sub, R.o = o;
       return R;
     });
     const W = Math.max(...rendered.map(x => x.width), opts.boxWidth || 0);
     rendered.forEach((x, i) => {
-      if (!x.sub || x.width >= W - 0.5 || W / x.width > 1.7) return;
+      if (!x.sub || x.o.spread || x.width >= W - 0.5 || W / x.width > 1.7) return;
       const w2 = render(x.sub, Object.assign({}, x.o, { spread: 2 })).width;
       const spread = 1 + (W - x.width) / (w2 - x.width);
       rendered[i] = render(x.sub, Object.assign({}, x.o, { spread }));
@@ -987,6 +998,7 @@
 
   const RhythmCore = {
     TPQ, METERS, LEVELS, STEPS, trainingPlan, exerciseParts, symbolPart, PARTS, DEFAULT_PARTS, normParts, beatTimes, parseCell, cellsFor, allowedStart, fillSpan, generate, variant, dictation, completion,
+    lineCount: (ex, opts, maxWidth) => (svgLines(ex, opts, maxWidth).match(/<svg/g) || []).length,
     flatten, onsets, signature, writtenKey, beamGroups, timeline, barSeconds, scoreTaps, countLabels, render, svgFor, svgLines, naturalWidth, symbolSvg,
     symbolTicks, eventSymbol, GLYPHS, writeCells, writtenExercise, soundTicks, wrongBeats, answerCellAt, allowedStartFor: allowedStart, canTieFrom, canTieTo, cellSvg
   };

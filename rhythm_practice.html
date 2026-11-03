@@ -68,7 +68,7 @@
     .tiles.symbols { grid-template-columns: repeat(4, 1fr); max-width: 520px; width: 100%; margin: 0 auto; }
     .tile {
       background: #efefef; color: #222222; border: none; border-radius: 6px; cursor: pointer;
-      padding: 14px 10px 8px; display: flex; align-items: center; justify-content: center; min-height: 92px;
+      padding: 14px 10px 8px; display: flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center; min-height: 92px;
     }
     .tile:hover { background: #e2e2e2; }
     .tile.correct, .tile.correct:hover { background: #222222; color: #ffffff; }
@@ -320,7 +320,7 @@ function rerender() {
     return;
   }
   if (cur.mode === 'write') { drawWrite(); return; }
-  const svgs = sameScale(cur.d.options, { scale: 1.25, counts: state.syllables });
+  const svgs = sameScale(cur.d.options, { counts: state.syllables });
   document.querySelectorAll('#tiles .tile').forEach((t, i) => { t.innerHTML = svgs[i]; });
 }
 
@@ -567,17 +567,27 @@ function scoreSvg(ex, opts) {
   return R.svgFor(ex, Object.assign({ line: '#9a9a9a' }, opts));
 }
 
-// תווים גדולים: בטלפון התיבות נשברות לשורות כדי שהתווים לא יהיו זעירים
+// גודל התווים קבוע בכל התרגילים (לפי המסך, לא לפי כמה תווים יש):
+// תרגיל ארוך נשבר לעוד שורות, ותיבה צפופה מקבלת מרווחים קטנים יותר במקום תווים קטנים
+const SCORE_PX = { phone: 1.1, wide: 1.6 };   // פיקסלים ליחידה בתווים הגדולים
+const TILE_PX = { phone: 0.7, wide: 0.95 };  // באפשרויות ההכתבה
+function containerWidth() { return Math.min(820, document.querySelector('.container').clientWidth || 820); }
+function isPhone() { return containerWidth() < 600; }
 function bigScore(ex, opts) {
-  const avail = Math.min(820, document.querySelector('.container').clientWidth || 820);
-  const maxNatural = avail < 600 ? avail / 0.95 : avail / 1.1;
-  return R.svgLines(ex, Object.assign({ line: '#9a9a9a', scale: 1.7, counts: state.syllables }, opts), maxNatural);
+  const px = isPhone() ? SCORE_PX.phone : SCORE_PX.wide;
+  return R.svgLines(ex, Object.assign({ line: '#9a9a9a', px, counts: state.syllables }, opts), containerWidth() / px);
 }
 
-// כמה אפשרויות באותו קנה מידה
+// אפשרויות ההכתבה: כולן באותו גודל, ואפשרות ארוכה נשברת לשתי שורות בתוך האריח
 function sameScale(list, opts) {
-  const W = Math.max(...list.map(ex => R.naturalWidth(ex, opts)));
-  return list.map(ex => scoreSvg(ex, Object.assign({ boxWidth: W }, opts)));
+  const avail = containerWidth();
+  const tile = (isPhone() ? avail : (avail - 8) / 2) - 24;
+  const px = isPhone() ? TILE_PX.phone : TILE_PX.wide;
+  const o = Object.assign({ line: '#9a9a9a', px }, opts);
+  // כל האפשרויות באותו מספר שורות: לפי האפשרות שצריכה הכי הרבה
+  const lines = Math.max(...list.map(ex => R.lineCount(ex, o, tile / px)));
+  const perLine = Math.ceil(list[0].bars.length / lines);
+  return list.map(ex => R.svgLines(ex, Object.assign({ perLine }, o), tile / px));
 }
 
 function setPrompt(s) { const el = document.getElementById('prompt'); if (el) el.textContent = s; }
@@ -591,7 +601,7 @@ function newDictation(autoplay) {
   stage.innerHTML = `
     <div class="big-play-wrap"><button class="big-play" id="bigPlay" aria-label="השמע">${PLAY_ICON}</button><div class="count muted" id="count"></div></div>
     <div class="prompt" id="prompt">מה שמעתם? אחרי תיבת ספירה אחת מתחיל הקצב</div>
-    <div class="tiles" id="tiles">${sameScale(d.options, { scale: 1.25, counts: state.syllables }).map((svg, i) => `<button class="tile" data-i="${i}">${svg}</button>`).join('')}</div>`;
+    <div class="tiles" id="tiles">${sameScale(d.options, { counts: state.syllables }).map((svg, i) => `<button class="tile" data-i="${i}">${svg}</button>`).join('')}</div>`;
   document.getElementById('bigPlay').onclick = playDictation;
   stage.querySelectorAll('.tile').forEach(t => t.onclick = () => pickDictation(+t.dataset.i, t));
   dictationActions();
