@@ -385,7 +385,7 @@ for (const vp of Object.keys(VIEWPORTS)) {
       assert.ok(await page.locator('.score-view svg text').count() >= 2, 'counting shown');
       await page.locator('#actions button', { hasText: 'ניסיון איטי' }).click();
       assert.equal(await page.locator('#actions button', { hasText: 'ניסיון איטי' }).count(), 0, 'last help step used');
-      await page.locator('#actions button', { hasText: 'התחל' }).click();
+      await page.locator('#tapPad').click();
       await page.evaluate(() => finishTap());
       assert.ok(await page.locator('.summary').isVisible());
       noErrors(errors);
@@ -464,7 +464,7 @@ for (const vp of Object.keys(VIEWPORTS)) {
     test('read and tap: start, tap, get a summary', async () => {
       const { page, errors, close } = await openPage(vp, 'rhythm_practice.html');
       await page.locator('#kindRow button[data-kind="tap"]').click();
-      await page.locator('#actions button', { hasText: 'התחל' }).click();
+      await page.locator('#tapPad').click();
       await page.locator('#tapPad').click();
       await page.evaluate(() => finishTap());
       assert.ok(await page.locator('.summary').isVisible(), 'summary shown');
