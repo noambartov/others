@@ -735,3 +735,10 @@ body.theme-clean .share-btn:hover { border-color: #c8c8c8; }
 body.mode-train .page-title { display: none; }
 body.theme-clean .level-item { background: #ffffff; border: 1px solid #d1d5db; border-radius: 14px; }
 body.theme-clean .level-item:hover { background: #f5f5f5; border-color: #9ca3af; }
+
+/* טעות בשמיעה: כפתור קטן לשמוע את מה שנבחר */
+.feedback .hear-choice {
+  margin-inline-start: 10px; padding: 3px 12px; font: inherit; font-size: 13px; font-weight: 400;
+  color: #333333; background: #ffffff; border: 1px solid #d1d5db; border-radius: 999px; cursor: pointer;
+}
+.feedback .hear-choice:hover { background: #f5f5f5; }

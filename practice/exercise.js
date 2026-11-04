@@ -90,6 +90,8 @@ function generateExercise(cfg = null) {
     clef,
     notes,
     inversion: chosenInversion,
+    baseLine,
+    baseAcc,
     optionsPool: poolStructs,
     inversionsPool: INVERSIONS_DATA[type] ? INVERSIONS_DATA[type].filter(i => activeInvPills.includes(i.id)) : [],
     playMode: cfg ? cfg.play : null,
@@ -100,7 +102,7 @@ function generateExercise(cfg = null) {
 function triggerSuccessAndNext() {
   exerciseSolved = true;
   if (training) recordTrainingResult();
-  const unlocked = window.Rewards ? Rewards.solved(!firstWrong && !helpUsed, currentSkill()) : [];
+  const unlocked = window.Rewards ? Rewards.solved(!firstWrong && !helpUsed, currentSkill(), itemDetail()) : [];
   // בלי השמעה חוזרת: הצליל דועך, רגע של שקט, ואז התרגיל הבא
   silenceAll(0.5);
   if (unlocked.length) {
@@ -214,12 +216,28 @@ function setupStandardUI() {
       } else {
         btn.classList.add('wrong');
         noteWrong(opt.name);
-        document.getElementById('feedback').innerText = 'נסה שוב';
-        document.getElementById('feedback').className = 'feedback error';
+        showWrongFeedback('נסה שוב', opt, currentExercise.inversion);
       }
     };
     container.appendChild(btn);
   });
+}
+
+// טעות בשמיעה: אפשר לשמוע את מה שנבחר, מאותו צליל יסוד ובאותה דרך נגינה, ולהשוות למה שהושמע.
+// התשובה הנכונה לא נחשפת, כך שממשיכים לנסות כרגיל
+function showWrongFeedback(text, struct, inversion) {
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback error';
+  fb.textContent = text;
+  const ex = currentExercise;
+  if (!struct || ex.baseLine === undefined || document.getElementById('displayMode').value !== 'audio_only') return;
+  const notes = buildNotes(ex.baseLine, ex.baseAcc, struct, ex.clef, inversion);
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'hear-choice';
+  btn.textContent = 'לשמוע מה שבחרתי';
+  btn.onclick = () => playExerciseNotes(notes);
+  fb.append(btn);
 }
 
 function setupChordUI() {
@@ -280,8 +298,7 @@ function checkChordType(typeName, btn) {
   } else {
     btn.classList.add('wrong');
     noteWrong(typeName);
-    document.getElementById('feedback').innerText = 'טיפוס שגוי';
-    document.getElementById('feedback').className = 'feedback error';
+    showWrongFeedback('טיפוס שגוי', currentExercise.optionsPool.find(o => o.name === typeName), currentExercise.inversion);
   }
 }
 
@@ -297,8 +314,7 @@ function checkChordInv(invId, btn) {
   } else {
     btn.classList.add('wrong');
     noteWrong(INVERSIONS_DATA[currentExercise.type].find(i => i.id === invId).name, 'inv');
-    document.getElementById('feedback').innerText = 'היפוך שגוי';
-    document.getElementById('feedback').className = 'feedback error';
+    showWrongFeedback('היפוך שגוי', currentExercise.struct, invId);
   }
 }
 
@@ -399,8 +415,7 @@ function checkModeType(typeName, btn) {
   } else {
     btn.classList.add('wrong');
     noteWrong(typeName);
-    document.getElementById('feedback').innerText = 'סוג שגוי';
-    document.getElementById('feedback').className = 'feedback error';
+    showWrongFeedback('סוג שגוי', currentExercise.optionsPool.find(o => o.name === typeName), 0);
   }
 }
 

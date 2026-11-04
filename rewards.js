@@ -540,13 +540,24 @@
     h.push(!!clean);
     if (h.length > WINDOW) h.splice(0, h.length - WINDOW);
   }
+  // היסטוריה לפי פריט (מרווח, אקורד, סולם...) ובלבולים: מה נבחר במקום התשובה. רק הניסיון הראשון בכל תרגיל
+  const HIST_MAX = 300;
+  function recordItem(s, skill, clean, detail) {
+    if (!skill || !detail || !detail.item) return;
+    const h = s.hist = s.hist || [];
+    const e = { k: skill, i: detail.item, ok: !!clean };
+    if (!clean && detail.chose && detail.chose !== detail.item) e.c = detail.chose;
+    h.push(e);
+    if (h.length > HIST_MAX) h.splice(0, h.length - HIST_MAX);
+  }
   function counts(s, skill) { return !s.chosen.length || s.chosen.includes(skill); }
 
-  function solved(clean, skill) {
+  function solved(clean, skill, detail) {
     const s = load();
     const today = dayKey();
     const before = skill ? skillStats(s, skill).level : 0;
     recordSkill(s, skill, clean);
+    recordItem(s, skill, clean, detail);
     const after = skill ? skillStats(s, skill).level : 0;
     s.total++;
     if (counts(s, skill)) s.days[today] = (s.days[today] || 0) + 1;
@@ -573,10 +584,11 @@
   }
 
   // דילוג על תרגיל שלא נפתר: שובר את הרצף ונספר כטעות במיומנות
-  function broke(skill) {
+  function broke(skill, detail) {
     const s = load();
     s.run = 0;
     recordSkill(s, skill, false);
+    recordItem(s, skill, false, detail);
     save(s);
   }
 
@@ -786,6 +798,7 @@
             <span class="sk-level">${LEVEL_NAMES[st.level]}${st.n ? ` · ${Math.round(100 * st.acc)}%` : ''}</span></button>`;
         }).join('')}</div>`).join('')}
       </div>
+      ${hardSection(s)}
       <div class="report-section">
         <h3>השבוע</h3>
         <div class="wk">${week.join('')}</div>
@@ -801,6 +814,44 @@
       </div>`;
   }
 
-  window.Rewards = { solved, broke, toggleSkill, startDaily, startRhythm, askReset, reset, dailyPlan, SKILLS, trainingDone, renderChip, open, close, setGoal, play: playSong, closeUnlock, showUnlock, _celebrate: celebrate, SONGS, ACHIEVEMENTS, _load: load, _save: save, _svg: melodySvg };
+  // "איפה קשה לי": זוגות שמתבלבלים ביניהם, ופריטים עם הכי מעט תשובות נכונות
+  function hardSpots(s) {
+    const h = s.hist || [];
+    const where = k => { const sk = SKILLS.find(x => x.key === k); return sk ? skillLabel(sk) : ''; };
+    const pairs = {};
+    h.filter(e => e.c).forEach(e => {
+      const two = [e.i, e.c].sort();
+      const key = e.k + '|' + two.join('|');
+      (pairs[key] = pairs[key] || { k: e.k, a: two[0], b: two[1], n: 0 }).n++;
+    });
+    const confused = Object.values(pairs).filter(p => p.n >= 2).sort((x, y) => y.n - x.n).slice(0, 3)
+      .map(p => ({ text: `${p.a} ו${p.b}`, meta: `${where(p.k)} · ${p.n} בלבולים` }));
+    const items = {};
+    h.forEach(e => {
+      const key = e.k + '|' + e.i;
+      const g = items[key] = items[key] || { k: e.k, i: e.i, n: 0, ok: 0 };
+      g.n++;
+      if (e.ok) g.ok++;
+    });
+    const weak = Object.values(items).filter(g => g.n >= 4 && g.ok / g.n < 0.75)
+      .sort((x, y) => x.ok / x.n - y.ok / y.n).slice(0, 3)
+      .map(g => ({ text: g.i, meta: `${where(g.k)} · ${g.ok} מתוך ${g.n} נכונות` }));
+    return { confused, weak, total: h.length };
+  }
+  function hardSection(s) {
+    const { confused, weak, total } = hardSpots(s);
+    const rows = list => list.map(r => `<div class="hard-row"><span class="hard-name">${r.text}</span><span class="hard-meta">${r.meta}</span></div>`).join('');
+    let body;
+    if (!confused.length && !weak.length) {
+      body = `<p class="rw-hint">${total < 20 ? 'אחרי עוד כמה תרגילים יופיע כאן מה מבלבל אותך ובמה כדאי להתמקד.' : 'כרגע אין משהו שחוזר על עצמו. יפה מאוד.'}</p>`;
+    } else {
+      body = `<p class="rw-hint">לפי ${total} התרגילים האחרונים, בניסיון הראשון.</p>`
+        + (confused.length ? `<div class="hard-sub">מתבלבלים ביניהם</div>${rows(confused)}` : '')
+        + (weak.length ? `<div class="hard-sub">הכי מעט תשובות נכונות</div>${rows(weak)}` : '');
+    }
+    return `<div class="report-section"><h3>איפה קשה לי</h3>${body}</div>`;
+  }
+
+  window.Rewards = { hardSpots, solved, broke, toggleSkill, startDaily, startRhythm, askReset, reset, dailyPlan, SKILLS, trainingDone, renderChip, open, close, setGoal, play: playSong, closeUnlock, showUnlock, _celebrate: celebrate, SONGS, ACHIEVEMENTS, _load: load, _save: save, _svg: melodySvg };
   renderChip();
 })();

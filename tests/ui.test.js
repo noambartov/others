@@ -208,6 +208,26 @@ for (const vp of Object.keys(VIEWPORTS)) {
       });
     }
 
+    test('ear: a wrong answer offers to hear the choice, and the collection lists what is confusing', async () => {
+      const { page, errors, close } = await openPage(vp, 'music_theory_exercise_tool.html', { mt_app_mode: 'ear' });
+      await page.locator('#exTypeRow button[data-type="intervals"]').click();
+      await page.locator('.big-play').click();
+      for (let i = 0; i < 2; i++) {
+        const right = await page.evaluate(() => currentExercise.struct.name);
+        await page.locator(`#optionsButtons .opt-btn:not([data-name="${right}"])`).first().click();
+        await page.locator('#feedback .hear-choice').click();
+        await answerCorrectly(page);
+        await waitForNextExercise(page);
+      }
+      const hist = await page.evaluate(() => Rewards._load().hist);
+      assert.strictEqual(hist.length, 2);
+      assert.ok(hist.every(e => e.k === 'ear:intervals' && !e.ok && e.c), 'first wrong choice kept');
+      await page.locator('#rewardChip').click();
+      assert.ok(await page.locator('.report-section', { hasText: 'איפה קשה לי' }).isVisible());
+      noErrors(errors);
+      await close();
+    });
+
     test('step-by-step training: pick a level, answer, see the report', async () => {
       const { page, errors, close } = await openPage(vp, 'music_theory_exercise_tool.html', { mt_app_mode: 'train' });
       const levels = page.locator('#trainingPanel .level-item');
