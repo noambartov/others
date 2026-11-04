@@ -953,7 +953,7 @@ function tapActions() {
   const help = next ? [next === 'guided' && cur.hint > 0 ? 'ניסיון איטי' : 'עזרה', () => { cur.helped = true; cur.hint++; applyHint(); }] : [null];
   actions(cur.result
     ? [['נסו שוב', () => { renderTap(); startTap(); }, 'primary'], ['השמע איך זה נשמע', playTapExample], help, ['לתרגיל הבא', goNextQuiet]]
-    : [['התחל', startTap, 'primary'], ['השמע איך זה נשמע', playTapExample], help, ['לתרגיל הבא', goNextQuiet]]);
+    : [['השמע איך זה נשמע', playTapExample], help, ['לתרגיל הבא', goNextQuiet]]);
 }
 
 function tapHint() {
