@@ -269,7 +269,12 @@ function playCurrentExercise() {
   if (!currentExercise) return;
   // אחרי רמז השמעה, כל השמעה חוזרת בתרגיל הזה נשמעת בדרך המקלה
   if (currentExercise.hintPlay) { currentExercise.hintPlay(); return; }
-  const freqs = currentExercise.notes.map(n => midiToFreq(n.midiNum));
+  playExerciseNotes(currentExercise.notes);
+}
+
+// מנגן צלילים כמו את התרגיל הנוכחי (סולם עולה ויורד, או מרווח ואקורד באותו כיוון נגינה)
+function playExerciseNotes(notes) {
+  const freqs = notes.map(n => midiToFreq(n.midiNum));
   const ctx = getAudioContext();
   newPlayBus(ctx);
 

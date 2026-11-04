@@ -159,6 +159,15 @@ function currentSkill() {
   return (ear ? 'ear:' : 'read:') + currentExercise.type;
 }
 
+// לאוסף ("איפה קשה לי"): מה נשאל, ומה נבחר במקומו בטעות הראשונה (רק כשזו בחירה של סוג, לא היפוך או צליל יסוד)
+function itemDetail() {
+  const ex = currentExercise;
+  if (!ex) return null;
+  const item = ex.struct ? ex.struct.name : noteLabel(ex.correctNote);
+  const chose = firstWrong && firstWrong.kind === 'type' && ex.struct ? firstWrong.label : null;
+  return { item, chose };
+}
+
 // תרגול יומי: תוכנית מהמיומנויות שהמתרגל בחר (נבנית ב-rewards.js), ורצה כמו אימון עם דוח בסוף
 function startDailyMix(items) {
   const invs = { chords: [0, 1, 2], septachords: [0, 1, 2, 3] };
@@ -191,7 +200,7 @@ function recordTrainingResult() {
 }
 
 function skipExercise() {
-  if (!exerciseSolved && window.Rewards) Rewards.broke(currentSkill());
+  if (!exerciseSolved && window.Rewards) Rewards.broke(currentSkill(), itemDetail());
   if (training && !exerciseSolved) {
     noteWrong('דילוג', 'skip');
     exerciseSolved = true;
