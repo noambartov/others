@@ -81,8 +81,13 @@
     .tap-pad {
       width: 100%; height: 130px; border: none; border-radius: 10px; background: #efefef; color: #999999;
       font-size: 16px; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
-      transition: background .06s;
+      touch-action: none; -webkit-tap-highlight-color: transparent;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
     }
+    .tap-pad .pad-count { font-size: 34px; line-height: 40px; color: #222222; min-height: 40px; }
+    .tap-pad .pad-count:empty { display: none; }
+    /* המשטח צמוד לתחתית המסך, כדי שתמיד אפשר להגיע אליו גם כשהתרגיל ארוך מהמסך */
+    .tap-dock { position: sticky; bottom: 0; z-index: 5; background: #ffffff; padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); }
     .tap-pad.hit { background: #dcdcdc; }
     .tap-pad.live { color: #222222; }
     .count { text-align: center; font-size: 34px; font-weight: 400; color: #222222; min-height: 44px; line-height: 44px; }
@@ -179,7 +184,7 @@
       .page-title { display: none; }
       .tap-pad { font-size: 15px; }
       .big-play { width: 84px; height: 84px; }
-      .tap-pad { height: 150px; }
+      .tap-pad { height: 120px; }
       .mode-tabs { gap: 12px; }
       .mode-tabs button { font-size: 14px; }
       .cell-pad { grid-template-columns: repeat(3, 1fr); }
@@ -907,6 +912,13 @@ function newTap() {
   renderTap();
 }
 
+function padIdleLabel() { return matchMedia('(hover: none)').matches ? 'לחצו כאן כדי להתחיל' : 'לחצו כאן או על רווח כדי להתחיל'; }
+// לחיצה על המשטח: לפני התרגיל מתחילה אותו, ובזמן התרגיל היא הקשה
+function padDown(e) {
+  if (tapRun) onTap(e);
+  else startTap();
+}
+
 function tapTempo() { return cur.guided ? Math.round(state.tempo * SLOW) : state.tempo; }
 function playTapExample() { playExercise(cur.ex, { metro: true, tempo: tapTempo() }); }
 
@@ -917,14 +929,16 @@ function renderTap(result) {
   const noteStyle = result ? result.errors.map(err => ({ color: err !== null && Math.abs(err) <= result.good ? null : '#a8a8a8' })) : null;
   const intro = cur.guided
     ? 'ניסיון איטי: הקצב מתנגן חלש, ומקישים יחד איתו'
-    : 'לחצו "התחל". אחרי תיבת ספירה אחת מקישים את הקצב עם המטרונום';
+    : 'אחרי תיבת ספירה אחת מקישים את הקצב עם המטרונום';
   stage.innerHTML = `
     <div class="score-view">${bigScore(ex, { marks, noteStyle, counts: cur.counts || state.syllables })}</div>
-    ${result ? summaryHtml(result) : `<div class="prompt" id="prompt">${intro}</div><div class="count muted" id="count"></div>`}
-    ${result ? '' : `<button class="tap-pad" id="tapPad">הקישו כאן את הקצב, או במקש רווח</button>`}`;
+    ${result ? summaryHtml(result) : `<div class="prompt" id="prompt">${intro}</div>`}
+    ${result ? '' : `<div class="tap-dock"><button class="tap-pad" id="tapPad"><span class="pad-count" id="count"></span><span class="pad-label" id="padLabel">${padIdleLabel()}</span></button></div>`}`;
   if (!result) {
     const pad = document.getElementById('tapPad');
-    pad.addEventListener('pointerdown', e => { e.preventDefault(); onTap(e); });
+    // במגע מקשיבים ל-touchstart: באייפון זה האירוע הראשון שמגיע, בלי המתנה לזיהוי גלילה או הגדלה
+    pad.addEventListener('touchstart', e => { e.preventDefault(); padDown(e); }, { passive: false });
+    pad.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') return; e.preventDefault(); padDown(e); });
   }
   cur.result = result || null;
   tapActions();
@@ -980,14 +994,39 @@ function startTap() {
   countDisplay(ex, t0, tempo);
   const latency = (ctx.outputLatency || 0) + (ctx.baseLatency || 0);
   const expected = R.timeline(ex, tempo).filter(n => !n.rest).map(n => start + n.start);
-  tapRun = { start, expected, taps: [], latency, ex, tempo };
+  tapRun = { start, expected, taps: [], latency, latencyKnown: ctx.outputLatency !== undefined, ex, tempo };
   const pad = document.getElementById('tapPad');
-  if (pad) { pad.textContent = 'הקישו כאן'; pad.classList.add('live'); }
+  const label = document.getElementById('padLabel');
+  if (pad) pad.classList.add('live');
+  if (label) label.textContent = 'הקישו כאן';
   const end = start + bar * ex.bars.length + 0.35;
   timers.push(setTimeout(() => {
-    if (pad) { pad.textContent = ''; }
+    if (label) label.textContent = '';
   }, (start - ctx.currentTime) * 1000));
+  followScore(ex, start, bar);
   timers.push(setTimeout(finishTap, (end - ctx.currentTime) * 1000));
+}
+
+// תרגיל ארוך מהמסך: לפני שמתחילה שורה שלא רואים, גוללים כך שהשורה הנוכחית למעלה והבאה מתחתיה, מעל משטח ההקשה
+function followScore(ex, start, bar) {
+  const lines = [...document.querySelectorAll('#stage .score-view svg[data-bar]')];
+  const dock = document.querySelector('.tap-dock');
+  if (lines.length < 2 || !dock) return;
+  const visible = el => {
+    const r = el.getBoundingClientRect();
+    return r.top >= 0 && r.bottom <= dock.getBoundingClientRect().top;
+  };
+  const show = i => {
+    if (visible(lines[i]) && (i + 1 >= lines.length || visible(lines[i + 1]))) return;
+    window.scrollBy({ top: lines[i].getBoundingClientRect().top - 12, behavior: 'smooth' });
+  };
+  show(0);
+  lines.forEach((el, i) => {
+    if (!i) return;
+    // חצי תיבה לפני שהשורה מתחילה, כדי שאפשר יהיה לקרוא קדימה
+    const at = start + Number(el.dataset.bar) * bar - bar / 2;
+    timers.push(setTimeout(() => { if (tapRun) show(i - 1); }, Math.max(0, (at - audioCtx.currentTime) * 1000)));
+  });
 }
 
 function onTap(e) {
@@ -999,17 +1038,21 @@ function onTap(e) {
   tapRun.taps.push(t);
   tapSound(audioCtx.currentTime);
   const pad = document.getElementById('tapPad');
-  if (pad) { pad.classList.add('hit'); setTimeout(() => pad.classList.remove('hit'), 90); }
+  if (pad) { pad.classList.add('hit'); setTimeout(() => pad.classList.remove('hit'), 80); }
 }
 
 function finishTap() {
   if (!tapRun) return;
   const run = tapRun;
   tapRun = null;
-  const res = R.scoreTaps(run.expected, run.taps, { beat: 60 / run.tempo });
+  // ספארי לא מדווח על עיכוב הרמקול (ובאוזניות בלוטות' הוא גדול), אז שם מתקנים עיכוב קבוע גדול יותר
+  const res = R.scoreTaps(run.expected, run.taps, { beat: 60 / run.tempo, maxShift: run.latencyKnown ? 0.15 : 0.25 });
   cur.tapRes = res;
   count(res.passed && !cur.helped);
   renderTap(res);
+  // בתרגיל ארוך: מראים את התוצאה ואת הכפתורים שמתחת לתווים
+  const actionsEl = document.getElementById('actions');
+  if (actionsEl && actionsEl.getBoundingClientRect().bottom > window.innerHeight) actionsEl.scrollIntoView({ block: 'end', behavior: 'smooth' });
   // הכול בזמן: עוברים לבד לתרגיל הבא
   if (res.passed) scheduleNext(1800, goNextQuiet);
 }

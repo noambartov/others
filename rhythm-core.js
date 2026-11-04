@@ -605,14 +605,15 @@
       return { errors, extra };
     }
 
-    // עיכוב קבוע של המכשיר: בודקים הזזות של עד 0.15 שנ׳ ובוחרים את זו שמתאימה הכי טוב.
+    // עיכוב קבוע של המכשיר: בודקים הזזות של עד 0.15 שנ׳ (או opts.maxShift) ובוחרים את זו שמתאימה הכי טוב.
     // בשוויון מעדיפים הזזה קטנה, כך שתלמיד שמקיש בזמן לא "מתוקן"
     const score = mm => mm.errors.filter(e => e !== null && Math.abs(e) <= good).length * 2
       - mm.errors.filter(e => e === null).length - mm.extra;
     let offset = 0;
     let m = match(0);
     let best = score(m);
-    for (let k = -15; k <= 15; k++) {
+    const maxK = Math.round((opts.maxShift || 0.15) * 100);
+    for (let k = -maxK; k <= maxK; k++) {
       const shift = k / 100;
       if (!k) continue;
       const mm = match(shift);
@@ -977,9 +978,9 @@
       const spread = 1 + (W - x.width) / (w2 - x.width);
       rendered[i] = render(x.sub, Object.assign({}, x.o, { spread }));
     });
-    return rendered.map(x => {
+    return rendered.map((x, i) => {
       // שורה שאינה האחרונה: הקו ממשיך עד הקצה, כמו בדפוס
-      return svgWrap(x, Object.assign({}, opts, { boxWidth: W }));
+      return svgWrap(x, Object.assign({}, opts, { boxWidth: W })).replace('<svg ', `<svg data-bar="${lines[i][0]}" `);
     }).join('');
   }
 
