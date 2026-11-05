@@ -254,6 +254,7 @@
 <script src="rhythm-core.js"></script>
 <script src="theory-core.js"></script>
 <script src="rewards.js?v={{ site.time | date: '%s' }}"></script>
+<script src="help-panel.js?v={{ site.time | date: '%s' }}"></script>
 <script>
 const R = window.RhythmCore;
 const PLAY_ICON = '<svg viewBox="0 0 24 24" width="36" height="36"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>';
@@ -1301,6 +1302,18 @@ loadSettings();
 renderSettings();
 updateScore();
 if (appMode === 'free') newExercise(false);
+
+// "על מה לוחצים?": הסבר קצר על תפעול המסך הנוכחי
+HelpPanel.init({
+  anchor: document.querySelector('.topbar'),
+  topic: () => {
+    const b = document.body.classList;
+    if (b.contains('in-rewards')) return 'rewards';
+    if (appMode === 'train') return b.contains('in-session') ? 'rhythm:session' : 'rhythm:train';
+    if (state.kind === 'dictation') return state.answer === 'choose' ? 'rhythm:choose' : 'rhythm:write';
+    return 'rhythm:' + state.kind;
+  }
+});
 </script>
 <script src="update-check.js"></script>
 </body>

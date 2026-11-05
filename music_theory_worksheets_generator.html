@@ -976,6 +976,8 @@ window.onload = () => { addRow(); generateSheet(); fitSheets(); };
 </script>
 
 <script src="site-nav.js"></script>
+<script src="help-panel.js?v={{ site.time | date: '%s' }}"></script>
+<script>HelpPanel.init({ anchor: document.querySelector('.app-header'), topic: () => 'print' });</script>
 <script src="update-check.js"></script>
 </body>
 </html>

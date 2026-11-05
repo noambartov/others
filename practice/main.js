@@ -26,3 +26,15 @@ applySharedSettings();
 if (!loadExerciseFromUrl() && appMode !== 'train') {
   startPractice();
 }
+
+// "על מה לוחצים?": הסבר קצר על תפעול המסך הנוכחי
+HelpPanel.init({
+  anchor: document.querySelector('.topbar'),
+  topic: () => {
+    const b = document.body.classList;
+    if (b.contains('in-rewards')) return 'rewards';
+    if (b.contains('in-daily')) return 'daily';
+    if (appMode === 'train') return b.contains('in-session') ? 'ear:session' : 'ear:train';
+    return appMode + ':' + document.getElementById('exType').value;
+  }
+});
