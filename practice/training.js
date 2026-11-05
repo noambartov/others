@@ -16,12 +16,16 @@ function earStructures(type) {
 }
 
 function optionStructures(type) {
-  return appMode === 'read' ? BASE_STRUCTURES[type] : earStructures(type);
+  return isReadMode() ? BASE_STRUCTURES[type] : earStructures(type);
 }
 
 function structsById(type, ids) {
-  return ids.map(id => earStructures(type).find(x => x.id === id));
+  return ids.map(id => optionStructures(type).find(x => x.id === id));
 }
+
+// קריאה: חופשי (read) או לפי שלבים (rtrain). שמיעה: חופשי (ear) או לפי שלבים (train)
+function isReadMode(mode = appMode) { return mode === 'read' || mode === 'rtrain'; }
+function isTrainMode(mode = appMode) { return mode === 'train' || mode === 'rtrain'; }
 
 const EAR_INTERVALS = ['m2', 'M2', 'm3', 'M3', 'P4', 'A4', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8'];
 // נגינה מלמעלה למטה קשה יותר לשמיעה, אז היא מגיעה רק אחרי שהעולה וההרמוני כבר מוכרים
@@ -56,6 +60,45 @@ const EAR_LEVELS = [
   ]}
 ];
 
+// אימון קריאה לפי רמות: קודם קריאת תווים בכל מפתח, ואז מרווחים, אקורדים, סולמות ומודוסים בשני המפתחות.
+// clef: sol / fa / rand (שניהם, לסירוגין). acc בזיהוי תווים: without (בלי סימני היתק) או with
+const READ_BASIC_INTERVALS = ['m2', 'M2', 'm3', 'M3', 'P4', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8'];
+const READ_LEVELS = [
+  { name: 'רמה 1', desc: 'תווים במפתח סול', cats: [
+    { label: 'תווים', type: 'note_id', clef: 'sol', acc: 'without' }
+  ]},
+  { name: 'רמה 2', desc: 'תווים במפתח פה', cats: [
+    { label: 'תווים', type: 'note_id', clef: 'fa', acc: 'without' }
+  ]},
+  { name: 'רמה 3', desc: 'תווים בשני המפתחות, עם סימני היתק', cats: [
+    { label: 'תווים', type: 'note_id', clef: 'rand', acc: 'with' }
+  ]},
+  { name: 'רמה 4', desc: 'מרווחים זכים, גדולים וקטנים', cats: [
+    { label: 'מרווחים', type: 'intervals', ids: READ_BASIC_INTERVALS, clef: 'rand' }
+  ]},
+  { name: 'רמה 5', desc: 'כל המרווחים, משולשים מז׳ור ומינור', cats: [
+    { label: 'מרווחים', type: 'intervals', ids: T.CATALOG.intervals.map(x => x.id), clef: 'rand' },
+    { label: 'משולשים', type: 'chords', ids: ['major', 'minor'], inversions: [0], clef: 'rand' }
+  ]},
+  { name: 'רמה 6', desc: 'כל המשולשים וההיפוכים, מז׳ור ומינור טבעי', cats: [
+    { label: 'משולשים', type: 'chords', ids: ['major', 'minor', 'diminished', 'augmented'], inversions: [0, 1, 2], clef: 'rand' },
+    { label: 'סולמות', type: 'scales', ids: ['major', 'minor_natural'], clef: 'rand' }
+  ]},
+  { name: 'רמה 7', desc: 'ספטאקורדים עיקריים, כל סוגי המינור', cats: [
+    { label: 'ספטאקורדים', type: 'septachords', ids: ['major7', 'dominant7', 'minor7', 'half_diminished'], inversions: [0], clef: 'rand' },
+    { label: 'סולמות', type: 'scales', ids: ['major', 'minor_natural', 'minor_harmonic', 'minor_melodic'], clef: 'rand' }
+  ]},
+  { name: 'רמה 8', desc: 'כל הספטאקורדים וההיפוכים, מודוסים', cats: [
+    { label: 'ספטאקורדים', type: 'septachords', ids: T.CATALOG.septachords.map(x => x.id), inversions: [0, 1, 2, 3], clef: 'rand' },
+    { label: 'מודוסים', type: 'modes', ids: T.CATALOG.modes.map(x => x.id), clef: 'rand' }
+  ]}
+];
+const READ_HISTORY_KEY = 'mt_read_training_history';
+const CLEF_NAMES = { sol: 'מפתח סול', fa: 'מפתח פה' };
+
+function trainLevels(read = isReadMode()) { return read ? READ_LEVELS : EAR_LEVELS; }
+function historyKey(read = isReadMode()) { return read ? READ_HISTORY_KEY : HISTORY_KEY; }
+
 let appMode = 'read';
 let training = null;
 let firstWrong = null;
@@ -65,40 +108,42 @@ function noteWrong(label, kind = 'type') {
   if (!firstWrong) firstWrong = { label, kind };
 }
 
-function loadHistory() {
-  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch (e) { return []; }
+function loadHistory(read = isReadMode()) {
+  try { return JSON.parse(localStorage.getItem(historyKey(read))) || []; } catch (e) { return []; }
 }
 
-function saveHistory(entry) {
+function saveHistory(entry, read = isReadMode()) {
   try {
-    const h = loadHistory();
+    const h = loadHistory(read);
     h.push(entry);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(-200)));
+    localStorage.setItem(historyKey(read), JSON.stringify(h.slice(-200)));
   } catch (e) { /* בלי אחסון, הדוח עדיין מוצג */ }
 }
 
 function setAppMode(mode, initial = false) {
-  const spellingChanged = (appMode === 'read') !== (mode === 'read');
+  const spellingChanged = isReadMode() !== isReadMode(mode);
   appMode = mode;
   if (window.Rewards && document.body.classList.contains('in-rewards')) Rewards.close();
   try { localStorage.setItem('mt_app_mode', mode); } catch (e) {}
-  document.body.classList.remove('mode-read', 'mode-ear', 'mode-train', 'in-session', 'in-daily');
+  document.body.classList.remove('mode-read', 'mode-ear', 'mode-train', 'mode-rtrain', 'in-session', 'in-daily');
   document.body.classList.add('mode-' + mode);
+  // אימון הקריאה מתנהג כמו אימון השמיעה (בלי הגדרות התרגול החופשי), אז מקבל גם את mode-train
+  if (mode === 'rtrain') document.body.classList.add('mode-train');
   document.querySelectorAll('#modeTabs button').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-  document.body.dataset.section = mode === 'read' ? 'read' : 'ear';
+  document.body.dataset.section = isReadMode(mode) ? 'read' : 'ear';
   if (window.SiteNav) SiteNav.setActive(document.body.dataset.section);
-  document.getElementById('pageTitle').textContent = mode === 'read' ? 'תרגול קריאה' : 'תרגול שמיעה';
-  document.getElementById('displayMode').value = mode === 'read' ? 'both' : 'audio_only';
+  document.getElementById('pageTitle').textContent = isReadMode(mode) ? 'תרגול קריאה' : 'תרגול שמיעה';
+  document.getElementById('displayMode').value = isReadMode(mode) ? 'both' : 'audio_only';
   training = null;
   const exType = document.getElementById('exType');
-  if (mode !== 'read' && exType.value === 'note_id') {
+  if (!isReadMode(mode) && exType.value === 'note_id') {
     exType.value = 'intervals';
     onExerciseTypeChange();
   } else if (spellingChanged && exType.value === 'intervals') {
     updateOptionsList();
   }
   closeSettings();
-  if (mode === 'train') {
+  if (isTrainMode(mode)) {
     showLevelPicker();
     return;
   }
@@ -117,7 +162,7 @@ function showLevelPicker() {
   document.getElementById('practiceArea').style.display = 'none';
   panel.style.display = 'block';
   updateTopbarProgress();
-  const items = EAR_LEVELS.map((lv, i) => {
+  const items = trainLevels().map((lv, i) => {
     const runs = history.filter(h => h.level === i);
     const best = runs.length ? Math.max(...runs.map(h => Math.round(100 * h.correct / h.total))) : null;
     return `<button class="level-item" onclick="startTraining(${i})">
@@ -125,14 +170,15 @@ function showLevelPicker() {
       <div class="lv-best">${best === null ? '' : 'שיא ' + best + '%'}</div>
     </button>`;
   }).join('');
-  panel.innerHTML = `<h2>אימון שמיעה</h2>
+  panel.innerHTML = `<h2>${isReadMode() ? 'אימון קריאה' : 'אימון שמיעה'}</h2>
     <p class="sub">בוחרים רמה ומקבלים ${TRAINING_LENGTH} תרגילים. נספרת רק התשובה הראשונה, ובסוף מקבלים דוח.</p>
     <div class="level-list">${items}</div>`;
 }
 
 function buildTrainingPlan(level) {
-  const cats = EAR_LEVELS[level].cats.map(c => ({
-    label: c.label, type: c.type, pool: structsById(c.type, c.ids), inversions: c.inversions || [0], play: c.play || null
+  const cats = trainLevels()[level].cats.map(c => ({
+    label: c.label, type: c.type, pool: c.ids ? structsById(c.type, c.ids) : [], inversions: c.inversions || [0], play: c.play || null,
+    clef: c.clef || null, acc: c.acc || null
   }));
   const plan = [];
   for (let i = 0; i < TRAINING_LENGTH; i++) plan.push(cats[i % cats.length]);
@@ -144,7 +190,7 @@ function buildTrainingPlan(level) {
 }
 
 function startTraining(level) {
-  training = { level, plan: buildTrainingPlan(level), index: 0, results: [] };
+  training = { level, read: isReadMode(), plan: buildTrainingPlan(level), index: 0, results: [] };
   document.body.classList.add('in-session');
   document.getElementById('trainingPanel').style.display = 'none';
   document.getElementById('practiceArea').style.display = 'flex';
@@ -193,6 +239,7 @@ function recordTrainingResult() {
     category: ex.category,
     item: ex.struct ? ex.struct.name : ex.correctNote.name,
     inversion: hasInv ? INVERSIONS_DATA[ex.type].find(i => i.id === ex.inversion).name : null,
+    clef: ex.clef,
     correct: !firstWrong,
     wrong: firstWrong
   });
@@ -220,7 +267,7 @@ function updateTopbarProgress() {
   if (training) {
     label.innerText = '';
     value.innerText = `${Math.min(training.index + 1, training.plan.length)} מתוך ${training.plan.length}`;
-  } else if (appMode === 'train') {
+  } else if (isTrainMode()) {
     label.innerText = '';
     value.innerText = '';
   } else {
@@ -259,17 +306,20 @@ function showTrainingReport(partial = false) {
   const total = results.length;
   const correct = results.filter(r => r.correct).length;
   const pct = total ? Math.round(100 * correct / total) : 0;
-  if (!partial && !t.daily) saveHistory({ t: Date.now(), level: t.level, correct, total });
-  if (!partial && !t.daily && window.Rewards) Rewards.trainingDone(t.level, pct);
+  const levels = trainLevels(!!t.read);
+  if (!partial && !t.daily) saveHistory({ t: Date.now(), level: t.level, correct, total }, !!t.read);
+  if (!partial && !t.daily && window.Rewards) Rewards.trainingDone(t.read ? 'read:' + t.level : t.level, pct);
 
   const byCat = groupStats(results, r => r.category);
   const byItem = groupStats(results, r => r.item).sort((a, b) => a.correct / a.total - b.correct / b.total);
   const invResults = results.filter(r => r.inversion);
   const byInv = groupStats(invResults, r => r.inversion);
+  // בקריאה: איך הלך בכל מפתח, כשהאימון כלל את שניהם
+  const byClef = t.read ? groupStats(results.filter(r => CLEF_NAMES[r.clef]), r => CLEF_NAMES[r.clef]) : [];
 
   const confusions = new Map();
   results.filter(r => !r.correct && r.wrong && r.wrong.kind === 'type').forEach(r => {
-    const k = `שמעת ${r.item} וענית ${r.wrong.label}`;
+    const k = `${t.read ? 'ראית' : 'שמעת'} ${r.item} וענית ${r.wrong.label}`;
     confusions.set(k, (confusions.get(k) || 0) + 1);
   });
   const confList = [...confusions.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
@@ -277,7 +327,7 @@ function showTrainingReport(partial = false) {
 
   const strong = byItem.filter(g => g.correct === g.total && g.total >= 2).map(g => g.key);
   const weak = byItem.filter(g => g.correct / g.total < 0.7).map(g => g.key);
-  const hasNext = !t.daily && t.level < EAR_LEVELS.length - 1;
+  const hasNext = !t.daily && t.level < levels.length - 1;
   let advice;
   if (partial) {
     advice = total ? `ענית על ${total} מתוך ${t.plan.length} תרגילים. ההמלצה לרמה הבאה תופיע בסוף האימון.` : 'עוד לא ענית על אף תרגיל.';
@@ -309,12 +359,13 @@ function showTrainingReport(partial = false) {
     : `${hasNext && pct >= 85 ? `<button class="primary" onclick="startTraining(${t.level + 1})">לרמה הבאה</button>` : ''}
       <button class="${hasNext && pct >= 85 ? '' : 'primary'}" onclick="startTraining(${t.level})">שוב ברמה הזו</button>
       <button onclick="showLevelPicker()">כל הרמות</button>`);
-  panel.innerHTML = `<h2>${t.daily ? 'תרגול יומי' : EAR_LEVELS[t.level].name}: ${partial ? 'דוח עד כה' : 'סיכום'}</h2>
+  panel.innerHTML = `<h2>${t.daily ? 'תרגול יומי' : (t.read ? 'קריאה, ' : '') + levels[t.level].name}: ${partial ? 'דוח עד כה' : 'סיכום'}</h2>
     ${total ? `<div class="report-score">${pct}%</div>
     <p class="sub">${correct} נכונות מתוך ${total} בניסיון הראשון</p>` : ''}
     <div class="report-section"><p class="report-advice">${advice}</p></div>
     ${byCat.length > 1 ? `<div class="report-section"><h3>לפי קטגוריה</h3>${byCat.map(statRow).join('')}</div>` : ''}
     ${total ? `<div class="report-section"><h3>לפי סוג</h3>${byItem.map(statRow).join('')}</div>` : ''}
+    ${byClef.length > 1 ? `<div class="report-section"><h3>לפי מפתח</h3>${byClef.map(statRow).join('')}</div>` : ''}
     ${byInv.length ? `<div class="report-section"><h3>היפוכים</h3>${byInv.map(statRow).join('')}</div>` : ''}
     ${strong.length ? `<div class="report-section"><h3>חזק</h3><p class="report-advice">${strong.join(', ')}</p></div>` : ''}
     ${weak.length ? `<div class="report-section"><h3>לחיזוק</h3><p class="report-advice">${weak.join(', ')}</p></div>` : ''}
@@ -327,10 +378,10 @@ function showTrainingReport(partial = false) {
 
 function initialAppMode() {
   const fromUrl = new URLSearchParams(location.search).get('mode');
-  if (['read', 'ear', 'train'].includes(fromUrl)) return fromUrl;
+  if (['read', 'ear', 'train', 'rtrain'].includes(fromUrl)) return fromUrl;
   try {
     const saved = localStorage.getItem('mt_app_mode');
-    if (['read', 'ear', 'train'].includes(saved)) return saved;
+    if (['read', 'ear', 'train', 'rtrain'].includes(saved)) return saved;
   } catch (e) {}
   return 'read';
 }

@@ -138,8 +138,9 @@ body.theme-clean .opt-btn.correct { background: #222222 !important; color: #ffff
 .mode-tabs { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); display: flex; gap: 18px; white-space: nowrap; }
 .mode-tabs button { background: none; border: none; padding: 2px 0; font: inherit; font-size: 15px; color: var(--text-muted); cursor: pointer; transition: color .15s; }
 .mode-tabs button:hover, .mode-tabs button.active { color: var(--text-dark); }
-/* קריאה ושמיעה נבחרות בסרגל האתר; כאן נשארים רק חופשי / לפי שלבים בתוך השמיעה */
-.mode-tabs button[data-mode="read"], body.mode-read .mode-tabs { display: none; }
+/* קריאה ושמיעה נבחרות בסרגל האתר; כאן נשארים רק חופשי / לפי שלבים בתוך הקטע הנוכחי */
+body[data-section="read"] .mode-tabs button[data-sec="ear"],
+body[data-section="ear"] .mode-tabs button[data-sec="read"] { display: none; }
 @media (max-width: 480px) {
   .mode-tabs { gap: 12px; }
   .mode-tabs button { font-size: 14px; }
@@ -155,7 +156,8 @@ body.theme-clean .opt-btn.correct { background: #222222 !important; color: #ffff
 .seg { display: flex; flex-wrap: wrap; gap: 4px; }
 .seg button { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 6px; cursor: pointer; background: #ffffff; border: 1px solid #e6e6e6; color: #999999; }
 .seg button.active { background: #e6e6e6; color: #222222; }
-body.mode-read .ear-only-setting { display: none !important; }
+body.mode-read .ear-only-setting,
+body.mode-rtrain .ear-only-setting { display: none !important; }
 body.mode-train #intervalFormatGroup { display: flex !important; }
 body.mode-ear .read-only-setting,
 body.mode-train .read-only-setting,

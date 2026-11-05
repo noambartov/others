@@ -247,6 +247,41 @@ for (const vp of Object.keys(VIEWPORTS)) {
       await close();
     });
 
+    test('reading step-by-step training: tabs, every level, report by clef', async () => {
+      const { page, errors, close } = await openPage(vp, 'music_theory_exercise_tool.html?mode=read', {});
+      assert.ok(await page.locator('#modeTabs button[data-mode="read"]').isVisible(), 'read free tab');
+      assert.ok(!(await page.locator('#modeTabs button[data-mode="train"]').isVisible()), 'ear tabs hidden in reading');
+      await page.locator('#modeTabs button[data-mode="rtrain"]').click();
+      const levels = page.locator('#trainingPanel .level-item');
+      const n = await levels.count();
+      assert.strictEqual(n, 8);
+      assert.match(await page.locator('#trainingPanel h2').textContent(), /אימון קריאה/);
+      for (let i = 0; i < n; i++) {
+        await page.evaluate(lv => startTraining(lv), i);
+        // כל תרגיל ברמה מוצג על החמשה ונענה
+        for (let k = 0; k < 3; k++) {
+          assert.strictEqual(await page.evaluate(() => document.getElementById('displayMode').value), 'both');
+          await answerCorrectly(page);
+          await waitForNextExercise(page);
+        }
+        assert.strictEqual(await page.evaluate(() => training.results.length), 3);
+        const clefs = await page.evaluate(() => training.results.map(r => r.clef));
+        if (i === 0) assert.ok(clefs.every(c => c === 'sol'), 'level 1 is treble clef');
+        if (i === 1) assert.ok(clefs.every(c => c === 'fa'), 'level 2 is bass clef');
+        await page.evaluate(() => { training.index = training.plan.length; goToNextExercise(); });
+        assert.ok(await page.locator('#trainingPanel .report-score').isVisible(), 'report shown');
+      }
+      const hist = await page.evaluate(() => JSON.parse(localStorage.getItem('mt_read_training_history')));
+      assert.strictEqual(hist.length, 8);
+      assert.strictEqual(await page.evaluate(() => localStorage.getItem('mt_training_history')), null, 'ear history untouched');
+      assert.ok(await page.evaluate(() => Rewards._load().passed.includes('read:0')));
+      // לוח השלבים מראה את השיא
+      await page.locator('#trainingPanel button', { hasText: 'כל הרמות' }).click();
+      assert.match(await levels.first().textContent(), /שיא 100%/);
+      noErrors(errors);
+      await close();
+    });
+
     test('settings, share link and rewards collection open without errors', async () => {
       const { page, errors, close } = await openPage(vp, 'music_theory_exercise_tool.html', { mt_app_mode: 'read' });
       await page.locator('#exTypeRow button[data-type="chords"]').click();
