@@ -1,11 +1,13 @@
 // תרגול: הפעלה. נטען אחרון, אחרי שכל הפונקציות מוגדרות.
 
-// כמה כפתורים נכנסים בשורה (לפחות 85px לכפתור), כמו grid auto-fit, אבל השורה האחרונה ממורכזת
+// כמה כפתורים נכנסים בשורה (לפחות --min-btn, ברירת מחדל 85px לכפתור), כמו grid auto-fit, אבל השורה האחרונה ממורכזת
 function fitOptionsGrid(grid) {
   const width = grid.clientWidth;
   if (!width) return;
-  const gap = parseFloat(getComputedStyle(grid).columnGap) || 0;
-  const fit = Math.max(1, Math.floor((width + gap) / (85 + gap)));
+  const style = getComputedStyle(grid);
+  const gap = parseFloat(style.columnGap) || 0;
+  const minBtn = parseFloat(style.getPropertyValue('--min-btn')) || 85;
+  const fit = Math.max(1, Math.floor((width + gap) / (minBtn + gap)));
   grid.style.setProperty('--cols', Math.max(1, Math.min(grid.children.length, fit)));
 }
 const gridResize = new ResizeObserver(entries => entries.forEach(e => fitOptionsGrid(e.target)));

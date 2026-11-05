@@ -354,7 +354,17 @@ function setupModeUI() {
     const btn = document.createElement('button');
     btn.className = 'opt-btn';
     btn.dataset.name = opt.name;
-    btn.innerText = opt.name;
+    // בטלפון ההסבר שבסוגריים מוסתר, כדי שכל הכפתורים יהיו בשורה אחת ובאותו גובה
+    const m = opt.name.match(/^(.*?)\s*(\(.*\))$/);
+    if (m) {
+      btn.textContent = m[1];
+      const extra = document.createElement('span');
+      extra.className = 'opt-extra';
+      extra.textContent = ' ' + m[2];
+      btn.appendChild(extra);
+    } else {
+      btn.textContent = opt.name;
+    }
     btn.onclick = () => checkModeType(opt.name, btn);
     typeContainer.appendChild(btn);
   });
