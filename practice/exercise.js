@@ -16,14 +16,14 @@ const AUDIO_RANGE_TYPES = ['intervals', 'chords', 'septachords'];
 // cfg: באימון, הקטגוריה שנבחרה מהרמה (סוג, מאגר מבנים, היפוכים, אופן נגינה) במקום ההגדרות
 function generateExercise(cfg = null) {
   const type = cfg ? cfg.type : document.getElementById('exType').value;
-  let clefSelectVal = document.getElementById('clefSelect').value;
+  let clefSelectVal = cfg && cfg.clef ? cfg.clef : document.getElementById('clefSelect').value;
   let clef = clefSelectVal === 'rand' ? (Math.random() < 0.5 ? 'sol' : 'fa') : clefSelectVal;
   // סולמות ומודוסים במושמע בלבד: רק מפתח סול, עד שני קווי עזר מעל החמשה (דו6)
   const audioScale = document.getElementById('displayMode').value === 'audio_only' && (type === 'scales' || type === 'modes');
   if (audioScale) clef = 'sol';
 
   if (type === 'note_id') {
-    const accOption = document.getElementById('accidentalSelect').value;
+    const accOption = cfg && cfg.acc ? cfg.acc : document.getElementById('accidentalSelect').value;
     let acc = 0;
     if (accOption === 'with') {
       acc = Math.random() < 0.4 ? (Math.random() < 0.5 ? -1 : 1) : 0;
@@ -542,6 +542,12 @@ function checkNoteAnswer(nameIdx, el) {
   }
 }
 
+// שם למקש בפסנתר: לבן לפי שמו, שחור כדיאז של הלבן שמתחתיו
+function pcLabel(pc) {
+  const white = NOTE_NAMES.find(n => n.pc === pc);
+  return white ? white.name : NOTE_NAMES.find(n => n.pc === (pc + 11) % 12).name + '♯';
+}
+
 function checkNoteAnswerByPc(pc, el) {
   if (exerciseSolved) return;
   clearWrongButtons();
@@ -557,6 +563,7 @@ function checkNoteAnswerByPc(pc, el) {
     triggerSuccessAndNext();
   } else {
     el.classList.add('wrong');
+    noteWrong(pcLabel(pc));
     document.getElementById('feedback').innerText = 'תו שגוי';
     document.getElementById('feedback').className = 'feedback error';
   }
