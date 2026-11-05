@@ -240,6 +240,7 @@
         <div class="setting no-train"><label>מהירות (פעמות לדקה)</label><div class="seg" id="tempoSeg"></div></div>
         <div class="setting"><label>הברות ספירה (קונוקול) מתחת לתווים</label><div class="seg" id="sylSeg"></div></div>
         <div class="setting" id="countInSetting"><label>ספירה לפני ההקשה</label><div class="seg" id="countInSeg"></div></div>
+        <div class="setting" id="tapClickSetting"><label>צליל בכל הקשה</label><div class="seg" id="tapClickSeg"></div></div>
         <div class="setting" id="metroSetting"><label>מטרונום בזמן ההשמעה</label><div class="seg" id="metroSeg"></div></div>
       </div>
     </details>
@@ -280,7 +281,7 @@ const TEMPOS = [60, 70, 80, 90, 100, 110, 120];
 const SETTINGS_KEY = 'mt_rhythm_settings';
 const ANSWERS = ['write', 'choose']; // הכתבה: כותבים את התווים, או בוחרים 1 מ-4
 
-const state = { kind: 'dictation', level: 1, tempo: 60, parts: R.DEFAULT_PARTS.slice(), metro: true, syllables: false, countIn: 1, answer: 'write', right: 0, total: 0 };
+const state = { kind: 'dictation', level: 1, tempo: 60, parts: R.DEFAULT_PARTS.slice(), metro: true, syllables: false, countIn: 1, tapClick: !matchMedia('(hover: none)').matches, answer: 'write', right: 0, total: 0 };
 let cur = null; // התרגיל הנוכחי
 
 // ===== הגדרות =====
@@ -294,6 +295,7 @@ function loadSettings() {
     if (typeof s.metro === 'boolean') state.metro = s.metro;
     if (typeof s.syllables === 'boolean') state.syllables = s.syllables;
     if (s.countIn === 1 || s.countIn === 2) state.countIn = s.countIn;
+    if (typeof s.tapClick === 'boolean') state.tapClick = s.tapClick;
     if (ANSWERS.includes(s.answer)) state.answer = s.answer;
   } catch (e) {}
   const q = new URLSearchParams(location.search);
@@ -308,7 +310,7 @@ function loadSettings() {
 function saveSettings() {
   // באימון השלב קובע רמה, מרכיבים, טמפו וסוג; נשמרות ההגדרות של התרגול החופשי
   const b = training ? training.saved : state;
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ kind: b.kind, level: b.level, tempo: b.tempo, parts: b.parts, metro: state.metro, syllables: state.syllables, countIn: state.countIn, answer: state.answer })); } catch (e) {}
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ kind: b.kind, level: b.level, tempo: b.tempo, parts: b.parts, metro: state.metro, syllables: state.syllables, countIn: state.countIn, tapClick: state.tapClick, answer: state.answer })); } catch (e) {}
 }
 
 function seg(id, items, current, onPick) {
@@ -337,6 +339,8 @@ function renderSettings() {
   document.getElementById('answerSetting').style.display = state.kind === 'dictation' ? '' : 'none';
   seg('countInSeg', [['1', 'תיבה אחת'], ['2', 'שתי תיבות']], String(state.countIn), v => { state.countIn = +v; changed(false); if (cur && cur.kind === 'tap' && !tapRun) renderTap(cur.result || undefined); });
   document.getElementById('countInSetting').style.display = state.kind === 'tap' ? '' : 'none';
+  seg('tapClickSeg', [['1', 'עם'], ['0', 'בלי']], state.tapClick ? '1' : '0', v => { state.tapClick = v === '1'; changed(false); });
+  document.getElementById('tapClickSetting').style.display = state.kind === 'tap' ? '' : 'none';
   document.getElementById('metroSetting').style.display = state.kind === 'tap' ? 'none' : '';
   document.querySelectorAll('#kindRow button').forEach(b => b.classList.toggle('active', b.dataset.kind === state.kind));
   const L = R.LEVELS[state.level - 1];
@@ -1091,14 +1095,29 @@ function followScore(ex, start, bar) {
   });
 }
 
+// זמן ההקשה בשעון השמע, כפי שהיא נשמעת: מה שהרמקול השמיע בדיוק ברגע הנגיעה.
+// getOutputTimestamp נותן את הזמן שיוצא עכשיו מהרמקול (כולל העיכוב שלו, גם בספארי שלא מדווח outputLatency),
+// ו-timeStamp של האירוע נותן את רגע הנגיעה עצמו, לפני העיכוב של הדפדפן
+function tapTime(e) {
+  const now = performance.now();
+  const at = e && e.timeStamp > 0 && now - e.timeStamp >= 0 && now - e.timeStamp < 150 ? e.timeStamp : now;
+  const fallback = audioCtx.currentTime - (now - at) / 1000 - tapRun.latency;
+  try {
+    const ts = audioCtx.getOutputTimestamp && audioCtx.getOutputTimestamp();
+    if (ts && ts.contextTime > 0 && ts.performanceTime > 0) {
+      const t = ts.contextTime + (at - ts.performanceTime) / 1000;
+      if (Math.abs(t - fallback) < 0.5) return t;
+    }
+  } catch (err) {}
+  return fallback;
+}
+
 function onTap(e) {
   if (!tapRun || !audioCtx) return;
-  // זמן ההקשה בשעון השמע: מורידים את העיכוב מאז האירוע ואת עיכוב הרמקול
-  const delay = e && e.timeStamp ? Math.max(0, Math.min(0.1, (performance.now() - e.timeStamp) / 1000)) : 0;
-  const t = audioCtx.currentTime - delay - tapRun.latency;
+  const t = tapTime(e);
   if (t < tapRun.start - 0.3) return; // הקשות בזמן תיבת הספירה לא נספרות
   tapRun.taps.push(t);
-  tapSound(audioCtx.currentTime);
+  if (state.tapClick) tapSound(audioCtx.currentTime);
   const pad = document.getElementById('tapPad');
   if (pad) { pad.classList.add('hit'); setTimeout(() => pad.classList.remove('hit'), 80); }
 }
