@@ -14,9 +14,12 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
   '.webmanifest': 'application/manifest+json', '.woff2': 'font/woff2', '.ttf': 'font/ttf', '.otf': 'font/otf' };
 
 let server, base, browser;
+// השהיה של כל תשובה מהשרת, כדי לבדוק רשת חלשה
+let serverDelayMs = 0;
 
 before(async () => {
-  server = http.createServer((req, res) => {
+  server = http.createServer(async (req, res) => {
+    if (serverDelayMs) await new Promise(r => setTimeout(r, serverDelayMs));
     const url = decodeURIComponent(req.url.split('?')[0]);
     const file = path.join(ROOT, url === '/' ? 'index.html' : url);
     if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
@@ -532,7 +535,27 @@ describe('offline', () => {
     await waitForNextExercise(page);
     // ספריות ה-PDF נטענו גם הן מהעותק השמור
     await page.goto(base + 'music_theory_worksheets_generator.html');
+    await page.evaluate(() => loadPdfLibs());
     assert.ok(await page.evaluate(() => !!(window.jspdf && window.html2canvas)), 'PDF libraries offline');
+    noErrors(errors.filter(e => !/version\.json/.test(e)));
+    await close();
+  });
+
+  test('on a very weak network, a visited page opens quickly from the saved copy', async () => {
+    const { page, context, errors, close } = await openPage('mobile', 'music_theory_exercise_tool.html', {}, { serviceWorkers: 'allow' });
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.reload();
+    await page.evaluate(() => sampleLoads.harp);
+    serverDelayMs = 20000;
+    try {
+      const t0 = Date.now();
+      await page.goto(base + 'music_theory_exercise_tool.html', { timeout: 15000 });
+      await page.waitForFunction(() => typeof sampleBuffers !== 'undefined' && !!sampleBuffers.harp, null, { timeout: 15000 });
+      const ms = Date.now() - t0;
+      assert.ok(ms < 7000, 'page and sounds ready in ' + ms + 'ms');
+    } finally {
+      serverDelayMs = 0;
+    }
     noErrors(errors.filter(e => !/version\.json/.test(e)));
     await close();
   });
