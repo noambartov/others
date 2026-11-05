@@ -239,6 +239,7 @@
         <div class="setting" id="answerSetting"><label>תשובה בהכתבה</label><div class="seg" id="answerSeg"></div></div>
         <div class="setting no-train"><label>מהירות (פעמות לדקה)</label><div class="seg" id="tempoSeg"></div></div>
         <div class="setting"><label>הברות ספירה (קונוקול) מתחת לתווים</label><div class="seg" id="sylSeg"></div></div>
+        <div class="setting" id="countInSetting"><label>ספירה לפני ההקשה</label><div class="seg" id="countInSeg"></div></div>
         <div class="setting" id="metroSetting"><label>מטרונום בזמן ההשמעה</label><div class="seg" id="metroSeg"></div></div>
       </div>
     </details>
@@ -279,7 +280,7 @@ const TEMPOS = [60, 70, 80, 90, 100, 110, 120];
 const SETTINGS_KEY = 'mt_rhythm_settings';
 const ANSWERS = ['write', 'choose']; // הכתבה: כותבים את התווים, או בוחרים 1 מ-4
 
-const state = { kind: 'dictation', level: 1, tempo: 60, parts: R.DEFAULT_PARTS.slice(), metro: true, syllables: false, answer: 'write', right: 0, total: 0 };
+const state = { kind: 'dictation', level: 1, tempo: 60, parts: R.DEFAULT_PARTS.slice(), metro: true, syllables: false, countIn: 1, answer: 'write', right: 0, total: 0 };
 let cur = null; // התרגיל הנוכחי
 
 // ===== הגדרות =====
@@ -292,6 +293,7 @@ function loadSettings() {
     if (Array.isArray(s.parts)) state.parts = R.normParts(s.parts);
     if (typeof s.metro === 'boolean') state.metro = s.metro;
     if (typeof s.syllables === 'boolean') state.syllables = s.syllables;
+    if (s.countIn === 1 || s.countIn === 2) state.countIn = s.countIn;
     if (ANSWERS.includes(s.answer)) state.answer = s.answer;
   } catch (e) {}
   const q = new URLSearchParams(location.search);
@@ -306,7 +308,7 @@ function loadSettings() {
 function saveSettings() {
   // באימון השלב קובע רמה, מרכיבים, טמפו וסוג; נשמרות ההגדרות של התרגול החופשי
   const b = training ? training.saved : state;
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ kind: b.kind, level: b.level, tempo: b.tempo, parts: b.parts, metro: state.metro, syllables: state.syllables, answer: state.answer })); } catch (e) {}
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ kind: b.kind, level: b.level, tempo: b.tempo, parts: b.parts, metro: state.metro, syllables: state.syllables, countIn: state.countIn, answer: state.answer })); } catch (e) {}
 }
 
 function seg(id, items, current, onPick) {
@@ -333,6 +335,8 @@ function renderSettings() {
   seg('sylSeg', [['1', 'להציג'], ['0', 'לא להציג']], state.syllables ? '1' : '0', v => { state.syllables = v === '1'; changed(false); rerender(); });
   seg('answerSeg', [['write', 'כתיבת התווים'], ['choose', 'בחירה מארבע']], state.answer, v => { state.answer = v; changed(state.kind === 'dictation'); });
   document.getElementById('answerSetting').style.display = state.kind === 'dictation' ? '' : 'none';
+  seg('countInSeg', [['1', 'תיבה אחת'], ['2', 'שתי תיבות']], String(state.countIn), v => { state.countIn = +v; changed(false); if (cur && cur.kind === 'tap' && !tapRun) renderTap(cur.result || undefined); });
+  document.getElementById('countInSetting').style.display = state.kind === 'tap' ? '' : 'none';
   document.getElementById('metroSetting').style.display = state.kind === 'tap' ? 'none' : '';
   document.querySelectorAll('#kindRow button').forEach(b => b.classList.toggle('active', b.dataset.kind === state.kind));
   const L = R.LEVELS[state.level - 1];
@@ -540,18 +544,22 @@ function playExercise(ex, { countIn = true, metro = state.metro, onEnd, tempo = 
 }
 
 // ספירה על המסך בזמן תיבת הספירה
-function countDisplay(ex, t0, tempo = curTempo()) {
+function countDisplay(ex, t0, tempo = curTempo(), bars = 1) {
   const el = document.getElementById('count');
   if (!el) return;
-  const bt = R.beatTimes(ex.meter, tempo).concat([R.barSeconds(ex, tempo)]);
-  const nb = bt.length - 1;
-  for (let i = 0; i <= nb; i++) {
-    const ms = (t0 + bt[i] - audioCtx.currentTime) * 1000;
+  const one = R.beatTimes(ex.meter, tempo);
+  const barLen = R.barSeconds(ex, tempo);
+  const nb = one.length;
+  const bt = [];
+  for (let b = 0; b < bars; b++) one.forEach(t => bt.push(t + b * barLen));
+  bt.push(bars * barLen);
+  bt.forEach((t, i) => {
+    const ms = (t0 + t - audioCtx.currentTime) * 1000;
     timers.push(setTimeout(() => {
-      el.textContent = i < nb ? String(i + 1) : '';
+      el.textContent = i < bt.length - 1 ? String(i % nb + 1) : '';
       el.classList.toggle('muted', false);
     }, Math.max(0, ms)));
-  }
+  });
 }
 
 // הטמפו בפועל: מה שנבחר, אבל לא מהר יותר ממה שאפשר לבצע בתרגיל הזה (R.maxTempo)
@@ -970,7 +978,7 @@ function renderTap(result) {
   const noteStyle = result ? result.errors.map(err => ({ color: err !== null && Math.abs(err) <= result.good ? null : '#a8a8a8' })) : null;
   const intro = cur.guided
     ? 'ניסיון איטי: הקצב מתנגן חלש, ומקישים יחד איתו'
-    : 'אחרי תיבת ספירה אחת מקישים את הקצב עם המטרונום';
+    : `אחרי ${state.countIn === 2 ? 'שתי תיבות ספירה' : 'תיבת ספירה אחת'} מקישים את הקצב עם המטרונום`;
   stage.innerHTML = `
     <div class="score-view">${bigScore(ex, { marks, noteStyle, counts: cur.counts || state.syllables })}</div>
     ${result ? summaryHtml(result) : `<div class="prompt" id="prompt">${intro}</div>`}
@@ -989,6 +997,7 @@ function renderTap(result) {
 // השמעת הקצב לא נכללת כאן, כי יש לה כפתור משלה
 function tapHintSteps() { return state.syllables ? ['guided'] : ['counts', 'guided']; }
 function tapActions() {
+  if (tapRun) { actions([['מההתחלה', restartTap, 'primary'], ['עצור', stopTap]]); return; }
   const steps = tapHintSteps();
   const next = steps[cur.hint];
   const help = next ? [next === 'guided' && cur.hint > 0 ? 'ניסיון איטי' : 'עזרה', () => { cur.helped = true; cur.hint++; applyHint(); }] : [null];
@@ -1028,11 +1037,11 @@ function startTap() {
   const ctx = getAudioContext();
   const t0 = ctx.currentTime + 0.15;
   const bar = R.barSeconds(ex, tempo);
-  const start = t0 + bar;
-  metronome(ex, t0, 1 + ex.bars.length, 1, tempo);
+  const start = t0 + state.countIn * bar;
+  metronome(ex, t0, state.countIn + ex.bars.length, 1, tempo);
   // בניסיון האיטי הקצב עצמו מתנגן חלש, להקיש יחד איתו
   if (cur.guided) R.timeline(ex, tempo).forEach(n => { if (!n.rest) tone(start + n.start, n.dur, 0.45); });
-  countDisplay(ex, t0, tempo);
+  countDisplay(ex, t0, tempo, state.countIn);
   const latency = (ctx.outputLatency || 0) + (ctx.baseLatency || 0);
   const expected = R.timeline(ex, tempo).filter(n => !n.rest).map(n => start + n.start);
   tapRun = { start, expected, taps: [], latency, latencyKnown: ctx.outputLatency !== undefined, ex, tempo };
@@ -1046,6 +1055,18 @@ function startTap() {
   }, (start - ctx.currentTime) * 1000));
   followScore(ex, start, bar);
   timers.push(setTimeout(finishTap, (end - ctx.currentTime) * 1000));
+  tapActions();
+}
+
+// בזמן ההקשה: אפשר לעצור, או להתחיל מחדש מתחילת הספירה
+function stopTap() {
+  stopAll();
+  renderTap();
+}
+function restartTap() {
+  stopAll();
+  renderTap();
+  startTap();
 }
 
 // תרגיל ארוך מהמסך: לפני שמתחילה שורה שלא רואים, גוללים כך שהשורה הנוכחית למעלה והבאה מתחתיה, מעל משטח ההקשה
