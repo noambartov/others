@@ -177,6 +177,15 @@
     footer { text-align: center; font-size: 13px; color: #aaaaaa; padding: 24px 16px 8px; }
     footer a { color: #888888; text-decoration: none; }
 
+    /* חלון נמוך (גם אפליקציה במחשב): פחות רווחים, כדי שהתווים יישארו גדולים */
+    @media (max-height: 860px) {
+      .page-title { display: none; }
+      .stage { gap: 10px; padding: 8px 0 4px; }
+      .big-play { width: 72px; height: 72px; }
+      .tap-pad { height: 96px; }
+      .tile { min-height: 56px; padding: 6px; }
+      footer { padding: 10px 16px 4px; }
+    }
     @media (max-width: 560px) {
       .tiles { grid-template-columns: 1fr; }
       .tiles.symbols { grid-template-columns: repeat(4, 1fr); }
@@ -202,6 +211,13 @@
       .action-bar { flex-wrap: nowrap; gap: 5px; }
       .action-bar button { padding: 6px 10px; font-size: 14px; white-space: nowrap; }
       footer { padding: 10px 16px 4px; }
+    }
+    /* חלון נמוך מאוד: כפתור השמעה ואפשרויות נמוכים יותר */
+    @media (max-height: 700px) {
+      .big-play { width: 56px; height: 56px; }
+      .big-play svg { width: 28px; height: 28px; }
+      .tile { min-height: 44px; }
+      .tiles { gap: 6px; }
     }
   </style>
 </head>
@@ -592,7 +608,8 @@ const TILE_PX = { phone: 0.7, wide: 0.95 };  // באפשרויות ההכתבה
 function containerWidth() { return Math.min(820, document.querySelector('.container').clientWidth || 820); }
 function isPhone() { return containerWidth() < 600; }
 function bigScore(ex, opts) {
-  const px = isPhone() ? SCORE_PX.phone : SCORE_PX.wide;
+  // fitScale: הקטנה שנקבעה לשלב הזה כדי שהתרגיל ייכנס בגובה החלון (ואז נכנסות יותר תיבות בשורה)
+  const px = (isPhone() ? SCORE_PX.phone : SCORE_PX.wide) * fitScale();
   return R.svgLines(ex, Object.assign({ line: '#9a9a9a', px, counts: state.syllables }, opts), containerWidth() / px);
 }
 
@@ -600,7 +617,7 @@ function bigScore(ex, opts) {
 function sameScale(list, opts) {
   const avail = containerWidth();
   const tile = (isPhone() ? avail : (avail - 8) / 2) - 24;
-  const px = isPhone() ? TILE_PX.phone : TILE_PX.wide;
+  const px = (isPhone() ? TILE_PX.phone : TILE_PX.wide) * fitScale();
   const o = Object.assign({ line: '#9a9a9a', px }, opts);
   // כל האפשרויות באותו מספר שורות: לפי האפשרות שצריכה הכי הרבה
   // בטלפון כל אפשרות בשורה אחת (מוקטנת לרוחב), כדי שארבע האפשרויות ייכנסו במסך
@@ -1288,6 +1305,47 @@ function showTrainingReport() {
   panel.hidden = false;
   window.scrollTo(0, 0);
 }
+
+// ===== התאמה לגובה החלון =====
+// תרגיל ארוך לא דוחף את אזור התשובה אל מתחת למסך: התווים מוקטנים עד שהכול נכנס.
+// הגודל נשמר לכל סוג ושלב, כך שגם התרגילים הבאים באותו שלב באותו גודל (מראה אחיד).
+const FIT_MIN = 0.6;
+const fitMemo = {};
+let fitCur = null, fitQueued = false;
+function fitKey() { return [state.kind, state.kind === 'dictation' ? state.answer : '', state.level, innerWidth, innerHeight].join('|'); }
+function fitSvgs() { return [...document.querySelectorAll('#stage .score-view svg, #stage .tiles:not(.symbols) .tile svg')]; }
+function fitScale() { return fitMemo[fitKey()] || 1; }
+function fitScreen() {
+  fitQueued = false;
+  const stage = document.getElementById('stage');
+  if (!stage || stage.offsetParent === null || !cur) return;
+  const fresh = cur !== fitCur;
+  fitCur = cur;
+  const key = fitKey();
+  let f = 1;  // מעבר לגודל שכבר נקבע לשלב הזה (ב-bigScore)
+  const svgs = fitSvgs();
+  if (!svgs.length) return;
+  svgs.forEach(s => {
+    if (!s.dataset.nat) s.dataset.nat = s.getBoundingClientRect().width;
+  });
+  const apply = k => svgs.forEach(s => { s.style.width = (s.dataset.nat * k).toFixed(1) + 'px'; });
+  apply(f);
+  for (let i = 0; i < 6; i++) {
+    // שורת הפעולות צריכה להיות גלויה; שורת הקרדיט מתחתיה יכולה לגלול
+    const over = document.getElementById('actions').getBoundingClientRect().bottom + scrollY + 4 - innerHeight;
+    if (over <= 1 || f <= FIT_MIN) break;
+    const scoreH = svgs.reduce((a, s) => a + s.getBoundingClientRect().height, 0);
+    if (!scoreH) break;
+    f = Math.max(FIT_MIN, f * (scoreH - over - 6) / scoreH);
+    apply(f);
+  }
+  // רק לפי התרגיל עצמו, לא לפי מסך התשובה; הגודל רק קטן, כדי שיישאר אחיד
+  const fits = document.getElementById('actions').getBoundingClientRect().bottom + scrollY + 4 - innerHeight <= 1;
+  if (fresh && fits && f < 1) fitMemo[key] = Math.max(FIT_MIN, (fitMemo[key] || 1) * f);
+}
+function queueFit() { if (!fitQueued) { fitQueued = true; requestAnimationFrame(fitScreen); } }
+new MutationObserver(queueFit).observe(document.getElementById('stage'), { childList: true, subtree: true });
+addEventListener('resize', queueFit);
 
 // ===== התחלה =====
 loadSettings();
