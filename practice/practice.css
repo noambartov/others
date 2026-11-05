@@ -765,3 +765,12 @@ body.theme-clean .level-item:hover { background: #f5f5f5; border-color: #9ca3af;
   body.theme-clean .opt-btn { font-size: 15px; padding: 8px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .opt-btn .opt-extra { display: none; }
 }
+
+/* חלון נמוך (גם אפליקציה במחשב): אותו עיקרון. החמשה מתכווצת, והתשובות ושורת הפעולות תמיד גלויות */
+@media (max-height: 860px) {
+  .page-title { display: none; }
+  body.theme-clean .practice-area { justify-content: flex-end; gap: 10px; }
+  body.theme-clean .staff-container { flex: 1 1 0; min-height: 84px; max-height: 220px; padding: 0; position: relative; }
+  body.theme-clean .staff-container .staff-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  body.theme-clean .big-play-wrap { flex: 1 1 0; min-height: 150px; justify-content: center; padding: 0; }
+}
