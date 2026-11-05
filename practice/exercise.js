@@ -36,6 +36,8 @@ function generateExercise(cfg = null) {
     return { type, clef, notes: [note], correctNote: note, category: cfg ? cfg.label : null };
   }
 
+  if (type === 'scales' && !cfg && keySigMode()) return keySigExercise(clef);
+
   const activeOptionPills = cfg ? cfg.pool.map(st => st.name) : Array.from(document.querySelectorAll('#optionsTags .tag-pill.active')).map(el => el.dataset.value);
   if (activeOptionPills.length === 0) {
     alert("יש לבחור לפחות אפשרות אחת לתרגול!");
@@ -99,6 +101,21 @@ function generateExercise(cfg = null) {
   };
 }
 
+// רק סימני מפתח: התשובה היא המז׳ור או המינור המקביל, ושתיהן נכונות
+function keySigExercise(clef) {
+  const key = T.KEYS[Math.floor(Math.random() * T.KEYS.length)];
+  const pool = ['major', 'minor_natural'].map(id => BASE_STRUCTURES.scales.find(s => s.id === id));
+  pool[1] = Object.assign({}, pool[1], { name: 'מינור' });
+  const answers = [
+    { nameIndex: key.major[0], acc: key.major[1], struct: pool[0] },
+    { nameIndex: key.minor[0], acc: key.minor[1], struct: pool[1] }
+  ];
+  return {
+    type: 'scales', keySig: key, clef, notes: [], answers,
+    struct: pool[0], inversion: 0, optionsPool: pool, inversionsPool: [], playMode: null, category: null
+  };
+}
+
 function triggerSuccessAndNext() {
   exerciseSolved = true;
   if (training) recordTrainingResult();
@@ -127,6 +144,7 @@ function goToNextExercise() {
 }
 
 function exerciseKey(ex) {
+  if (ex.keySig) return ex.clef + ':sig:' + ex.keySig.name;
   return ex.clef + ':' + (ex.struct ? ex.struct.name : '') + ':' + ex.inversion + ':' + ex.notes.map(n => n.absLine + '/' + n.acc).join(',');
 }
 
@@ -384,7 +402,9 @@ function waitsForAccidental(nameIdx, target) {
 function checkModeNoteName(nameIdx, btn) {
   if (exerciseSolved) return;
   clearWrongButtons();
-  const rootNote = currentExercise.notes[0];
+  const ex = currentExercise;
+  // סימני מפתח: גם צליל היסוד של המז׳ור וגם של המינור המקביל נכונים
+  const rootNote = ex.keySig ? (ex.answers.find(a => a.nameIndex === nameIdx) || ex.answers[0]) : ex.notes[0];
   setPendingLetter(null);
 
   if (waitsForAccidental(nameIdx, rootNote)) {
@@ -394,6 +414,14 @@ function checkModeNoteName(nameIdx, btn) {
   }
 
   if (nameIdx === rootNote.nameIndex && parseInt(selectedAccidental) === rootNote.acc) {
+    if (ex.keySig) {
+      document.querySelectorAll('#modeNoteNameButtons .opt-btn.correct').forEach(b => b.classList.remove('correct'));
+      // הסוג שנבחר קודם שייך לצליל האחר: הצליל נכון, ועכשיו בוחרים את הסוג שמתאים לו
+      if (selectedModeType && selectedModeType !== rootNote.struct.name) {
+        selectedModeType = null;
+        document.querySelectorAll('#modeTypeButtons .opt-btn.correct').forEach(b => b.classList.remove('correct'));
+      }
+    }
     btn.classList.add('correct');
     selectedNoteNameIdx = nameIdx;
     if (!typeAnsweredCorrectly) {
@@ -416,7 +444,14 @@ function checkModeNoteName(nameIdx, btn) {
 function checkModeType(typeName, btn) {
   if (exerciseSolved) return;
   clearWrongButtons();
-  if (typeName === currentExercise.struct.name) {
+  const ex = currentExercise;
+  const right = ex.keySig
+    ? ex.answers.some(a => a.struct.name === typeName && (selectedNoteNameIdx === null || a.nameIndex === selectedNoteNameIdx))
+    : typeName === ex.struct.name;
+  if (right) {
+    if (selectedModeType && selectedModeType !== typeName) {
+      document.querySelectorAll('#modeTypeButtons .opt-btn.correct').forEach(b => b.classList.remove('correct'));
+    }
     btn.classList.add('correct');
     selectedModeType = typeName;
     document.getElementById('feedback').innerText = 'סוג נכון';
@@ -430,6 +465,17 @@ function checkModeType(typeName, btn) {
 }
 
 function checkModeComplete() {
+  if (currentExercise.keySig) {
+    const answer = currentExercise.answers.find(a => a.nameIndex === selectedNoteNameIdx && a.struct.name === selectedModeType);
+    if (!answer) return;
+    currentExercise.struct = answer.struct;
+    currentScore += 0.5;
+    updateTopbarProgress();
+    document.getElementById('feedback').innerText = 'נכון';
+    document.getElementById('feedback').className = 'feedback success';
+    triggerSuccessAndNext();
+    return;
+  }
   const rootNote = currentExercise.notes[0];
 
   // selectedNoteNameIdx נקבע רק כשהצליל וסימן ההתק נכונים, כך ששינוי סימן אחר כך לא מבטל

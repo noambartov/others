@@ -211,6 +211,34 @@ for (const vp of Object.keys(VIEWPORTS)) {
       });
     }
 
+    test('reading scales by key signature only: major or relative minor both count', async () => {
+      const { page, errors, close } = await openPage(vp, 'music_theory_exercise_tool.html', { mt_app_mode: 'read' });
+      await page.locator('#exTypeRow button[data-type="scales"]').click();
+      await page.locator('#settingsCollapse summary').click();
+      await page.locator('#scaleShowGroup .seg button[data-value="keysig"]').click();
+      assert.ok(!(await page.locator('#optionsGroup').isVisible()), 'scale list hidden');
+      await page.locator('#settingsCollapse summary').click();
+      await page.waitForFunction(() => currentExercise && currentExercise.keySig);
+      assert.ok(!(await page.locator('#playAudioBtn').isVisible()), 'no play button');
+      for (const pick of [0, 1, 1, 0]) {
+        const a = await page.evaluate(i => {
+          const x = currentExercise.answers[i];
+          return { nameIndex: x.nameIndex, acc: x.acc, name: x.struct.name, count: currentExercise.keySig.accCount };
+        }, pick);
+        const drawn = await page.locator('#staffSvg path').count();
+        assert.strictEqual(drawn, 1 + a.count, 'clef plus key signature, no notes');
+        // סדר הפוך בפעם השנייה: קודם הסוג ואז הצליל
+        if (pick === 1) await page.locator(`#modeTypeButtons .opt-btn[data-name="${a.name}"]`).click();
+        if (a.acc) await page.locator(a.acc < 0 ? '#modeAccFlat' : '#modeAccSharp').click();
+        await page.locator('#modeNoteNameButtons .opt-btn').nth(a.nameIndex).click();
+        if (pick === 0) await page.locator(`#modeTypeButtons .opt-btn[data-name="${a.name}"]`).click();
+        await page.waitForFunction(() => document.getElementById('feedback').classList.contains('success') && exerciseSolved);
+        await waitForNextExercise(page);
+      }
+      noErrors(errors);
+      await close();
+    });
+
     test('ear: a wrong answer offers to hear the choice, and the collection lists what is confusing', async () => {
       const { page, errors, close } = await openPage(vp, 'music_theory_exercise_tool.html', { mt_app_mode: 'ear' });
       await page.locator('#exTypeRow button[data-type="intervals"]').click();

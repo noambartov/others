@@ -167,6 +167,8 @@ body.mode-train .no-train { display: none !important; }
 body:not(.in-session) .train-only { display: none !important; }
 body.mode-train .container { justify-content: flex-start; }
 body.in-session .no-train { display: none !important; }
+/* סולמות לפי סימני מפתח בלבד: יש רק מז׳ור או מינור, אז אין מה לבחור ב"מה לתרגל" */
+body.mode-read.scales-keysig #optionsGroup { display: none !important; }
 
 .training-panel { text-align: right; padding: 28px 0 24px; backdrop-filter: none; }
 .training-panel h2 { font-size: 20px; font-weight: 500; margin: 0 0 4px; }

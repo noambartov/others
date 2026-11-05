@@ -80,8 +80,26 @@ function scaleFamilyStep() {
   return narrowStep(text, o => sig(o) === fam);
 }
 
+// סימני מפתח: איך מוצאים את המז׳ור, ואז את המינור המקביל
+const SHARP_ORDER = [3, 0, 4, 1, 5, 2, 6];
+const FLAT_ORDER = [6, 2, 5, 1, 4, 0, 3];
+
+function keySigHintSteps(key) {
+  const name = (letter, acc) => noteLabel({ nameIndex: letter, acc });
+  let first;
+  if (key.accCount === 0) first = 'בלי סימנים במפתח: דו מז׳ור';
+  else if (key.accType === 1) first = `הדיאז האחרון (${name(SHARP_ORDER[key.accCount - 1], 1)}) הוא הצליל השביעי של המז׳ור. חצי טון מעליו: צליל היסוד`;
+  else if (key.accCount === 1) first = 'במול אחד: פה מז׳ור';
+  else first = `הבמול הלפני אחרון (${name(FLAT_ORDER[key.accCount - 2], -1)}) הוא צליל היסוד של המז׳ור`;
+  return [
+    { key: 'sig', text: first },
+    { key: 'rel', text: 'המינור המקביל: טרצה קטנה מתחת לצליל היסוד של המז׳ור' }
+  ];
+}
+
 function buildHintSteps() {
   const ex = currentExercise;
+  if (ex.keySig) return keySigHintSteps(ex.keySig);
   const ear = document.getElementById('displayMode').value === 'audio_only';
   let steps = [];
   if (ex.type === 'note_id') {
@@ -150,6 +168,8 @@ function revealAnswer() {
     let name = NOTE_NAMES[n.nameIndex].eng + ' / ' + NOTE_NAMES[n.nameIndex].name;
     let accStr = n.acc === 1 ? ' דיאז' : (n.acc === -1 ? ' במול' : '');
     text = `${name}${accStr}`;
+  } else if (currentExercise.keySig) {
+    text = currentExercise.keySig.name;
   } else if (currentExercise.type === 'modes' || currentExercise.type === 'scales') {
     const rootNote = currentExercise.notes[0];
     const rootStr = NOTE_NAMES[rootNote.nameIndex].name + (rootNote.acc === 1 ? '♯' : (rootNote.acc === -1 ? '♭' : ''));
