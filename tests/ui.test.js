@@ -568,6 +568,11 @@ for (const vp of Object.keys(VIEWPORTS)) {
       await page.evaluate(() => setAppMode('train'));
       await page.locator('.hp-link').click();
       assert.strictEqual(await page.locator('.hp-short').textContent(), await page.evaluate(() => HelpPanel.TOPICS['ear:train'].short));
+      await page.keyboard.press('Escape');
+      await page.evaluate(() => setAppMode('rtrain'));
+      assert.ok(await page.locator('.hp-link').isVisible(), 'shown in reading training');
+      await page.locator('.hp-link').click();
+      assert.strictEqual(await page.locator('.hp-short').textContent(), await page.evaluate(() => HelpPanel.TOPICS['read:train'].short));
       noErrors(errors);
       await close();
     });

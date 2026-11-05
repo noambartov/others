@@ -34,7 +34,10 @@ HelpPanel.init({
     const b = document.body.classList;
     if (b.contains('in-rewards')) return 'rewards';
     if (b.contains('in-daily')) return 'daily';
-    if (appMode === 'train') return b.contains('in-session') ? 'ear:session' : 'ear:train';
+    if (appMode === 'train' || appMode === 'rtrain') {
+      const part = appMode === 'rtrain' ? 'read' : 'ear';
+      return part + (b.contains('in-session') ? ':session' : ':train');
+    }
     return appMode + ':' + document.getElementById('exType').value;
   }
 });
