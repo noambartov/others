@@ -228,4 +228,34 @@ test('dictation by writing: wrong beats, sound equality, slots', () => {
   assert.ok(!R.flatten(restTie.ex).some(e => e.tie));
 });
 
+test('playable limits: tap never has long fast runs, too many notes, or a tempo faster than 5 taps a second', () => {
+  const rnd = seeded(21);
+  for (let level = 1; level <= R.LEVELS.length; level++) {
+    for (let k = 0; k < 80; k++) {
+      const parts = PART_SETS[k % PART_SETS.length];
+      const ex = R.generate(level, 'tap', rnd, null, parts);
+      if (!parts.every(p => p === '16')) assert.ok(R.playableTap(ex), level + ' ' + R.writtenKey(ex));
+      const m = R.METERS[ex.meter];
+      const t = Math.min(120, R.maxTempo(ex, 'tap'));
+      const o = R.onsets(ex);
+      const minGap = Math.min(...o.slice(1).map((x, i) => x - o[i])) * 60 / t / m.beatTicks;
+      if (t > R.LIMITS.minTempo) assert.ok(minGap >= 0.2 - 1e-9, ex.meter + ' ' + t + ' ' + minGap);
+    }
+  }
+  // דוגמאות: שש-עשריות ב-4/4 עד 75, ב-9/8 עד 50 (פעמה = רבע מנוקד), טריולות עד 100
+  const mk = (meter, cells) => ({ meter, bars: [cells.map(c => ({ str: c, events: R.parseCell(c) }))] });
+  assert.strictEqual(R.maxTempo(mk('4/4', ['16 16 16 16', 'q', 'q', 'q']), 'tap'), 75);
+  assert.strictEqual(R.maxTempo(mk('9/8', ['16 16 8 8', 'q.', 'q.']), 'tap'), 50);
+  assert.strictEqual(R.maxTempo(mk('4/4', ['T8 8 8', 'q', 'h']), 'tap'), 100);
+  assert.strictEqual(R.maxTempo(mk('4/4', ['8 8', 'q', 'h']), 'tap'), 150);
+  assert.strictEqual(R.maxTempo(mk('4/4', ['16 16 16 16', 'q', 'h']), 'listen'), 120);
+  assert.strictEqual(R.maxTempo(mk('9/8', ['16 16 16 16 16 16', 'q.', 'q.']), 'listen'), 80);
+  // ב-9/8 בהקשה אין תא של שש שש-עשריות
+  for (let k = 0; k < 100; k++) {
+    const ex = R.generate(6, 'tap', rnd, '9/8', ['h', 'q', '8', '16']);
+    assert.ok(!ex.bars.flat().some(c => c.str === '16 16 16 16 16 16'));
+    assert.ok(ex.bars.length <= 4);
+  }
+});
+
 console.log(`rhythm-core: ${passed} tests passed`);

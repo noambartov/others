@@ -338,8 +338,8 @@ function renderSettings() {
   const L = R.LEVELS[state.level - 1];
   const names = R.PARTS.filter(p => state.parts.includes(p.id)).map(p => p.name).join(', ');
   document.getElementById('levelLine').innerHTML = training
-    ? `שלב ${training.step + 1}: ${R.STEPS[training.step].desc} · ${KIND_NAMES[state.kind]} · ${state.tempo} לדקה`
-    : `רמה ${L.n}: ${L.name} · ${names} · ${state.tempo} לדקה`;
+    ? `שלב ${training.step + 1}: ${R.STEPS[training.step].desc} · ${KIND_NAMES[state.kind]} · <span id="tempoNow">${tempoText()}</span>`
+    : `רמה ${L.n}: ${L.name} · ${names} · <span id="tempoNow">${tempoText()}</span>`;
   document.querySelectorAll('#modeTabs button').forEach(b => b.classList.toggle('active', b.dataset.mode === appMode));
 }
 
@@ -508,7 +508,7 @@ function tapSound(t) {
 
 // פעמות המטרונום מ-t0, לאורך bars תיבות. במשקל מורכב, או כשמבקשים חלוקה, גם צליל חלש בין הפעמות
 // במשקל אי-זוגי (5/8, 7/8) הפעמות לא שוות, ותמיד נשמעות גם השמיניות
-function metronome(ex, t0, bars, vol, tempo = state.tempo, subdivide = false) {
+function metronome(ex, t0, bars, vol, tempo = curTempo(), subdivide = false) {
   const m = R.METERS[ex.meter];
   const bt = R.beatTimes(ex.meter, tempo);
   const bar = R.barSeconds(ex, tempo);
@@ -524,7 +524,7 @@ function metronome(ex, t0, bars, vol, tempo = state.tempo, subdivide = false) {
 }
 
 // השמעת תרגיל: תיבת ספירה ואז הקצב. מחזיר את זמן ההתחלה של הקצב
-function playExercise(ex, { countIn = true, metro = state.metro, onEnd, tempo = state.tempo, subdivide = false } = {}) {
+function playExercise(ex, { countIn = true, metro = state.metro, onEnd, tempo = curTempo(), subdivide = false } = {}) {
   stopAll();
   const ctx = getAudioContext();
   const t0 = ctx.currentTime + 0.12;
@@ -540,7 +540,7 @@ function playExercise(ex, { countIn = true, metro = state.metro, onEnd, tempo = 
 }
 
 // ספירה על המסך בזמן תיבת הספירה
-function countDisplay(ex, t0, tempo = state.tempo) {
+function countDisplay(ex, t0, tempo = curTempo()) {
   const el = document.getElementById('count');
   if (!el) return;
   const bt = R.beatTimes(ex.meter, tempo).concat([R.barSeconds(ex, tempo)]);
@@ -554,6 +554,14 @@ function countDisplay(ex, t0, tempo = state.tempo) {
   }
 }
 
+// הטמפו בפועל: מה שנבחר, אבל לא מהר יותר ממה שאפשר לבצע בתרגיל הזה (R.maxTempo)
+function curTempo() { return Math.min(state.tempo, (cur && cur.maxTempo) || Infinity); }
+function tempoText() {
+  const t = curTempo();
+  return t < state.tempo ? `${t} לדקה (הואט לתרגיל הזה)` : `${t} לדקה`;
+}
+function updateLevelLine() { const el = document.getElementById('tempoNow'); if (el) el.textContent = tempoText(); }
+
 const SLOW = 0.75;          // רמז "לאט יותר": שלושה רבעים מהמהירות
 const NEXT_DELAY = 1500;    // אחרי תשובה נכונה, כמו בתרגול השמיעה
 
@@ -563,6 +571,7 @@ function newExercise(autoplay) {
   if (state.kind === 'dictation') newDictation(autoplay);
   else if (state.kind === 'tap') newTap();
   else newComplete();
+  updateLevelLine();
 }
 
 function goNext() { if (training) trainingNext(true); else newExercise(true); }
@@ -632,7 +641,7 @@ function setPrompt(s) { const el = document.getElementById('prompt'); if (el) el
 function newDictation(autoplay) {
   if (state.answer === 'write') { newWriteDictation(autoplay); return; }
   const d = R.dictation(state.level, null, state.parts, stepMeter());
-  cur = { kind: 'dictation', d, answered: false, counted: false, hint: 0, helped: false, slow: false };
+  cur = { kind: 'dictation', d, maxTempo: Math.min(...d.options.map(o => R.maxTempo(o, 'listen'))), answered: false, counted: false, hint: 0, helped: false, slow: false };
   const stage = document.getElementById('stage');
   stage.innerHTML = `
     <div class="big-play-wrap"><button class="big-play" id="bigPlay" aria-label="השמע">${PLAY_ICON}</button><div class="count muted" id="count"></div></div>
@@ -646,7 +655,7 @@ function newDictation(autoplay) {
 
 function playDictation() {
   const d = cur.d;
-  if (cur.slow) playExercise(d.answer, { tempo: Math.round(state.tempo * SLOW), metro: true, subdivide: true });
+  if (cur.slow) playExercise(d.answer, { tempo: Math.round(curTempo() * SLOW), metro: true, subdivide: true });
   else playExercise(d.answer);
 }
 
@@ -710,7 +719,7 @@ function newWriteDictation(autoplay) {
   const ex = R.generate(state.level, 'dictation', null, stepMeter(), state.parts);
   const cells = R.writeCells(ex.meter, state.level, state.parts);
   const hasTies = R.flatten(ex).some(e => e.tie);
-  cur = { kind: 'dictation', mode: 'write', d: { answer: ex }, cells, entries: [], tieOn: false, tieBtn: state.parts.includes('tie') || hasTies,
+  cur = { kind: 'dictation', mode: 'write', d: { answer: ex }, maxTempo: R.maxTempo(ex, 'listen'), cells, entries: [], tieOn: false, tieBtn: state.parts.includes('tie') || hasTies,
     wrong: null, answered: false, counted: false, hint: 0, helped: false, slow: false };
   const stage = document.getElementById('stage');
   stage.innerHTML = `
@@ -853,7 +862,7 @@ function writeHint() {
 // --- השלמת תיבה ---
 function newComplete() {
   const c = R.completion(state.level, null, state.parts, stepMeter());
-  cur = { kind: 'complete', c, answered: false, counted: false, hint: 0, helped: false };
+  cur = { kind: 'complete', c, maxTempo: R.maxTempo(c.ex, 'listen'), answered: false, counted: false, hint: 0, helped: false };
   const stage = document.getElementById('stage');
   stage.innerHTML = `
     <div class="score-view" id="bar">${bigScore(c.ex, { missing: c.missing })}</div>
@@ -940,7 +949,7 @@ let tapRun = null;
 
 function newTap() {
   const ex = R.generate(state.level, 'tap', null, stepMeter(), state.parts);
-  cur = { kind: 'tap', ex, counted: false, hint: 0, helped: false, counts: false, guided: false };
+  cur = { kind: 'tap', ex, maxTempo: R.maxTempo(ex, 'tap'), counted: false, hint: 0, helped: false, counts: false, guided: false };
   renderTap();
 }
 
@@ -951,7 +960,7 @@ function padDown(e) {
   else startTap();
 }
 
-function tapTempo() { return cur.guided ? Math.round(state.tempo * SLOW) : state.tempo; }
+function tapTempo() { return cur.guided ? Math.round(curTempo() * SLOW) : curTempo(); }
 function playTapExample() { playExercise(cur.ex, { metro: true, tempo: tapTempo() }); }
 
 function renderTap(result) {
