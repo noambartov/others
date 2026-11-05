@@ -112,7 +112,19 @@ function onExerciseTypeChange() {
     intervalFmtGroup.style.display = 'flex';
     updateOptionsList();
   }
+  document.getElementById('scaleShowGroup').style.display = type === 'scales' ? 'flex' : 'none';
+  updateScaleShow();
   document.querySelectorAll('#exTypeRow button').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+}
+
+// סולמות בקריאה: אפשר לזהות רק לפי סימני המפתח, בלי תווי הסולם
+function updateScaleShow() {
+  const on = document.getElementById('exType').value === 'scales' && document.getElementById('scaleShowSelect').value === 'keysig';
+  document.body.classList.toggle('scales-keysig', on);
+}
+
+function keySigMode() {
+  return appMode === 'read' && document.body.classList.contains('scales-keysig');
 }
 
 function updateInversionsList(type) {
@@ -171,12 +183,13 @@ function buildShareParams() {
   }
   if (type === 'note_id') params.set('acc', document.getElementById('accidentalSelect').value);
   if (type === 'intervals') params.set('fmt', document.getElementById('intervalFormatSelect').value);
+  if (keySigMode()) params.set('sig', 'keysig');
   if (type === 'chords' || type === 'septachords') {
     const pills = Array.from(document.querySelectorAll('#inversionsTags .tag-pill'));
     const on = pills.filter(el => el.classList.contains('active'));
     if (on.length && on.length < pills.length) params.set('inv', on.map(el => el.dataset.value).join(','));
   }
-  if (type !== 'note_id') {
+  if (type !== 'note_id' && !keySigMode()) {
     const pills = Array.from(document.querySelectorAll('#optionsTags .tag-pill'));
     const on = pills.filter(el => el.classList.contains('active'));
     if (on.length && on.length < pills.length) {
@@ -191,6 +204,7 @@ function shareSummary() {
   const type = document.getElementById('exType').value;
   const typeName = document.querySelector(`#exType option[value="${type}"]`).textContent;
   let text = `${MODE_LABELS[appMode] || ''} · ${typeName}`;
+  if (keySigMode()) return text + ': לפי סימני מפתח';
   if (type !== 'note_id') {
     const pills = Array.from(document.querySelectorAll('#optionsTags .tag-pill'));
     const on = pills.filter(el => el.classList.contains('active'));
@@ -201,7 +215,7 @@ function shareSummary() {
 
 function shareCurrentExercise() {
   const type = document.getElementById('exType').value;
-  if (type !== 'note_id' && !document.querySelector('#optionsTags .tag-pill.active')) {
+  if (type !== 'note_id' && !keySigMode() && !document.querySelector('#optionsTags .tag-pill.active')) {
     alert('יש לבחור לפחות אפשרות אחת לתרגול!');
     return;
   }
@@ -249,10 +263,11 @@ function applySharedSettings() {
   document.getElementById('exType').value = type;
   if (params.has('fmt')) setSettingValue('intervalFormatSelect', params.get('fmt'));
   onExerciseTypeChange();
-  ['clef:clefSelect', 'acc:accidentalSelect', 'play:playMode'].forEach(pair => {
+  ['clef:clefSelect', 'acc:accidentalSelect', 'play:playMode', 'sig:scaleShowSelect'].forEach(pair => {
     const [key, id] = pair.split(':');
     if (params.has(key)) setSettingValue(id, params.get(key));
   });
+  updateScaleShow();
   if (params.has('instr') && setSettingValue('instrumentSelect', params.get('instr'))) loadSamples(params.get('instr'));
   if (params.has('inv')) {
     const inv = params.get('inv').split(',');

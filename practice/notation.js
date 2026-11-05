@@ -7,7 +7,8 @@ function renderStaff(ex) {
   // במצב מושמע בלבד: כפתור השמעה גדול במקום החמשה
   document.getElementById('bigPlayWrap').style.display = dispMode === 'audio_only' ? 'flex' : 'none';
   // בשמיעה יש כפתור גדול, אז הכפתור הקטן בשורה נחוץ רק בקריאה
-  document.getElementById('playAudioBtn').style.display = dispMode === 'audio_only' ? 'none' : '';
+  // בסימני מפתח בלבד אין מה להשמיע: זה היה מסגיר אם זה מז׳ור או מינור
+  document.getElementById('playAudioBtn').style.display = dispMode === 'audio_only' || ex.keySig ? 'none' : '';
   if (dispMode === 'audio_only') {
     container.style.display = 'none';
     return;
@@ -20,7 +21,7 @@ function renderStaff(ex) {
 
   const isScaleOrMode = (ex.type === 'scales' || ex.type === 'modes');
   // במסך צר חמשה קצרה לצליל/מרווח/אקורד, כדי שהתווים לא יתכווצו
-  const width = (!isScaleOrMode && container.clientWidth < 560) ? 240 : 520;
+  const width = ex.keySig || (!isScaleOrMode && container.clientWidth < 560) ? 240 : 520;
   svg.setAttribute('viewBox', `0 0 ${width} 110`);
   const startX = isScaleOrMode ? 85 : (width === 520 ? 260 : 140);
   const spacing = isScaleOrMode ? 48 : 0;
@@ -32,6 +33,12 @@ function renderStaff(ex) {
   svgContent += `<line x1="20" y1="34" x2="20" y2="66" class="staff-line strong" stroke-width="1.5"/>`;
 
   svgContent += T.svg.clef(ex.clef === 'fa' ? 'fa' : 'sol', 35, STAFF);
+
+  if (ex.keySig) {
+    T.keySignatureLines(ex.clef, ex.keySig.accType, ex.keySig.accCount).forEach((line, i) => {
+      svgContent += T.svg.accidental(ex.keySig.accType, 70 + i * 11, 66 - line * 4, STAFF.space);
+    });
+  }
 
   const layout = isScaleOrMode ? null : T.chordLayout(ex.notes);
 
@@ -62,7 +69,7 @@ window.addEventListener('resize', () => { if (currentExercise) renderStaff(curre
 
 function updateFirstNoteButtonUI() {
   const btn = document.getElementById('playFirstNoteBtn');
-  if (!currentExercise || currentExercise.type === 'note_id') {
+  if (!currentExercise || currentExercise.type === 'note_id' || currentExercise.keySig) {
     btn.style.display = 'none';
     return;
   }

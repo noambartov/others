@@ -70,6 +70,14 @@
           </select>
         </div>
 
+        <div class="control-group read-only-setting no-train" id="scaleShowGroup" style="display: none;">
+          <label>זיהוי לפי:</label>
+          <select id="scaleShowSelect" onchange="updateScaleShow()">
+            <option value="notes" selected>תווים</option>
+            <option value="keysig">סימני מפתח</option>
+          </select>
+        </div>
+
         <div class="control-group" id="accidentalGroup" style="display: none;">
           <label>סימני התק:</label>
           <select id="accidentalSelect">
