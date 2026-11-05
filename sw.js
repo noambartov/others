@@ -24,6 +24,7 @@ const PRECACHE = [
   'fonts/fonts.css',
   'fonts/assistant.woff2',
   'site-nav.js',
+  'help-panel.js',
   'theory-core.js',
   'rhythm-core.js',
   'rewards.js',

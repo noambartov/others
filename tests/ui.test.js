@@ -532,6 +532,48 @@ for (const vp of Object.keys(VIEWPORTS)) {
   });
 }
 
+// ---------- "על מה לוחצים?" ----------
+for (const vp of Object.keys(VIEWPORTS)) {
+  describe(`what to tap panel (${vp})`, () => {
+    test('every page: opens, shows more, closes, and stays quiet after the first look', async () => {
+      const pages = [['music_theory_exercise_tool.html?mode=read', 'read:intervals'], ['music_theory_exercise_tool.html?mode=ear', 'ear:intervals'],
+        ['rhythm_practice.html', 'rhythm:write'], ['music_theory_worksheets_generator.html', 'print']];
+      for (const [file, key] of pages) {
+        const { page, errors, close } = await openPage(vp, file);
+        const link = page.locator('.hp-link');
+        await link.waitFor();
+        assert.ok(await link.evaluate(el => el.classList.contains('fresh')), file + ': dark before the first look');
+        await link.click();
+        const card = page.locator('.hp-card');
+        assert.ok(await card.isVisible(), file + ': card opens');
+        const short = await page.evaluate(k => HelpPanel.TOPICS[k].short, key);
+        assert.strictEqual(await card.locator('.hp-short').textContent(), short, file + ': text for this screen');
+        await card.locator('.hp-more').click();
+        assert.ok(await card.locator('.hp-sec').count() > 0, file + ': more details');
+        await card.locator('.hp-close').click();
+        assert.ok(await card.isHidden(), file + ': closes');
+        assert.ok(!(await link.evaluate(el => el.classList.contains('fresh'))), file + ': grey after the first look');
+        noErrors(errors);
+        await close();
+      }
+    });
+
+    test('practice: the text follows the exercise type and the training screen', async () => {
+      const { page, errors, close } = await openPage(vp, 'music_theory_exercise_tool.html?mode=read');
+      await page.locator('#exTypeRow button[data-type="chords"]').click();
+      await page.locator('.hp-link').click();
+      assert.strictEqual(await page.locator('.hp-short').textContent(), await page.evaluate(() => HelpPanel.TOPICS['read:chords'].short));
+      await page.keyboard.press('Escape');
+      assert.ok(await page.locator('.hp-card').isHidden());
+      await page.evaluate(() => setAppMode('train'));
+      await page.locator('.hp-link').click();
+      assert.strictEqual(await page.locator('.hp-short').textContent(), await page.evaluate(() => HelpPanel.TOPICS['ear:train'].short));
+      noErrors(errors);
+      await close();
+    });
+  });
+}
+
 // ---------- בלי אינטרנט ----------
 describe('offline', () => {
   test('every file the service worker saves ahead exists', () => {
