@@ -66,7 +66,7 @@
     { n: 3, name: 'ארבע תיבות', meters: ['2/4', '3/4', '4/4'], tap: 4, other: 2, palette: 4, form: ['A', "A'", 'A', 'B'], tempo: 80 },
     { n: 4, name: 'משקל מורכב', meters: ['2/4', '3/4', '4/4', '6/8', '9/8'], focus: ['6/8', '9/8'], tap: 4, other: 2, palette: 4, form: ['A', "A'", 'A', 'B'], tempo: 90 },
     { n: 5, name: 'גיוון וסינקופות', meters: ['2/4', '3/4', '4/4', '6/8', '9/8'], tap: 4, other: 2, palette: 6, form: ['A', 'B', "A'", 'C'], tempo: 100, sync: true },
-    { n: 6, name: 'משקלים אי-זוגיים', meters: ['2/4', '3/4', '4/4', '6/8', '9/8', '5/8', '7/8'], focus: ['5/8', '7/8'], tap: [4, 6], other: 2, palette: 99, form: ['A', 'B', 'C', 'D', 'E', 'F'], tempo: 110, sync: true }
+    { n: 6, name: 'משקלים אי-זוגיים', meters: ['2/4', '3/4', '4/4', '6/8', '9/8', '5/8', '7/8'], focus: ['5/8', '7/8'], tap: 4, other: 2, palette: 99, form: ['A', 'B', 'C', 'D', 'E', 'F'], tempo: 110, sync: true }
   ];
 
   // תאי קצב: [תא, המרכיבים שהוא צריך, sync = סינקופה שחוצה פעמה (מרמה 5)]
@@ -229,6 +229,35 @@
     }
   }
 
+  // ===== גבולות ביצוע =====
+  // כדי שכל תרגיל יהיה אפשרי: מרווח מינימלי בין שני צלילים (בשניות), רצף מהיר מוגבל, ואורך מוגבל בהקשה.
+  // fast = מרווח של שש-עשרית או טריולה (עד 4 יחידות). fastRun = כמה מרווחים מהירים ברצף, כלומר 5 = שישה תווים מהירים.
+  const LIMITS = {
+    tap: { minGap: 0.2, fastRun: 5, maxNotes: 24, max16InCell: 4 },
+    listen: { minGap: 0.125 },
+    minTempo: 40
+  };
+  function gaps(ex) {
+    const o = onsets(ex);
+    return o.slice(1).map((t, i) => t - o[i]);
+  }
+  function fastRun(ex) {
+    let run = 0, best = 0;
+    gaps(ex).forEach(g => { run = g <= 4 ? run + 1 : 0; best = Math.max(best, run); });
+    return best;
+  }
+  // הטמפו הכי מהיר שבו המרווח הקצר בתרגיל עוד לא קצר מ-minGap (בקפיצות של 5)
+  function maxTempo(ex, kind) {
+    const g = Math.min(...gaps(ex));
+    if (!isFinite(g)) return Infinity;
+    const lim = (kind === 'tap' ? LIMITS.tap : LIMITS.listen).minGap;
+    const t = g * 60 / (METERS[ex.meter].beatTicks * lim);
+    return Math.max(LIMITS.minTempo, Math.floor(t / 5 + 1e-9) * 5);
+  }
+  function playableTap(ex) {
+    return fastRun(ex) <= LIMITS.tap.fastRun && onsets(ex).length <= LIMITS.tap.maxNotes;
+  }
+
   // ===== יצירת תרגיל =====
   function viableMeter(meter, level, parts) {
     const m = METERS[meter];
@@ -296,13 +325,22 @@
     parts = normParts(parts);
     const L = LEVELS[level - 1];
     meter = meter || chooseMeter(L, parts, rnd);
-    const nBars = barsFor(L, meter, kind, rnd);
-    const pool = cellsFor(meter, level, parts);
+    let nBars = barsFor(L, meter, kind, rnd);
+    let pool = cellsFor(meter, level, parts);
+    // בהקשה אין תא של שש שש-עשריות ברצף (אם נשאר משהו אחר)
+    if (kind === 'tap') {
+      const calm = pool.filter(c => c.events.filter(e => e.type === '16' && !e.rest).length <= LIMITS.tap.max16InCell);
+      if (calm.some(hasNote)) pool = calm;
+    }
     const rests = pool.filter(isRestCell);
     const beats = METERS[meter].beats;
     const target = Math.min(L.palette, parts.length);
     let best = null, bestScore = -Infinity;
     for (let tries = 0; tries < 50; tries++) {
+      // בהקשה, כשכל הדמויות צפופות ואין דרך להישאר בגבול התווים, מקצרים תיבה (לא פחות משתיים)
+      if (kind === 'tap' && tries > 0 && tries % 10 === 0 && nBars > 2 && best && onsets(best).length > LIMITS.tap.maxNotes) {
+        nBars--; best = null; bestScore = -Infinity;
+      }
       const pal = choosePalette(pool, L.palette, parts, rnd);
       const use = pal.concat(rests.filter(c => !pal.includes(c)));
       const made = {};
@@ -319,9 +357,10 @@
       const okNotes = onsets(ex).length >= Math.min(2 + nBars, 3 * nBars);
       const okRests = !ex.bars.some(b => restCells(b) > 1 || b.every(isRestCell));
       const okWhole = !ex.bars.some(b => b.length === 1 && b[0].str === 'w') || rnd() < 0.3;
-      const score = (okNotes ? 100 : 0) + (okRests ? 50 : 0) + (okWhole ? 20 : 0) + used * 5;
+      const okPlay = kind !== 'tap' || playableTap(ex);
+      const score = (okPlay ? 200 : 0) + (okNotes ? 100 : 0) + (okRests ? 50 : 0) + (okWhole ? 20 : 0) + used * 5;
       if (score > bestScore) { best = ex; bestScore = score; }
-      if (okNotes && okRests && okWhole && used >= target) break;
+      if (okPlay && okNotes && okRests && okWhole && used >= target) break;
     }
     return best;
   }
@@ -998,7 +1037,7 @@
   }
 
   const RhythmCore = {
-    TPQ, METERS, LEVELS, STEPS, trainingPlan, exerciseParts, symbolPart, PARTS, DEFAULT_PARTS, normParts, beatTimes, parseCell, cellsFor, allowedStart, fillSpan, generate, variant, dictation, completion,
+    TPQ, METERS, LEVELS, STEPS, LIMITS, maxTempo, fastRun, playableTap, trainingPlan, exerciseParts, symbolPart, PARTS, DEFAULT_PARTS, normParts, beatTimes, parseCell, cellsFor, allowedStart, fillSpan, generate, variant, dictation, completion,
     lineCount: (ex, opts, maxWidth) => (svgLines(ex, opts, maxWidth).match(/<svg/g) || []).length,
     flatten, onsets, signature, writtenKey, beamGroups, timeline, barSeconds, scoreTaps, countLabels, render, svgFor, svgLines, naturalWidth, symbolSvg,
     symbolTicks, eventSymbol, GLYPHS, writeCells, writtenExercise, soundTicks, wrongBeats, answerCellAt, allowedStartFor: allowedStart, canTieFrom, canTieTo, cellSvg
