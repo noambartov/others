@@ -27,9 +27,10 @@
     <span class="topscore"><span id="scoreLabel">ניקוד </span><span id="scoreDisplay">0</span></span>
     <button class="reward-chip" id="rewardChip" onclick="Rewards.open()" aria-label="האוסף שלי"><span class="chip-row"><span class="chip-label">היום</span> <span class="chip-num">0/20</span></span><span class="chip-bar"><span></span></span></button>
     <nav class="mode-tabs" id="modeTabs">
-      <button data-mode="read" onclick="setAppMode('read')">קריאה</button>
-      <button data-mode="ear" onclick="setAppMode('ear')">חופשי</button>
-      <button data-mode="train" onclick="setAppMode('train')">לפי שלבים</button>
+      <button data-mode="read" data-sec="read" onclick="setAppMode('read')">חופשי</button>
+      <button data-mode="rtrain" data-sec="read" onclick="setAppMode('rtrain')">לפי שלבים</button>
+      <button data-mode="ear" data-sec="ear" onclick="setAppMode('ear')">חופשי</button>
+      <button data-mode="train" data-sec="ear" onclick="setAppMode('train')">לפי שלבים</button>
     </nav>
     <details id="settingsCollapse">
       <summary>הגדרות</summary>

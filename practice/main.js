@@ -23,6 +23,6 @@ initSilentTip();
 const fromLink = new URLSearchParams(location.search).has('exData');
 setAppMode(fromLink ? 'read' : initialAppMode(), true);
 applySharedSettings();
-if (!loadExerciseFromUrl() && appMode !== 'train') {
+if (!loadExerciseFromUrl() && !isTrainMode()) {
   startPractice();
 }

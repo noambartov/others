@@ -21,7 +21,7 @@ let settingsDirty = false;
   settings.addEventListener('toggle', () => {
     if (settings.open || !settingsDirty) return;
     settingsDirty = false;
-    if (appMode !== 'train') goToNextExercise();
+    if (!isTrainMode()) goToNextExercise();
   });
 })();
 
@@ -244,8 +244,8 @@ function setSettingValue(id, value) {
 function applySharedSettings() {
   const params = new URLSearchParams(location.search);
   const type = params.get('type');
-  if (!type || !BASE_STRUCTURES[type] || appMode === 'train') return false;
-  if (type === 'note_id' && appMode !== 'read') return false;
+  if (!type || !BASE_STRUCTURES[type] || isTrainMode()) return false;
+  if (type === 'note_id' && !isReadMode()) return false;
   document.getElementById('exType').value = type;
   if (params.has('fmt')) setSettingValue('intervalFormatSelect', params.get('fmt'));
   onExerciseTypeChange();
