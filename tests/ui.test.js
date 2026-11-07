@@ -211,6 +211,24 @@ for (const vp of Object.keys(VIEWPORTS)) {
       });
     }
 
+    test('alto clef in reading: notes, intervals and the C clef glyph', async () => {
+      const { page, errors, close } = await openPage(vp, 'music_theory_exercise_tool.html', { mt_app_mode: 'read' });
+      for (const type of ['note_id', 'intervals']) {
+        await page.locator(`#exTypeRow button[data-type="${type}"]`).click();
+        await page.locator('#settingsCollapse summary').click();
+        await page.locator('#clefSelect + .seg button[data-value="alto"]').click();
+        await page.locator('#settingsCollapse summary').click();
+        await page.waitForFunction(() => currentExercise && currentExercise.clef === 'alto');
+        const usesCClef = await page.evaluate(() => document.getElementById('staffSvg').innerHTML.includes(TheoryCore.svg.GLYPHS.cClef.d.slice(0, 40)));
+        assert.ok(usesCClef, 'C clef drawn');
+        await answerCorrectly(page);
+        await waitForNextExercise(page);
+        assert.strictEqual(await page.evaluate(() => currentExercise.clef), 'alto');
+      }
+      noErrors(errors);
+      await close();
+    });
+
     test('reading scales by key signature only: major or relative minor both count', async () => {
       const { page, errors, close } = await openPage(vp, 'music_theory_exercise_tool.html', { mt_app_mode: 'read' });
       await page.locator('#exTypeRow button[data-type="scales"]').click();

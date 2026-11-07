@@ -32,7 +32,7 @@ function renderStaff(ex) {
   }
   svgContent += `<line x1="20" y1="34" x2="20" y2="66" class="staff-line strong" stroke-width="1.5"/>`;
 
-  svgContent += T.svg.clef(ex.clef === 'fa' ? 'fa' : 'sol', 35, STAFF);
+  svgContent += T.svg.clef(ex.clef, 35, STAFF);
 
   if (ex.keySig) {
     T.keySignatureLines(ex.clef, ex.keySig.accType, ex.keySig.accCount).forEach((line, i) => {

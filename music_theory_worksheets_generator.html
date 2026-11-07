@@ -347,7 +347,7 @@ function buildNotesForStructure(givenLine, givenAcc, item, clef, givenVoice = 'b
 let rowCounter = 0;
 let draggedRow = null;
 
-const CLEFS_LIST = [{ val: 'sol', label: 'סול' }, { val: 'fa', label: 'פה' }];
+const CLEFS_LIST = [{ val: 'sol', label: 'סול', on: true }, { val: 'fa', label: 'פה', on: true }, { val: 'alto', label: 'אלט' }];
 const INTERVALS_LIST = DEFINED_STRUCTURES.intervals.map(s => s.name);
 const INTERVAL_ABBR = Object.fromEntries(DEFINED_STRUCTURES.intervals.map(s => [s.name, s.abbr || s.name]));
 const CHORDS_LIST = DEFINED_STRUCTURES.chords.map(s => s.name);
@@ -380,7 +380,7 @@ function addRow() {
         <div class="multi-select-btn custom-select-btn" onclick="toggleDropdown(event, 'clefs_${id}')">סול, פה</div>
         <div class="multi-select-dropdown" id="clefs_${id}">
           <span class="select-all-btn" onclick="toggleAll('clefs_${id}')">הכל</span>
-          ${CLEFS_LIST.map(c => `<label><input type="checkbox" value="${c.val}" checked> ${c.label}</label>`).join('')}
+          ${CLEFS_LIST.map(c => `<label><input type="checkbox" value="${c.val}"${c.on ? ' checked' : ''}> ${c.label}</label>`).join('')}
         </div>
       </div>
     </div>
@@ -490,7 +490,8 @@ function updateRowSummary(id) {
   const main = `${optText(skill)} ${optText(type)}`;
   const rest = [];
   const clefs = [...row.querySelectorAll(`#clefs_${id} label`)].filter(l => l.classList.contains('on')).map(l => l.textContent.trim());
-  rest.push('מפתח ' + (clefs.length === 2 ? 'סול ופה' : clefs[0] || 'סול'));
+  const clefList = clefs.length ? clefs : ['סול'];
+  rest.push('מפתח ' + (clefList.length > 1 ? clefList.slice(0, -1).join(', ') + ' ו' + clefList[clefList.length - 1] : clefList[0]));
   const sub = document.getElementById(`sub_container_${id}`);
   const t = type.value;
   if (t === 'chords' || t === 'septachords') {

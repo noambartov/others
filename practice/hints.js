@@ -97,13 +97,19 @@ function keySigHintSteps(key) {
   ];
 }
 
+const CLEF_HINTS = {
+  sol: 'מפתח סול מסמן את סול על הקו השני מלמטה',
+  fa: 'מפתח פה מסמן את פה על הקו הרביעי מלמטה, בין שתי הנקודות',
+  alto: 'מפתח אלט מסמן את דו האמצעי על הקו האמצעי, במרכז המפתח'
+};
+
 function buildHintSteps() {
   const ex = currentExercise;
   if (ex.keySig) return keySigHintSteps(ex.keySig);
   const ear = document.getElementById('displayMode').value === 'audio_only';
   let steps = [];
   if (ex.type === 'note_id') {
-    steps = [{ key: 'clef', text: ex.clef === 'fa' ? 'מפתח פה מסמן את פה על הקו הרביעי מלמטה, בין שתי הנקודות' : 'מפתח סול מסמן את סול על הקו השני מלמטה' }];
+    steps = [{ key: 'clef', text: CLEF_HINTS[ex.clef] || CLEF_HINTS.sol }];
   } else if (ex.type === 'intervals') {
     if (ear) steps.push({ key: 'play', text: 'מעכשיו ההשמעה: יחד, ואז צליל אחר צליל מלמטה למעלה', play: playHintVersion });
     steps.push(intervalNumberStep(ear));
