@@ -329,6 +329,30 @@
   // [מינימום, מקסימום] אקורדים בכל שלב. כל עוד יש רק טוניקה ודומיננטה (שלבים 1 עד 3) המהלך עד שלושה אקורדים,
   // ועם כל תפקוד שנוסף הוא מתארך
   const LENGTHS = [[2, 3], [2, 3], [3, 3], [3, 4], [4, 5], [4, 5], [4, 5], [5, 6], [5, 6]];
+  // פתיחה שלא מהטוניקה במצב יסודי, בשלבים המתקדמים: מ־I6 (משלב הסובדומיננטה), מהדומיננטה כאקורד פתיחה
+  // (משלב הדרגה השישית), ומהסובדומיננטה (משלב הדרגה השלישית). האקורד הראשון תמיד ניתן, כך שברור מאיפה מתחילים
+  const START_FROM = { I6: 4, V: 6, IV: 7 };
+  function otherStart(seq, f, ending) {
+    const stage = Object.keys(f).length;
+    const options = [];
+    if (stage >= START_FROM.I6 && seq[0] === 'I' && seq[1] && !['I6', 'IV64', 'V64'].includes(seq[1])) {
+      options.push(() => ['I6'].concat(seq.slice(1)));
+    }
+    if (stage >= START_FROM.V && seq[0] === 'I') {
+      options.push(() => [f.v7 && Math.random() < 0.4 ? 'V7' : 'V'].concat(seq));
+    }
+    if (stage >= START_FROM.IV && seq[0] === 'I' && seq[1] !== 'IV') options.push(() => ['IV'].concat(seq));
+    if (stage >= START_FROM.IV && ending !== 'plag') {
+      options.push(() => {
+        const out = ['IV'].concat(pick(dominantIdioms(f, ending)));
+        if (ending === 'auth') out.push('I');
+        if (ending === 'dec') out.push('VI');
+        return out;
+      });
+    }
+    return options.length ? pick(options)() : seq;
+  }
+
   // opts: { flags | stage, mode: 'major' | 'minor' | 'both', kind: 'prog' | 'cad' }
   function generate(opts) {
     const f = opts.flags || flagsFor(opts.stage || 1);
@@ -347,6 +371,7 @@
         seq = [...pick(tonicIdioms(f))];
         ending = seq[seq.length - 1] === 'V' ? 'half' : 'auth';
       }
+      if (kind === 'prog' && Math.random() < 0.4) seq = otherStart(seq, f, ending);
       if (seq.length >= minLen && seq.length <= maxLen && validSeq(seq, ending)) tokens = seq;
     }
     if (!tokens) { tokens = ['I', 'V', 'I']; ending = 'auth'; }
@@ -384,7 +409,7 @@
   }
 
   const HarmonyCore = {
-    TOPICS, CADENCE_FROM, CADENCES, FAMILY_NAMES, flagsFor, generate, vocabulary, cadenceOptions,
+    TOPICS, CADENCE_FROM, START_FROM, CADENCES, FAMILY_NAMES, flagsFor, generate, vocabulary, cadenceOptions,
     chordInfo, label, family, voice, voiceAfter, candidates, transCost, parse
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = HarmonyCore;
