@@ -174,7 +174,7 @@ function loadSamples(inst) {
   if (!Offline || !window.fetch) return;
   const decoder = new Offline(1, 1, 44100);
   sampleLoads[inst] = Promise.all(set.notes.map(n =>
-    fetch(set.dir + n + '.mp3')
+    fetch(set.dir + n + '.mp3', { priority: 'low' })
       .then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
       .then(ab => new Promise((res, rej) => decoder.decodeAudioData(ab, res, rej)))
       .then(buffer => ({ midi: sampleNameToMidi(n), buffer }))
