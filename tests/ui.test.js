@@ -290,9 +290,13 @@ for (const vp of Object.keys(VIEWPORTS)) {
     test('harmonic progressions: chord by chord, hear a wrong choice, cadences, all stages fit the screen', async () => {
       const { page, errors, close } = await openPage(vp, 'music_theory_exercise_tool.html', { mt_app_mode: 'ear' });
       await page.locator('#exTypeRow button[data-type="progressions"]').click();
+      assert.strictEqual(await page.locator('#progSlots .prog-slot.given').count(), 0, 'no chord is given at first');
+      // הרמז הראשון בעזרה הוא האקורד הראשון
+      await page.locator('#helpBtn').click();
       const first = await page.evaluate(() => currentExercise.prog.chords[0].text);
-      assert.match(first, /^(I|i)⁶?$/, 'first chord is the tonic');
-      assert.match(await page.locator('#progSlots .prog-slot.given').textContent(), /^(I|i)6?$/);
+      assert.match(await page.locator('#helpPopover').textContent(), new RegExp(first));
+      assert.strictEqual(await page.locator('#progSlots .prog-slot.given').count(), 1, 'first chord filled by help');
+      assert.strictEqual(await page.evaluate(() => progIndex), 1);
       // כותבים הכול, עם טעות במשבצת השנייה, ובודקים: הטעות מסומנת, אפשר לשמוע מה שנכתב, והמשבצת פתוחה לתיקון
       const tokens = await page.evaluate(() => currentExercise.prog.tokens);
       const wrong = await page.evaluate(r => [...document.querySelectorAll('#progButtons .opt-btn')].map(b => b.dataset.token).find(t => t !== r), tokens[1]);
@@ -341,6 +345,7 @@ for (const vp of Object.keys(VIEWPORTS)) {
       const q = await page.evaluate(() => ({ kind: currentExercise.kind, tokens: currentExercise.prog.tokens }));
       if (q.kind === 'prog') {
         const wrong = await page.evaluate(r => [...document.querySelectorAll('#progButtons .opt-btn')].map(b => b.dataset.token).find(t => t !== r), q.tokens[1]);
+        await page.locator(`#progButtons .opt-btn[data-token="${q.tokens[0]}"]`).click();
         await page.locator(`#progButtons .opt-btn[data-token="${wrong}"]`).click();
         for (let i = 2; i < q.tokens.length; i++) await page.locator(`#progButtons .opt-btn[data-token="${q.tokens[i]}"]`).click();
         await page.locator('#progSub .prog-check').click();
