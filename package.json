@@ -3,7 +3,7 @@
   "private": true,
   "description": "Static site; package.json is only for the tests.",
   "scripts": {
-    "test": "node tests/theory-core.test.js && node tests/rhythm-core.test.js && node --test --test-reporter=spec --test-concurrency=1 tests/ui.test.js"
+    "test": "node tests/theory-core.test.js && node tests/rhythm-core.test.js && node tests/harmony-core.test.js && node --test --test-reporter=spec --test-concurrency=1 tests/ui.test.js"
   },
   "devDependencies": {
     "playwright": "1.63.0"

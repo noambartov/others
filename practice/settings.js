@@ -83,7 +83,14 @@ function onExerciseTypeChange() {
   const optGroup = document.getElementById('optionsGroup');
   const intervalFmtGroup = document.getElementById('intervalFormatGroup');
 
-  if (type === 'note_id') {
+  document.querySelectorAll('.prog-setting').forEach(g => { g.style.display = type === 'progressions' ? 'flex' : 'none'; });
+  if (type === 'progressions') {
+    invGroup.style.display = 'none';
+    playGroup.style.display = 'none';
+    optGroup.style.display = 'none';
+    accGroup.style.display = 'none';
+    intervalFmtGroup.style.display = 'none';
+  } else if (type === 'note_id') {
     invGroup.style.display = 'none';
     playGroup.style.display = 'none';
     optGroup.style.display = 'none';
@@ -182,6 +189,12 @@ function buildShareParams() {
     if (type === 'intervals' || type === 'chords' || type === 'septachords') params.set('play', document.getElementById('playMode').value);
   }
   if (type === 'note_id') params.set('acc', document.getElementById('accidentalSelect').value);
+  if (type === 'progressions') {
+    params.set('stage', document.getElementById('progStageSelect').value);
+    params.set('pmode', document.getElementById('progModeSelect').value);
+    params.set('ask', document.getElementById('progAskSelect').value);
+    return params;
+  }
   if (type === 'intervals') params.set('fmt', document.getElementById('intervalFormatSelect').value);
   if (keySigMode()) params.set('sig', 'keysig');
   if (type === 'chords' || type === 'septachords') {
@@ -205,6 +218,10 @@ function shareSummary() {
   const typeName = document.querySelector(`#exType option[value="${type}"]`).textContent;
   let text = `${MODE_LABELS[appMode] || ''} · ${typeName}`;
   if (keySigMode()) return text + ': לפי סימני מפתח';
+  if (type === 'progressions') {
+    const sel = document.getElementById('progStageSelect');
+    return text + ': עד ' + sel.options[sel.selectedIndex].textContent;
+  }
   if (type !== 'note_id') {
     const pills = Array.from(document.querySelectorAll('#optionsTags .tag-pill'));
     const on = pills.filter(el => el.classList.contains('active'));
@@ -215,7 +232,7 @@ function shareSummary() {
 
 function shareCurrentExercise() {
   const type = document.getElementById('exType').value;
-  if (type !== 'note_id' && !keySigMode() && !document.querySelector('#optionsTags .tag-pill.active')) {
+  if (type !== 'note_id' && type !== 'progressions' && !keySigMode() && !document.querySelector('#optionsTags .tag-pill.active')) {
     alert('יש לבחור לפחות אפשרות אחת לתרגול!');
     return;
   }
@@ -258,12 +275,13 @@ function setSettingValue(id, value) {
 function applySharedSettings() {
   const params = new URLSearchParams(location.search);
   const type = params.get('type');
-  if (!type || !BASE_STRUCTURES[type] || isTrainMode()) return false;
+  if (!type || !(BASE_STRUCTURES[type] || type === 'progressions') || isTrainMode()) return false;
+  if (type === 'progressions' && isReadMode()) return false;
   if (type === 'note_id' && !isReadMode()) return false;
   document.getElementById('exType').value = type;
   if (params.has('fmt')) setSettingValue('intervalFormatSelect', params.get('fmt'));
   onExerciseTypeChange();
-  ['clef:clefSelect', 'acc:accidentalSelect', 'play:playMode', 'sig:scaleShowSelect'].forEach(pair => {
+  ['clef:clefSelect', 'acc:accidentalSelect', 'play:playMode', 'sig:scaleShowSelect', 'stage:progStageSelect', 'pmode:progModeSelect', 'ask:progAskSelect'].forEach(pair => {
     const [key, id] = pair.split(':');
     if (params.has(key)) setSettingValue(id, params.get(key));
   });

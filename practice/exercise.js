@@ -16,6 +16,7 @@ const AUDIO_RANGE_TYPES = ['intervals', 'chords', 'septachords'];
 // cfg: באימון, הקטגוריה שנבחרה מהרמה (סוג, מאגר מבנים, היפוכים, אופן נגינה) במקום ההגדרות
 function generateExercise(cfg = null) {
   const type = cfg ? cfg.type : document.getElementById('exType').value;
+  if (type === 'progressions') return progressionExercise(cfg);
   let clefSelectVal = cfg && cfg.clef ? cfg.clef : document.getElementById('clefSelect').value;
   let clef = clefSelectVal === 'rand' ? (Math.random() < 0.5 ? 'sol' : 'fa') : clefSelectVal;
   // סולמות ומודוסים במושמע בלבד: רק מפתח סול, עד שני קווי עזר מעל החמשה (דו6)
@@ -144,6 +145,7 @@ function goToNextExercise() {
 }
 
 function exerciseKey(ex) {
+  if (ex.prog) return progressionKey(ex);
   if (ex.keySig) return ex.clef + ':sig:' + ex.keySig.name;
   return ex.clef + ':' + (ex.struct ? ex.struct.name : '') + ':' + ex.inversion + ':' + ex.notes.map(n => n.absLine + '/' + n.acc).join(',');
 }
@@ -192,13 +194,19 @@ function setupAnswerUI() {
   const chordArea = document.getElementById('chordAnswersArea');
   const modeArea = document.getElementById('modeAnswersArea');
   const noteArea = document.getElementById('noteIdAnswersArea');
+  const progArea = document.getElementById('progAnswersArea');
 
+  progArea.style.display = 'none';
+  document.body.classList.toggle('ex-prog', currentExercise.type === 'progressions');
   stdArea.style.display = 'none';
   chordArea.style.display = 'none';
   modeArea.style.display = 'none';
   noteArea.style.display = 'none';
 
-  if (currentExercise.type === 'chords' || currentExercise.type === 'septachords') {
+  if (currentExercise.type === 'progressions') {
+    progArea.style.display = 'flex';
+    setupProgressionUI();
+  } else if (currentExercise.type === 'chords' || currentExercise.type === 'septachords') {
     chordArea.style.display = 'flex';
     setupChordUI();
   } else if (currentExercise.type === 'modes' || currentExercise.type === 'scales') {

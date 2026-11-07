@@ -67,6 +67,7 @@
     { key: 'ear:septachords', mode: 'ear', type: 'septachords', name: 'ספטאקורדים' },
     { key: 'ear:scales', mode: 'ear', type: 'scales', name: 'סולמות' },
     { key: 'ear:modes', mode: 'ear', type: 'modes', name: 'מודוסים' },
+    { key: 'ear:progressions', mode: 'ear', type: 'progressions', name: 'מהלכים הרמוניים' },
     // קצב: התרגול עצמו בדף הקצב (rhythm_practice.html), הסוג = state.kind שם
     { key: 'rhythm:dictation', mode: 'rhythm', type: 'dictation', name: 'הכתבה' },
     { key: 'rhythm:tap', mode: 'rhythm', type: 'tap', name: 'קריאה והקשה' },
