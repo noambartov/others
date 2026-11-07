@@ -162,7 +162,27 @@
     return (c === 'U' ? r : r.toLowerCase()) + mark;
   }
 
+  // קוורטסקסט קדנציאלי בסימון של אלדוול ושכטר: דומיננטה אחת, ומעליה הספרות 6–5 ו־4–3 (עם ספטימה גם 8–7).
+  // בתשובה זו משבצת אחת וכפתור אחד, ובהשמעה שני אקורדים: I64 ואחריו V או V7
+  const CAD64 = { 'V64-53': ['I64', 'V'], 'V864-753': ['I64', 'V7'] };
+  const CAD64_ROWS = { 'V64-53': ['6–5', '4–3'], 'V864-753': ['8–7', '6–5', '4–3'] };
+  const CAD64_TEXT = { 'V64-53': 'V⁶⁻⁵₄₋₃', 'V864-753': 'V⁸⁻⁷₆₋₅₄₋₃' };
+  function group(seq) {
+    const out = [];
+    for (let i = 0; i < seq.length; i++) {
+      const next = seq[i + 1];
+      if (seq[i] === 'I64' && (next === 'V' || next === 'V7')) { out.push(next === 'V' ? 'V64-53' : 'V864-753'); i++; }
+      else out.push(seq[i]);
+    }
+    return out;
+  }
+  const expand = tokens => tokens.flatMap(t => CAD64[t] || [t]);
+
   function label(token, mode) {
+    if (CAD64[token]) {
+      const rows = CAD64_ROWS[token].map(r => `<span>${r}</span>`).join('');
+      return { text: CAD64_TEXT[token], html: `<span class="rn" dir="ltr">V<span class="rn-st rn-cad">${rows}</span></span>` };
+    }
     const ch = chordInfo(token, mode);
     let base, target = '';
     if (ch.of) {
@@ -184,7 +204,7 @@
 
   // משפחה לרמז: טוניקה, סובדומיננטה, דומיננטה או דומיננטה שניונית
   function family(token) {
-    if (token === 'I64') return 'D';
+    if (token === 'I64' || CAD64[token]) return 'D';
     const { deg, of } = parse(token);
     if (of) return 'A';
     return { 1: 'T', 3: 'T', 2: 'S', 4: 'S', 6: 'S', 5: 'D', 7: 'D' }[deg];
@@ -376,12 +396,14 @@
     }
     if (!tokens) { tokens = ['I', 'V', 'I']; ending = 'auth'; }
     const tonic = Math.floor(Math.random() * 12);
-    const chords = tokens.map(t => chordInfo(t, mode));
-    const { voices } = voice(chords, tonic);
+    const { voices } = voice(tokens.map(t => chordInfo(t, mode)), tonic);
+    // tokens: משבצת לכל אקורד בתשובה (הקוורטסקסט הקדנציאלי והדומיננטה שאחריו במשבצת אחת). rawTokens ו־voices: מה שמושמע
+    const rawTokens = tokens;
+    tokens = group(rawTokens);
     return {
       mode, tonic, ending, kind,
-      tokens,
-      chords: tokens.map((t, i) => Object.assign({ token: t, family: family(t), voices: voices[i] }, label(t, mode))),
+      tokens, rawTokens,
+      chords: tokens.map(t => Object.assign({ token: t, family: family(t) }, label(t, mode))),
       voices
     };
   }
@@ -391,13 +413,14 @@
   function vocabulary(f, mode) {
     const minor = mode === 'minor';
     const set = new Set();
-    const add = list => list.forEach(seq => seq.forEach(t => set.add(t)));
+    const add = list => list.forEach(seq => group(seq).forEach(t => set.add(t)));
     add(tonicIdioms(f));
     ['auth', 'half', 'plag', 'dec'].forEach(e => { add(predominantIdioms(f, minor, e)); add(dominantIdioms(f, e)); });
     set.add('I');
     if (f.pd) set.add('IV');
     if (f.vi) set.add('VI');
     const key = t => {
+      if (CAD64[t]) return 50 + (t === 'V64-53' ? 2.5 : 6.5);
       const p = parse(t);
       return (p.of ? 100 + p.of * 10 : p.deg * 10) + FIG_ORDER.indexOf(p.fig);
     };
@@ -410,7 +433,7 @@
 
   const HarmonyCore = {
     TOPICS, CADENCE_FROM, START_FROM, CADENCES, FAMILY_NAMES, flagsFor, generate, vocabulary, cadenceOptions,
-    chordInfo, label, family, voice, voiceAfter, candidates, transCost, parse
+    chordInfo, label, family, group, expand, voice, voiceAfter, candidates, transCost, parse
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = HarmonyCore;
   else root.HarmonyCore = HarmonyCore;

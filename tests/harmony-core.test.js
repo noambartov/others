@@ -48,28 +48,30 @@ for (let stage = 1; stage <= H.TOPICS.length; stage++) {
       assert.ok(starts.includes(ex.tokens[0]), `stage ${stage} starts on ${ex.tokens[0]}`);
       if (stage < H.START_FROM.I6) assert.ok(ex.tokens[0] === 'I' || ex.tokens.join(' ') === 'I6 V43 I', 'early stages start on the tonic');
       const max = [3, 3, 3, 4, 5, 5, 5, 6, 6][stage - 1];
-      assert.ok(ex.tokens.length >= 2 && ex.tokens.length <= max, `stage ${stage} length ${ex.tokens}`);
+      assert.ok(ex.tokens.length >= 2 && ex.rawTokens.length <= max, `stage ${stage} length ${ex.rawTokens}`);
+      assert.deepStrictEqual(H.expand(ex.tokens), ex.rawTokens);
+      assert.ok(!ex.tokens.includes('I64'), 'cadential 6/4 is written as one V6-5/4-3 slot');
       ex.tokens.forEach(t => assert.ok(vocab.includes(t), `${t} is in the stage ${stage} buttons (${ex.mode})`));
       if (ex.mode === 'minor') assert.ok(!ex.tokens.includes('II'), 'no root-position ii° in minor');
       assert.ok(H.cadenceOptions(f).some(c => c.id === ex.ending));
-      if (ex.ending === 'half') assert.strictEqual(ex.tokens[ex.tokens.length - 1], 'V');
+      if (ex.ending === 'half') assert.strictEqual(ex.rawTokens[ex.rawTokens.length - 1], 'V');
       if (ex.ending === 'dec') assert.strictEqual(ex.tokens[ex.tokens.length - 1], 'VI');
       ex.voices.forEach((v, k) => {
-        const ch = H.chordInfo(ex.tokens[k], ex.mode);
+        const ch = H.chordInfo(ex.rawTokens[k], ex.mode);
         const pcs = ch.pcs.map(p => (p + ex.tonic) % 12);
         const [b, tn, a, s] = v;
         assert.ok(b < tn && tn < a && a < s, 'voice order ' + v);
         assert.ok(s - a <= 12 && a - tn <= 12, 'spacing ' + v);
         assert.strictEqual(b % 12, (ch.bassPc + ex.tonic) % 12, 'bass is the inversion note');
         v.forEach(m => assert.ok(pcs.includes(m % 12), 'chord tone'));
-        if (ch.lt !== null) assert.ok(v.filter(m => m % 12 === (ch.lt + ex.tonic) % 12).length <= 1, 'leading tone not doubled ' + ex.tokens[k]);
+        if (ch.lt !== null) assert.ok(v.filter(m => m % 12 === (ch.lt + ex.tonic) % 12).length <= 1, 'leading tone not doubled ' + ex.rawTokens[k]);
         if (k === 0) return;
         const p = ex.voices[k - 1];
         for (let x = 0; x < 4; x++) for (let y = x + 1; y < 4; y++) {
           const pi = (p[y] - p[x]) % 12, ni = (v[y] - v[x]) % 12;
           const moved = p[x] !== v[x] || p[y] !== v[y];
           if (moved && ((pi === 7 && ni === 7) || (pi === 0 && ni === 0)) && Math.sign(v[x] - p[x]) === Math.sign(v[y] - p[y])) {
-            assert.fail(`parallel ${pi === 7 ? 'fifths' : 'octaves'} in ${ex.tokens.join(' ')} (${ex.mode}) at ${k}`);
+            assert.fail(`parallel ${pi === 7 ? 'fifths' : 'octaves'} in ${ex.rawTokens.join(' ')} (${ex.mode}) at ${k}`);
           }
         }
         for (let x = 1; x < 4; x++) assert.ok(Math.abs(v[x] - p[x]) <= 9, 'no big leap in upper voices ' + ex.tokens);
@@ -96,6 +98,16 @@ test('later stages also start on I6, V and IV', () => {
   const early = new Set();
   for (let i = 0; i < 1000; i++) early.add(H.generate({ stage: 2, kind: 'prog' }).tokens[0]);
   assert.deepStrictEqual([...early], ['I']);
+});
+
+
+test('cadential 6/4 is labelled the Aldwell & Schachter way', () => {
+  assert.deepStrictEqual(H.group(['II6', 'I64', 'V7', 'I']), ['II6', 'V864-753', 'I']);
+  assert.deepStrictEqual(H.group(['IV', 'I64', 'V']), ['IV', 'V64-53']);
+  assert.strictEqual(H.label('V64-53', 'major').text, 'V⁶⁻⁵₄₋₃');
+  assert.strictEqual(H.family('V864-753'), 'D');
+  const v = H.vocabulary(H.flagsFor(5), 'major').map(x => x.token);
+  assert.ok(v.includes('V64-53') && v.includes('V864-753') && !v.includes('I64'));
 });
 
 console.log(`harmony-core: ${passed} tests passed`);
