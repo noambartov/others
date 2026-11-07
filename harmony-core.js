@@ -324,13 +324,17 @@
   }
 
   // ===== תרגיל =====
+  // [מינימום, מקסימום] אקורדים בכל שלב (שלב 1 = I ו-V בלבד: 3, וחצי קדנצה I V I V)
+  const LENGTHS = [[3, 4], [3, 4], [4, 5], [4, 5], [4, 5], [4, 6], [5, 6], [5, 6], [5, 6]];
   // opts: { flags | stage, mode: 'major' | 'minor' | 'both', kind: 'prog' | 'cad' }
   function generate(opts) {
     const f = opts.flags || flagsFor(opts.stage || 1);
     const kind = opts.kind || 'prog';
     const mode = opts.mode === 'major' || opts.mode === 'minor' ? opts.mode : (Math.random() < 0.5 ? 'major' : 'minor');
-    const minLen = kind === 'cad' ? 3 : (Object.keys(f).length <= 1 ? 3 : 4);
-    const maxLen = 6;
+    // אורך המהלך לפי השלב: מעט אקורדים כשיש מעט פונקציות, ומהלך ארוך רק כשיש מה למלא בו
+    const [lo, hi] = LENGTHS[Math.min(Object.keys(f).length, LENGTHS.length) - 1];
+    const minLen = kind === 'cad' ? 3 : lo;
+    const maxLen = hi;
     let tokens = null, ending = null;
     for (let i = 0; i < 400 && !tokens; i++) {
       ending = kind === 'cad' ? pick(endingsFor(f)) : chooseEnding(f);

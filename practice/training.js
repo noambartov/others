@@ -66,7 +66,7 @@ function progressionLevels() {
   const H = window.HarmonyCore;
   return H.TOPICS.map((topic, i) => {
     const stage = i + 1;
-    const prog = { label: 'מהלכים', type: 'progressions', stage, kind: 'prog' };
+    const prog = { label: 'מהלכים הרמוניים', type: 'progressions', stage, kind: 'prog' };
     const cats = stage >= H.CADENCE_FROM ? [prog, prog, prog, { label: 'קדנצות', type: 'progressions', stage, kind: 'cad' }] : [prog];
     return { name: 'מהלכים ' + stage, desc: topic.desc, group: 'מהלכים הרמוניים', cats };
   });

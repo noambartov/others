@@ -45,7 +45,8 @@ for (let stage = 1; stage <= H.TOPICS.length; stage++) {
       const ex = H.generate({ flags: f, kind });
       const vocab = H.vocabulary(f, ex.mode).map(v => v.token);
       assert.strictEqual(ex.tokens[0].replace(/\d+$/, ''), 'I', 'starts on the tonic: ' + ex.tokens);
-      assert.ok(ex.tokens.length >= 3 && ex.tokens.length <= 6, 'length ' + ex.tokens);
+      const max = [4, 4, 5, 5, 5, 6, 6, 6, 6][stage - 1];
+      assert.ok(ex.tokens.length >= 3 && ex.tokens.length <= max, `stage ${stage} length ${ex.tokens}`);
       ex.tokens.forEach(t => assert.ok(vocab.includes(t), `${t} is in the stage ${stage} buttons (${ex.mode})`));
       if (ex.mode === 'minor') assert.ok(!ex.tokens.includes('II'), 'no root-position ii° in minor');
       assert.ok(H.cadenceOptions(f).some(c => c.id === ex.ending));
