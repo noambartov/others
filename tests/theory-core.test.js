@@ -22,6 +22,10 @@ test('note() places the bottom line correctly in both clefs', () => {
   assert.strictEqual(g2.midiNum, 43);
   assert.strictEqual(T.note(-2, 0, 'sol').midiNum, 60); // דו אמצעי
   assert.strictEqual(T.note(10, 0, 'fa').midiNum, 60);
+  // מפתח אלט: פה 3 על הקו התחתון, דו האמצעי על הקו האמצעי
+  assert.strictEqual(T.note(0, 0, 'alto').name, 'פה');
+  assert.strictEqual(T.note(0, 0, 'alto').midiNum, 53);
+  assert.strictEqual(T.note(4, 0, 'alto').midiNum, 60);
 });
 
 test('every structure has the right semitones from every root, inversion and given voice', () => {
@@ -29,7 +33,7 @@ test('every structure has the right semitones from every root, inversion and giv
   for (const type of Object.keys(T.CATALOG)) {
     const inversions = T.INVERSIONS[type] ? T.INVERSIONS[type].length : 1;
     for (const struct of T.CATALOG[type]) {
-      for (const clef of ['sol', 'fa']) {
+      for (const clef of T.CLEFS) {
         for (let line = -4; line <= 10; line++) {
           for (const acc of [-1, 0, 1]) {
             for (let inv = 0; inv < inversions; inv++) {
@@ -58,7 +62,7 @@ test('every structure has the right semitones from every root, inversion and giv
 test('the major scale of every key has exactly its key signature', () => {
   const major = T.findStructure('scales', 'major');
   for (const key of T.KEYS) {
-    for (const clef of ['sol', 'fa']) {
+    for (const clef of T.CLEFS) {
       const line = T.lineForLetter(key.major[0], clef, -2);
       const { notes } = T.build(major, { line, acc: key.major[1], clef });
       const accs = notes.slice(0, 7).map(n => n.acc);
@@ -140,11 +144,18 @@ test('identifyInterval is the inverse of build for every catalog interval', () =
 test('key signature lines', () => {
   assert.deepStrictEqual(T.keySignatureLines('fa', 1, 5), [6, 3, 7, 4, 1]);
   assert.deepStrictEqual(T.keySignatureLines('sol', -1, 2), [4, 7]);
+  // כל סימן במפתח אלט הוא אותו צליל כמו במפתח סול (פה דו סול רה לה מי סי / סי מי לה רה סול דו פה)
+  for (const type of [1, -1]) {
+    const sol = T.keySignatureLines('sol', type, 7).map(l => T.note(l, 0, 'sol').letter);
+    const alto = T.keySignatureLines('alto', type, 7).map(l => T.note(l, 0, 'alto').letter);
+    assert.deepStrictEqual(alto, sol);
+  }
 });
 
 test('svg helpers return paths', () => {
   const staff = { bottomY: 51, space: 8 };
   assert.ok(T.svg.clef('sol', 35, staff).startsWith('<path'));
+  assert.ok(T.svg.clef('alto', 35, staff).includes(T.svg.GLYPHS.cClef.d));
   assert.ok(T.svg.accidental(-2, 100, 40, 8).includes('<path'));
   assert.strictEqual(T.svg.ledgerLines(50, -4, staff, 8).split('<line').length - 1, 2);
 });

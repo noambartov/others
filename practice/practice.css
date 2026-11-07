@@ -156,6 +156,8 @@ body[data-section="ear"] .mode-tabs button[data-sec="read"] { display: none; }
 .seg { display: flex; flex-wrap: wrap; gap: 4px; }
 .seg button { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 6px; cursor: pointer; background: #ffffff; border: 1px solid #e6e6e6; color: #999999; }
 .seg button.active { background: #e6e6e6; color: #222222; }
+/* ארבעה מפתחות לא נכנסים בחצי שורה בטלפון: המפתח מקבל שורה שלמה */
+@media (max-width: 600px) { #clefGroup { grid-column: 1 / -1; } }
 body.mode-read .ear-only-setting,
 body.mode-rtrain .ear-only-setting { display: none !important; }
 body.mode-train #intervalFormatGroup { display: flex !important; }
