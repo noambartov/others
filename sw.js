@@ -78,12 +78,27 @@ function key(url) {
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
-    // קובץ אחד שנכשל לא מפיל את כל ההתקנה
-    await Promise.allSettled(PRECACHE.map(async path => {
-      // קבצים שלא משתנים יכולים להגיע מהמטמון של הדפדפן, כדי לא להוריד אותם פעמיים בביקור הראשון
-      const res = await fetch(new Request(path, { cache: STATIC.test(path) ? 'default' : 'reload' }));
-      if (res.ok) await cache.put(key(res.url || new URL(path, self.registration.scope).href), res);
-    }));
+    // קבצים שלא משתנים (צלילים, ספריות, סמלים, גופן) שכבר שמורים לא יורדים שוב בכל עדכון של האתר.
+    // כשקובץ כזה משתנה, שמו משתנה (כמו הסמלים), ולכן העותק השמור תמיד נכון
+    const todo = [];
+    for (const path of PRECACHE) {
+      if (STATIC.test(path) && await cache.match(key(new URL(path, self.registration.scope).href))) continue;
+      todo.push(path);
+    }
+    // כמה קבצים בכל פעם ולא הכול יחד, כדי לא לחנוק את הדף שהתלמיד פותח באותו רגע
+    let next = 0;
+    const worker = async () => {
+      while (next < todo.length) {
+        const path = todo[next++];
+        // קובץ אחד שנכשל לא מפיל את כל ההתקנה
+        try {
+          // קבצים שלא משתנים יכולים להגיע מהמטמון של הדפדפן, כדי לא להוריד אותם פעמיים בביקור הראשון
+          const res = await fetch(new Request(path, { cache: STATIC.test(path) ? 'default' : 'reload' }));
+          if (res.ok) await cache.put(key(res.url || new URL(path, self.registration.scope).href), res);
+        } catch (e) {}
+      }
+    };
+    await Promise.all(Array.from({ length: 4 }, worker));
     self.skipWaiting();
   })());
 });
