@@ -84,7 +84,7 @@
   function buildTokens(f, minor, ending) {
     let seq = [...pick(tonicIdioms(f))];
     if (ending === 'plag') {
-      if (seq[seq.length - 1] !== 'I') seq.push('I');
+      if (seq[seq.length - 1] !== 'I') return [];
       return seq.concat(['IV', 'I']);
     }
     const pds = predominantIdioms(f, minor, ending);
@@ -98,6 +98,8 @@
 
   function validSeq(seq, ending) {
     for (let i = 1; i < seq.length; i++) if (seq[i] === seq[i - 1]) return false;
+    // קוורטסקסט קדנציאלי לא בא ישר אחרי I
+    for (let i = 1; i < seq.length; i++) if (seq[i] === 'I64' && seq[i - 1] === 'I') return false;
     // אקורד שניוני הולך לאקורד שהוא מוביל אליו
     for (let i = 0; i < seq.length; i++) {
       const m = seq[i].match(/\/(.+)$/);
@@ -324,8 +326,9 @@
   }
 
   // ===== תרגיל =====
-  // [מינימום, מקסימום] אקורדים בכל שלב (שלב 1 = I ו-V בלבד: 3, וחצי קדנצה I V I V)
-  const LENGTHS = [[3, 4], [3, 4], [4, 5], [4, 5], [4, 5], [4, 6], [5, 6], [5, 6], [5, 6]];
+  // [מינימום, מקסימום] אקורדים בכל שלב. כל עוד יש רק טוניקה ודומיננטה (שלבים 1 עד 3) המהלך עד שלושה אקורדים,
+  // ועם כל תפקוד שנוסף הוא מתארך
+  const LENGTHS = [[2, 3], [2, 3], [3, 3], [3, 4], [4, 5], [4, 5], [4, 5], [5, 6], [5, 6]];
   // opts: { flags | stage, mode: 'major' | 'minor' | 'both', kind: 'prog' | 'cad' }
   function generate(opts) {
     const f = opts.flags || flagsFor(opts.stage || 1);
@@ -333,12 +336,17 @@
     const mode = opts.mode === 'major' || opts.mode === 'minor' ? opts.mode : (Math.random() < 0.5 ? 'major' : 'minor');
     // אורך המהלך לפי השלב: מעט אקורדים כשיש מעט פונקציות, ומהלך ארוך רק כשיש מה למלא בו
     const [lo, hi] = LENGTHS[Math.min(Object.keys(f).length, LENGTHS.length) - 1];
-    const minLen = kind === 'cad' ? 3 : lo;
+    const minLen = kind === 'cad' ? Math.max(3, lo) : lo;
     const maxLen = hi;
     let tokens = null, ending = null;
     for (let i = 0; i < 400 && !tokens; i++) {
       ending = kind === 'cad' ? pick(endingsFor(f)) : chooseEnding(f);
-      const seq = buildTokens(f, mode === 'minor', ending);
+      let seq = buildTokens(f, mode === 'minor', ending);
+      // מהלך קצר יכול להיות הרחבת טוניקה לבדה, למשל I V6 I או I V43 I6
+      if (kind === 'prog' && Math.random() < 0.4) {
+        seq = [...pick(tonicIdioms(f))];
+        ending = seq[seq.length - 1] === 'V' ? 'half' : 'auth';
+      }
       if (seq.length >= minLen && seq.length <= maxLen && validSeq(seq, ending)) tokens = seq;
     }
     if (!tokens) { tokens = ['I', 'V', 'I']; ending = 'auth'; }
