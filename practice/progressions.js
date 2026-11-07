@@ -1,5 +1,5 @@
 // תרגול: מהלכים הרמוניים בשמיעה. התרגיל עצמו (מהלך, סימון והובלת קולות) נבנה ב-harmony-core.js.
-// שני סוגי שאלות: "מה המהלך?" (מסמנים אקורד אחרי אקורד, הראשון כבר מסומן) ו"איך זה נגמר?" (סוג הקדנצה).
+// שני סוגי שאלות: "מה המהלך?" (כותבים את כל האקורדים ואז בודקים; האקורד הראשון הוא הרמז הראשון בעזרה) ו"איך זה נגמר?" (סוג הקדנצה).
 
 const HC = window.HarmonyCore;
 let progIndex = 1;
@@ -89,15 +89,14 @@ function setupProgressionUI() {
   sub.style.display = '';
   q.style.display = 'none';
   const n = ex.prog.chords.length;
-  progAnswers = ex.prog.tokens.map((t, i) => (i === 0 ? t : null));
-  progLocked = new Set([0]);
+  progAnswers = ex.prog.tokens.map(() => null);
+  progLocked = new Set();
   progChecked = false;
   ex.prog.chords.forEach((c, i) => {
     const s = document.createElement('button');
     s.type = 'button';
-    s.className = 'prog-slot' + (i === 0 ? ' given' : '');
-    if (i === 0) s.innerHTML = c.html;
-    else s.onclick = () => selectProgSlot(i);
+    s.className = 'prog-slot';
+    s.onclick = () => selectProgSlot(i);
     slots.appendChild(s);
   });
   HC.vocabulary(ex.flags, ex.prog.mode).forEach(v => {
@@ -109,7 +108,7 @@ function setupProgressionUI() {
     btn.onclick = () => writeProgChord(v);
     grid.appendChild(btn);
   });
-  progIndex = n > 1 ? 1 : -1;
+  progIndex = 0;
   markProgSlots();
 }
 
@@ -245,10 +244,15 @@ const CADENCE_HINTS = {
 
 function progressionHintSteps() {
   const ex = currentExercise;
-  const steps = [
+  const steps = [];
+  // הרמז הראשון: האקורד הראשון, כדי לדעת מאיפה מתחילים
+  if (ex.kind !== 'cad' && !progLocked.has(0)) {
+    steps.push({ key: 'first', text: `האקורד הראשון: ${ex.prog.chords[0].text}`, progFirst: true });
+  }
+  steps.push(
     { key: 'play', text: 'מעכשיו ההשמעה לאט יותר', play: () => playProgression({ slow: true }) },
     { key: 'bass', text: 'מעכשיו ההשמעה: קודם קו הבס לבד, ואז המהלך', play: () => playProgression({ slow: true, bassFirst: true }) }
-  ];
+  );
   if (ex.kind === 'cad') {
     steps.push({ key: 'cad', text: CADENCE_HINTS[ex.prog.ending] });
     return steps;
@@ -266,6 +270,18 @@ function progressionHintSteps() {
 }
 
 function applyProgressionHint(step) {
+  if (step.progFirst) {
+    const ex = currentExercise;
+    const slot = document.querySelectorAll('#progSlots .prog-slot')[0];
+    progAnswers[0] = ex.prog.tokens[0];
+    progLocked.add(0);
+    slot.innerHTML = ex.prog.chords[0].html;
+    slot.classList.remove('wrong');
+    slot.classList.add('given');
+    if (progIndex === 0 || progIndex < 0) progIndex = nextOpenSlot(1);
+    markProgSlots();
+    return;
+  }
   if (!step.progFamily) return;
   document.querySelectorAll('#progButtons .opt-btn').forEach(b => {
     if (b.dataset.family !== step.progFamily) b.classList.add('hint-out');
