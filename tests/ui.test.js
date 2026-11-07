@@ -130,7 +130,13 @@ async function answerCorrectly(page) {
   if (ex.type === 'progressions') {
     const q = await page.evaluate(() => ({ kind: currentExercise.kind, tokens: currentExercise.prog.tokens, ending: currentExercise.prog.ending }));
     if (q.kind === 'cad') await click(`#progButtons .opt-btn[data-name="${await page.evaluate(e => HarmonyCore.CADENCES[e], q.ending)}"]`);
-    else for (const t of q.tokens.slice(1)) await click(`#progButtons .opt-btn[data-token="${t}"]`);
+    else {
+      // כותבים בכל משבצת פתוחה את האקורד הנכון, ואז "בדיקה"
+      for (let i = await page.evaluate(() => progIndex); i >= 0; i = await page.evaluate(() => progIndex)) {
+        await click(`#progButtons .opt-btn[data-token="${q.tokens[i]}"]`);
+      }
+      await click('#progSub .prog-check');
+    }
   } else if (ex.type === 'note_id') {
     await acc('acc', ex.note.acc);
     await page.locator('#noteNameButtons .opt-btn').nth(ex.note.nameIndex).click();
@@ -285,17 +291,24 @@ for (const vp of Object.keys(VIEWPORTS)) {
       const { page, errors, close } = await openPage(vp, 'music_theory_exercise_tool.html', { mt_app_mode: 'ear' });
       await page.locator('#exTypeRow button[data-type="progressions"]').click();
       const first = await page.evaluate(() => currentExercise.prog.chords[0].text);
-      assert.match(first, /^(I|i)$/, 'first chord is the tonic');
-      assert.match(await page.locator('#progSlots .prog-slot.given').textContent(), /^(I|i)$/);
-      const right = await page.evaluate(() => currentExercise.prog.tokens[1]);
-      const wrong = await page.evaluate(r => [...document.querySelectorAll('#progButtons .opt-btn')].map(b => b.dataset.token).find(t => t !== r), right);
+      assert.match(first, /^(I|i)⁶?$/, 'first chord is the tonic');
+      assert.match(await page.locator('#progSlots .prog-slot.given').textContent(), /^(I|i)6?$/);
+      // כותבים הכול, עם טעות במשבצת השנייה, ובודקים: הטעות מסומנת, אפשר לשמוע מה שנכתב, והמשבצת פתוחה לתיקון
+      const tokens = await page.evaluate(() => currentExercise.prog.tokens);
+      const wrong = await page.evaluate(r => [...document.querySelectorAll('#progButtons .opt-btn')].map(b => b.dataset.token).find(t => t !== r), tokens[1]);
       await page.locator(`#progButtons .opt-btn[data-token="${wrong}"]`).click();
+      for (let i = 2; i < tokens.length; i++) await page.locator(`#progButtons .opt-btn[data-token="${tokens[i]}"]`).click();
+      assert.strictEqual(await page.evaluate(() => exerciseSolved), false, 'nothing is checked before "בדיקה"');
+      await page.locator('#progSub .prog-check').click();
+      assert.ok(await page.locator('#progSlots .prog-slot.wrong').count() === 1, 'the wrong chord is marked');
+      assert.strictEqual(await page.evaluate(() => progIndex), 1, 'the wrong slot is open again');
       await page.locator('#feedback .hear-choice').click();
-      await page.locator(`#progButtons .opt-btn[data-token="${right}"]`).click();
-      assert.strictEqual(await page.evaluate(() => progIndex), 2, 'second slot filled');
+      await page.locator(`#progButtons .opt-btn[data-token="${tokens[1]}"]`).click();
       // עזרה: לאט, קו הבס, משפחה, ואז התשובה בספרות רומיות
       for (let i = 0; i < 4; i++) await page.locator('#helpBtn').click();
       assert.match(await page.locator('#helpPopover').textContent(), /–/);
+      await page.locator('#progSub .prog-check').click();
+      await waitForNextExercise(page);
       await page.locator('#settingsCollapse summary').click();
       for (const id of ['progStageGroup', 'progModeGroup', 'progAskGroup']) assert.ok(await page.locator('#' + id).isVisible(), id);
       assert.ok(!(await page.locator('#optionsGroup').isVisible()), 'no options list for progressions');
@@ -329,6 +342,8 @@ for (const vp of Object.keys(VIEWPORTS)) {
       if (q.kind === 'prog') {
         const wrong = await page.evaluate(r => [...document.querySelectorAll('#progButtons .opt-btn')].map(b => b.dataset.token).find(t => t !== r), q.tokens[1]);
         await page.locator(`#progButtons .opt-btn[data-token="${wrong}"]`).click();
+        for (let i = 2; i < q.tokens.length; i++) await page.locator(`#progButtons .opt-btn[data-token="${q.tokens[i]}"]`).click();
+        await page.locator('#progSub .prog-check').click();
       }
       await answerCorrectly(page);
       await waitForNextExercise(page);

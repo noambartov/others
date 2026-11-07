@@ -813,3 +813,14 @@ body.theme-clean .level-item:hover { background: #f5f5f5; border-color: #9ca3af;
 }
 #progStageGroup { grid-column: 1 / -1; }
 @media (max-width: 560px) { #progButtons { --min-btn: 54px; --gap: 6px; } }
+/* המשבצות הן כפתורים: לחיצה על משבצת בוחרת אותה לכתיבה מחדש. אחרי בדיקה, אקורד שגוי נמחק בקו */
+.prog-slot { font: inherit; padding: 0; cursor: pointer; position: relative; }
+.prog-slot.given, .prog-slot.locked { cursor: default; }
+.prog-slot.wrong { color: #bbbbbb; }
+.prog-slot.wrong::after { content: ''; position: absolute; left: 18%; right: 18%; top: 50%; border-top: 1.5px solid #9ca3af; transform: rotate(-12deg); }
+.prog-check {
+  font: inherit; font-size: 14px; padding: 6px 22px; border-radius: 999px; cursor: pointer;
+  background: #333333; color: #ffffff; border: 1px solid #333333;
+}
+.prog-check:hover { background: #222222; }
+.prog-sub { min-height: 30px; display: flex; align-items: center; justify-content: center; }

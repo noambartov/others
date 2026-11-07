@@ -88,10 +88,16 @@ function setupProgressionUI() {
   slots.style.display = '';
   sub.style.display = '';
   q.style.display = 'none';
+  const n = ex.prog.chords.length;
+  progAnswers = ex.prog.tokens.map((t, i) => (i === 0 ? t : null));
+  progLocked = new Set([0]);
+  progChecked = false;
   ex.prog.chords.forEach((c, i) => {
-    const s = document.createElement('div');
+    const s = document.createElement('button');
+    s.type = 'button';
     s.className = 'prog-slot' + (i === 0 ? ' given' : '');
     if (i === 0) s.innerHTML = c.html;
+    else s.onclick = () => selectProgSlot(i);
     slots.appendChild(s);
   });
   HC.vocabulary(ex.flags, ex.prog.mode).forEach(v => {
@@ -100,61 +106,112 @@ function setupProgressionUI() {
     btn.dataset.token = v.token;
     btn.dataset.family = v.family;
     btn.innerHTML = v.html;
-    btn.onclick = () => checkProgChord(v, btn);
+    btn.onclick = () => writeProgChord(v);
     grid.appendChild(btn);
   });
+  progIndex = n > 1 ? 1 : -1;
+  markProgSlots();
+}
+
+// התשובה נכתבת כולה ורק אז נבדקת, כמו בהכתבת הקצב: כך חושבים על המהלך לפני שעונים, ואי אפשר לנחש אקורד אחרי אקורד.
+// progAnswers: מה שנכתב בכל משבצת. progLocked: משבצות שכבר נבדקו ונמצאו נכונות (והראשונה, שניתנת)
+let progAnswers = [];
+let progLocked = new Set();
+let progChecked = false;
+
+function nextOpenSlot(from) {
+  const n = progAnswers.length;
+  for (let k = 0; k < n; k++) {
+    const i = (from + k) % n;
+    if (!progLocked.has(i) && !progAnswers[i]) return i;
+  }
+  return -1;
+}
+
+function selectProgSlot(i) {
+  if (exerciseSolved || progLocked.has(i)) return;
+  progIndex = i;
+  markProgSlots();
+}
+
+function writeProgChord(v) {
+  if (exerciseSolved || progIndex < 0) return;
+  const ex = currentExercise;
+  const i = progIndex;
+  progAnswers[i] = v.token;
+  const slot = document.querySelectorAll('#progSlots .prog-slot')[i];
+  slot.innerHTML = v.html;
+  slot.classList.remove('wrong');
+  document.querySelectorAll('#progButtons .hint-out').forEach(b => b.classList.remove('hint-out'));
+  progIndex = nextOpenSlot(i + 1);
   markProgSlots();
 }
 
 function markProgSlots() {
   const ex = currentExercise;
+  const n = ex.prog.chords.length;
   document.querySelectorAll('#progSlots .prog-slot').forEach((s, i) => {
     s.classList.toggle('active', i === progIndex);
-    s.classList.toggle('empty', i > progIndex);
+    s.classList.toggle('empty', !progAnswers[i] && i !== progIndex);
+    s.classList.toggle('locked', progLocked.has(i));
   });
-  const n = ex.prog.chords.length;
-  document.getElementById('progSub').textContent = progIndex < n ? `אקורד ${progIndex + 1} מתוך ${n}` : '';
+  const sub = document.getElementById('progSub');
+  sub.innerHTML = '';
+  if (progAnswers.every(Boolean)) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'prog-check';
+    btn.textContent = 'בדיקה';
+    btn.onclick = checkProgression;
+    sub.appendChild(btn);
+  } else if (progIndex >= 0) {
+    sub.textContent = `אקורד ${progIndex + 1} מתוך ${n}`;
+  }
 }
 
-function checkProgChord(v, btn) {
+function checkProgression() {
   if (exerciseSolved) return;
-  clearWrongButtons();
   const ex = currentExercise;
-  const right = ex.prog.chords[progIndex];
-  if (v.token === right.token) {
-    const slot = document.querySelectorAll('#progSlots .prog-slot')[progIndex];
-    slot.innerHTML = right.html;
-    progIndex++;
-    document.querySelectorAll('#progButtons .hint-out').forEach(b => b.classList.remove('hint-out'));
-    document.getElementById('feedback').textContent = '';
-    document.getElementById('feedback').className = 'feedback';
+  const tokens = ex.prog.tokens;
+  const wrong = [];
+  const slots = document.querySelectorAll('#progSlots .prog-slot');
+  tokens.forEach((t, i) => {
+    if (progAnswers[i] === t) progLocked.add(i);
+    else wrong.push(i);
+  });
+  const fb = document.getElementById('feedback');
+  if (!wrong.length) {
+    progIndex = -1;
     markProgSlots();
-    if (progIndex >= ex.prog.chords.length) {
-      currentScore += 1;
-      updateTopbarProgress();
-      document.getElementById('feedback').textContent = 'נכון';
-      document.getElementById('feedback').className = 'feedback success';
-      triggerSuccessAndNext();
-    }
+    currentScore += 1;
+    updateTopbarProgress();
+    fb.textContent = 'נכון';
+    fb.className = 'feedback success';
+    triggerSuccessAndNext();
     return;
   }
-  btn.classList.add('wrong');
-  noteWrong(v.text, 'chord');
-  if (firstWrong && firstWrong.kind === 'chord' && !firstWrong.heard) firstWrong.heard = right.text;
-  const fb = document.getElementById('feedback');
+  // באימון נספרת רק הבדיקה הראשונה. לדוח: מה נשמע ומה נכתב במקומו, באקורד השגוי הראשון
+  const label = t => HC.label(t, ex.prog.mode).text;
+  const first = wrong[0];
+  noteWrong(label(progAnswers[first]), 'chord');
+  if (firstWrong && firstWrong.kind === 'chord' && !firstWrong.heard) firstWrong.heard = label(tokens[first]);
+  const mine = progAnswers.slice();
+  wrong.forEach(i => { slots[i].classList.add('wrong'); progAnswers[i] = null; });
+  progChecked = true;
+  progIndex = first;
+  markProgSlots();
   fb.className = 'feedback error';
-  fb.textContent = 'נסה שוב';
-  // לשמוע את האקורד הקודם ואחריו את מה שנבחר, כדי להשוות
-  const prev = ex.prog.chords[progIndex - 1];
-  const chosen = HC.voiceAfter(prev.voices, prev.token, v.token, ex.prog.mode, ex.prog.tonic);
+  fb.textContent = wrong.length === 1 ? 'אקורד אחד לא נכון. מתקנים את המסומן' : `${wrong.length} אקורדים לא נכונים. מתקנים את המסומנים`;
+  // לשמוע את המהלך כפי שנכתב, כדי להשוות למה שהושמע
   const hear = document.createElement('button');
   hear.type = 'button';
   hear.className = 'hear-choice';
-  hear.textContent = 'לשמוע מה שבחרתי';
+  hear.textContent = 'לשמוע מה שכתבתי';
   hear.onclick = () => {
+    const { voices } = HC.voice(mine.map(t => HC.chordInfo(t, ex.prog.mode)), ex.prog.tonic);
     const ctx = getAudioContext();
     newPlayBus(ctx);
-    playChords([prev.voices, chosen], ctx.currentTime + 0.05, 1.05);
+    playChords(voices, ctx.currentTime + 0.05, 1.05);
   };
   fb.append(hear);
 }
@@ -196,7 +253,7 @@ function progressionHintSteps() {
     steps.push({ key: 'cad', text: CADENCE_HINTS[ex.prog.ending] });
     return steps;
   }
-  const right = ex.prog.chords[progIndex];
+  const right = progIndex >= 0 ? ex.prog.chords[progIndex] : null;
   if (right) {
     const fam = right.family;
     const buttons = document.querySelectorAll('#progButtons .opt-btn');
