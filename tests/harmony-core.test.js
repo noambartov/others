@@ -44,7 +44,9 @@ for (let stage = 1; stage <= H.TOPICS.length; stage++) {
       const kind = stage >= H.CADENCE_FROM && i % 3 === 0 ? 'cad' : 'prog';
       const ex = H.generate({ flags: f, kind });
       const vocab = H.vocabulary(f, ex.mode).map(v => v.token);
-      assert.strictEqual(ex.tokens[0].replace(/\d+$/, ''), 'I', 'starts on the tonic: ' + ex.tokens);
+      const starts = ['I', 'I6'].concat(stage >= H.START_FROM.V ? ['V', 'V7'] : [], stage >= H.START_FROM.IV ? ['IV'] : []);
+      assert.ok(starts.includes(ex.tokens[0]), `stage ${stage} starts on ${ex.tokens[0]}`);
+      if (stage < H.START_FROM.I6) assert.ok(ex.tokens[0] === 'I' || ex.tokens.join(' ') === 'I6 V43 I', 'early stages start on the tonic');
       const max = [3, 3, 3, 4, 5, 5, 5, 6, 6][stage - 1];
       assert.ok(ex.tokens.length >= 2 && ex.tokens.length <= max, `stage ${stage} length ${ex.tokens}`);
       ex.tokens.forEach(t => assert.ok(vocab.includes(t), `${t} is in the stage ${stage} buttons (${ex.mode})`));
@@ -85,6 +87,15 @@ test('cadence questions appear from the subdominant stage, deceptive with the si
 test('stage 1 buttons are only I and V', () => {
   assert.deepStrictEqual(H.vocabulary(H.flagsFor(1), 'major').map(v => v.text), ['I', 'V']);
   assert.deepStrictEqual(H.vocabulary(H.flagsFor(1), 'minor').map(v => v.text), ['i', 'V']);
+});
+
+test('later stages also start on I6, V and IV', () => {
+  const seen = new Set();
+  for (let i = 0; i < 2000; i++) seen.add(H.generate({ stage: 9, kind: 'prog' }).tokens[0]);
+  ['I', 'I6', 'V', 'IV'].forEach(t => assert.ok(seen.has(t), 'starts on ' + t));
+  const early = new Set();
+  for (let i = 0; i < 1000; i++) early.add(H.generate({ stage: 2, kind: 'prog' }).tokens[0]);
+  assert.deepStrictEqual([...early], ['I']);
 });
 
 console.log(`harmony-core: ${passed} tests passed`);
