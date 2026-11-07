@@ -106,7 +106,7 @@ const READ_LEVELS = [
   ]}
 ];
 const READ_HISTORY_KEY = 'mt_read_training_history';
-const CLEF_NAMES = { sol: 'מפתח סול', fa: 'מפתח פה', alto: 'מפתח אלט' };
+const CLEF_NAMES = { sol: 'מפתח סול', fa: 'מפתח פה', alto: 'מפתח דו אלט' };
 
 function trainLevels(read = isReadMode()) { return read ? READ_LEVELS : EAR_LEVELS; }
 function historyKey(read = isReadMode()) { return read ? READ_HISTORY_KEY : HISTORY_KEY; }
