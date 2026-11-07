@@ -207,7 +207,7 @@ function checkProgression() {
   hear.className = 'hear-choice';
   hear.textContent = 'לשמוע מה שכתבתי';
   hear.onclick = () => {
-    const { voices } = HC.voice(mine.map(t => HC.chordInfo(t, ex.prog.mode)), ex.prog.tonic);
+    const { voices } = HC.voice(HC.expand(mine).map(t => HC.chordInfo(t, ex.prog.mode)), ex.prog.tonic);
     const ctx = getAudioContext();
     newPlayBus(ctx);
     playChords(voices, ctx.currentTime + 0.05, 1.05);
@@ -291,5 +291,5 @@ function applyProgressionHint(step) {
 function progressionAnswerHtml() {
   const ex = currentExercise;
   if (ex.kind === 'cad') return HC.CADENCES[ex.prog.ending];
-  return '<span dir="ltr">' + ex.prog.chords.map(c => c.text).join(' – ') + '</span>';
+  return '<span dir="ltr">' + ex.prog.chords.map(c => c.html).join(' – ') + '</span>';
 }
