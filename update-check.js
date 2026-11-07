@@ -71,7 +71,18 @@
   window.addEventListener('focus', check);
 
   // עבודה בלי אינטרנט: ה-service worker שומר עותק של האתר (ראו sw.js)
+  // נרשם רק כשהדף כבר נטען ורגוע, כדי שההורדות לשמירה לא יאטו את הביקור הראשון.
+  // אחר כך, שוב ברגע רגוע, מבקשים לשמור גם את הקבצים הכבדים (צלילים, ספריות PDF), אלא אם ביקשו לחסוך בנתונים
   if ('serviceWorker' in navigator && window.isSecureContext) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    const idle = (fn, ms) => setTimeout(() => (window.requestIdleCallback || (f => f()))(fn, { timeout: 2000 }), ms);
+    const start = () => idle(() => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+      const saveData = navigator.connection && navigator.connection.saveData;
+      if (!saveData) navigator.serviceWorker.ready.then(reg => idle(() => {
+        if (reg.active) reg.active.postMessage({ type: 'warm' });
+      }, 4000));
+    }, 2500);
+    if (document.readyState === 'complete') start();
+    else window.addEventListener('load', start);
   }
 })();

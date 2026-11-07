@@ -723,11 +723,15 @@ describe('offline', () => {
     const { page, context, errors, close } = await openPage('mobile', 'index.html', { mt_app_mode: 'read' }, { serviceWorkers: 'allow' });
     await page.evaluate(() => Promise.race([navigator.serviceWorker.ready,
       new Promise((_, reject) => setTimeout(() => reject(new Error('no service worker registered')), 10000))]));
-    // מחכים שההתקנה תשמור את כל הקבצים
-    await page.waitForFunction(async () => {
-      const c = await caches.open('site-v1');
-      return (await c.keys()).length >= 45;
-    }, null, { timeout: 15000 });
+    // מחכים שההתקנה תשמור את כל הקבצים, וגם את הכבדים שנשמרים כשהדף רגוע
+    const saved = () => page.evaluate(async () => {
+      const keys = (await (await caches.open('site-v1')).keys()).map(r => r.url);
+      return keys.length >= 45 && keys.some(u => u.endsWith('sounds/harp/D6.mp3')) && keys.some(u => u.endsWith('html2canvas.min.js'));
+    });
+    for (const t0 = Date.now(); !(await saved());) {
+      assert.ok(Date.now() - t0 < 30000, 'files saved for offline use');
+      await page.waitForTimeout(250);
+    }
     await context.setOffline(true);
 
     for (const f of ['index.html', 'rhythm_practice.html', 'music_theory_worksheets_generator.html', 'music_theory_algorythm.html']) {

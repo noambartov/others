@@ -41,14 +41,20 @@ const PRECACHE = [
   'practice/progressions.js',
   'practice/hints.js',
   'practice/main.js',
-  'vendor/jspdf.umd.min.js',
-  'vendor/html2canvas.min.js',
   'icons/metronome.svg',
   'icons/metronome-32.png',
   'icons/metronome-180.png',
   'icons/metronome-192.png',
   'icons/metronome-512.png',
-  // הנבל, הכלי שנבחר כברירת מחדל, כדי שאפשר לשמוע גם בלי רשת. כלים אחרים נשמרים כשבוחרים בהם
+];
+
+// קבצים כבדים (כ-1.5MB): לא בהתקנה, כדי שהביקור הראשון לא יחכה להם.
+// הדף מבקש לשמור אותם רק כשהוא כבר רגוע (ראו update-check.js), אחד אחרי השני.
+// הנבל, הכלי שנבחר כברירת מחדל, כדי שאפשר לשמוע גם בלי רשת. כלים אחרים נשמרים כשבוחרים בהם.
+// דף התרגול עצמו טוען את הנבל ממילא, והוא נשמר כבר אז
+const LATER = [
+  'vendor/jspdf.umd.min.js',
+  'vendor/html2canvas.min.js',
   'sounds/harp/G1.mp3',
   'sounds/harp/D2.mp3',
   'sounds/harp/F2.mp3',
@@ -101,6 +107,24 @@ self.addEventListener('install', event => {
     await Promise.all(Array.from({ length: 4 }, worker));
     self.skipWaiting();
   })());
+});
+
+// שמירת הקבצים הכבדים, כשהדף מבקש. אחד בכל פעם, וקבצים שכבר שמורים לא יורדים שוב
+let warming = null;
+self.addEventListener('message', event => {
+  if (!event.data || event.data.type !== 'warm') return;
+  if (!warming) warming = (async () => {
+    const cache = await caches.open(CACHE);
+    for (const path of LATER) {
+      const url = new URL(path, self.registration.scope).href;
+      if (await cache.match(key(url))) continue;
+      try {
+        const res = await fetch(url);
+        if (res.ok) await cache.put(key(url), res);
+      } catch (e) {}
+    }
+  })().finally(() => { warming = null; });
+  event.waitUntil(warming);
 });
 
 self.addEventListener('activate', event => {
