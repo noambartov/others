@@ -269,6 +269,7 @@ function playCurrentExercise() {
   if (!currentExercise) return;
   // אחרי רמז השמעה, כל השמעה חוזרת בתרגיל הזה נשמעת בדרך המקלה
   if (currentExercise.hintPlay) { currentExercise.hintPlay(); return; }
+  if (currentExercise.prog) { playProgression(); return; }
   playExerciseNotes(currentExercise.notes);
 }
 

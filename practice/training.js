@@ -58,7 +58,19 @@ const EAR_LEVELS = [
     { label: 'ספטאקורדים', type: 'septachords', ids: T.CATALOG.septachords.map(x => x.id), inversions: [0, 1, 2, 3], play: 'random' },
     { label: 'מודוסים', type: 'modes', ids: T.CATALOG.modes.map(x => x.id) }
   ]}
-];
+].concat(progressionLevels());
+
+// מהלכים הרמוניים: שלב לכל נושא, לפי סדר הספר של אלדוול ושכטר. כל שלב כולל את כל מה שלפניו.
+// מהשלב של הסובדומיננטה, רבע מהתרגילים הם שאלות "איך זה נגמר?"
+function progressionLevels() {
+  const H = window.HarmonyCore;
+  return H.TOPICS.map((topic, i) => {
+    const stage = i + 1;
+    const prog = { label: 'מהלכים', type: 'progressions', stage, kind: 'prog' };
+    const cats = stage >= H.CADENCE_FROM ? [prog, prog, prog, { label: 'קדנצות', type: 'progressions', stage, kind: 'cad' }] : [prog];
+    return { name: 'מהלכים ' + stage, desc: topic.desc, group: 'מהלכים הרמוניים', cats };
+  });
+}
 
 // אימון קריאה לפי רמות: קודם קריאת תווים בכל מפתח, ואז מרווחים, אקורדים, סולמות ומודוסים בשני המפתחות.
 // clef: sol / fa / rand (שניהם, לסירוגין). acc בזיהוי תווים: without (בלי סימני היתק) או with
@@ -136,7 +148,7 @@ function setAppMode(mode, initial = false) {
   document.getElementById('displayMode').value = isReadMode(mode) ? 'both' : 'audio_only';
   training = null;
   const exType = document.getElementById('exType');
-  if (!isReadMode(mode) && exType.value === 'note_id') {
+  if ((!isReadMode(mode) && exType.value === 'note_id') || (isReadMode(mode) && exType.value === 'progressions')) {
     exType.value = 'intervals';
     onExerciseTypeChange();
   } else if (spellingChanged && exType.value === 'intervals') {
@@ -162,10 +174,11 @@ function showLevelPicker() {
   document.getElementById('practiceArea').style.display = 'none';
   panel.style.display = 'block';
   updateTopbarProgress();
-  const items = trainLevels().map((lv, i) => {
+  const items = trainLevels().map((lv, i, all) => {
     const runs = history.filter(h => h.level === i);
     const best = runs.length ? Math.max(...runs.map(h => Math.round(100 * h.correct / h.total))) : null;
-    return `<button class="level-item" onclick="startTraining(${i})">
+    const head = lv.group && (i === 0 || all[i - 1].group !== lv.group) ? `<h3 class="level-group">${lv.group}</h3>` : '';
+    return `${head}<button class="level-item" onclick="startTraining(${i})">
       <div><div class="lv-name">${lv.name}</div><div class="lv-desc">${lv.desc}</div></div>
       <div class="lv-best">${best === null ? '' : 'שיא ' + best + '%'}</div>
     </button>`;
@@ -178,7 +191,7 @@ function showLevelPicker() {
 function buildTrainingPlan(level) {
   const cats = trainLevels()[level].cats.map(c => ({
     label: c.label, type: c.type, pool: c.ids ? structsById(c.type, c.ids) : [], inversions: c.inversions || [0], play: c.play || null,
-    clef: c.clef || null, acc: c.acc || null
+    clef: c.clef || null, acc: c.acc || null, stage: c.stage || null, kind: c.kind || null
   }));
   const plan = [];
   for (let i = 0; i < TRAINING_LENGTH; i++) plan.push(cats[i % cats.length]);
@@ -209,6 +222,10 @@ function currentSkill() {
 function itemDetail() {
   const ex = currentExercise;
   if (!ex) return null;
+  if (ex.prog && ex.kind === 'prog') {
+    const chord = firstWrong && firstWrong.kind === 'chord';
+    return { item: chord ? firstWrong.heard : 'מהלך', chose: chord ? firstWrong.label : null };
+  }
   const item = ex.struct ? ex.struct.name : noteLabel(ex.correctNote);
   const chose = firstWrong && firstWrong.kind === 'type' && ex.struct ? firstWrong.label : null;
   return { item, chose };
@@ -219,8 +236,10 @@ function startDailyMix(items) {
   const invs = { chords: [0, 1, 2], septachords: [0, 1, 2, 3] };
   const plan = items.map(it => ({
     label: it.label, type: it.type, display: it.mode === 'read' ? 'both' : 'audio_only',
-    pool: it.type === 'note_id' ? [] : (it.mode === 'read' ? BASE_STRUCTURES[it.type] : earStructures(it.type)),
-    inversions: invs[it.type] || [0], play: null
+    pool: it.type === 'note_id' || it.type === 'progressions' ? [] : (it.mode === 'read' ? BASE_STRUCTURES[it.type] : earStructures(it.type)),
+    inversions: invs[it.type] || [0], play: null,
+    stage: it.type === 'progressions' ? Number(document.getElementById('progStageSelect').value) : null,
+    kind: it.type === 'progressions' ? 'prog' : null
   }));
   closeSettings();
   document.getElementById('sharedNote').hidden = true;
@@ -318,8 +337,9 @@ function showTrainingReport(partial = false) {
   const byClef = t.read ? groupStats(results.filter(r => CLEF_NAMES[r.clef]), r => CLEF_NAMES[r.clef]) : [];
 
   const confusions = new Map();
-  results.filter(r => !r.correct && r.wrong && r.wrong.kind === 'type').forEach(r => {
-    const k = `${t.read ? 'ראית' : 'שמעת'} ${r.item} וענית ${r.wrong.label}`;
+  results.filter(r => !r.correct && r.wrong && (r.wrong.kind === 'type' || r.wrong.kind === 'chord')).forEach(r => {
+    const heard = r.wrong.kind === 'chord' ? r.wrong.heard : r.item;
+    const k = `${t.read ? 'ראית' : 'שמעת'} ${heard} וענית ${r.wrong.label}`;
     confusions.set(k, (confusions.get(k) || 0) + 1);
   });
   const confList = [...confusions.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)

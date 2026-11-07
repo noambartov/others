@@ -69,7 +69,7 @@ window.addEventListener('resize', () => { if (currentExercise) renderStaff(curre
 
 function updateFirstNoteButtonUI() {
   const btn = document.getElementById('playFirstNoteBtn');
-  if (!currentExercise || currentExercise.type === 'note_id' || currentExercise.keySig) {
+  if (!currentExercise || currentExercise.type === 'note_id' || currentExercise.keySig || currentExercise.prog) {
     btn.style.display = 'none';
     return;
   }

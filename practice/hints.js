@@ -106,6 +106,7 @@ const CLEF_HINTS = {
 function buildHintSteps() {
   const ex = currentExercise;
   if (ex.keySig) return keySigHintSteps(ex.keySig);
+  if (ex.prog) return progressionHintSteps();
   const ear = document.getElementById('displayMode').value === 'audio_only';
   let steps = [];
   if (ex.type === 'note_id') {
@@ -125,6 +126,7 @@ function buildHintSteps() {
 }
 
 function applyHint(step) {
+  applyProgressionHint(step);
   if (step.play) {
     currentExercise.hintPlay = step.play;
     step.play();
@@ -169,6 +171,11 @@ function revealAnswer() {
   const popover = document.getElementById('helpPopover');
   let text = '';
 
+  if (currentExercise.prog) {
+    popover.innerHTML = progressionAnswerHtml();
+    popover.classList.add('visible');
+    return;
+  }
   if (currentExercise.type === 'note_id') {
     const n = currentExercise.correctNote;
     let name = NOTE_NAMES[n.nameIndex].eng + ' / ' + NOTE_NAMES[n.nameIndex].name;

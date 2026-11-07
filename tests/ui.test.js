@@ -127,7 +127,11 @@ async function answerCorrectly(page) {
   const click = sel => page.locator(sel).click();
   const acc = (prefix, a) => a < 0 ? click(`#${prefix}Flat`) : a > 0 ? click(`#${prefix}Sharp`) : null;
 
-  if (ex.type === 'note_id') {
+  if (ex.type === 'progressions') {
+    const q = await page.evaluate(() => ({ kind: currentExercise.kind, tokens: currentExercise.prog.tokens, ending: currentExercise.prog.ending }));
+    if (q.kind === 'cad') await click(`#progButtons .opt-btn[data-name="${await page.evaluate(e => HarmonyCore.CADENCES[e], q.ending)}"]`);
+    else for (const t of q.tokens.slice(1)) await click(`#progButtons .opt-btn[data-token="${t}"]`);
+  } else if (ex.type === 'note_id') {
     await acc('acc', ex.note.acc);
     await page.locator('#noteNameButtons .opt-btn').nth(ex.note.nameIndex).click();
   } else if (ex.type === 'chords' || ex.type === 'septachords') {
@@ -167,7 +171,7 @@ async function audioWorks(page) {
 }
 
 const READ_TYPES = ['note_id', 'intervals', 'chords', 'septachords', 'scales', 'modes'];
-const EAR_TYPES = ['intervals', 'chords', 'septachords', 'scales', 'modes'];
+const EAR_TYPES = ['intervals', 'chords', 'septachords', 'scales', 'modes', 'progressions'];
 
 for (const vp of Object.keys(VIEWPORTS)) {
   describe(`practice (${vp})`, () => {
@@ -273,6 +277,64 @@ for (const vp of Object.keys(VIEWPORTS)) {
       assert.ok(hist.every(e => e.k === 'ear:intervals' && !e.ok && e.c), 'first wrong choice kept');
       await page.locator('#rewardChip').click();
       assert.ok(await page.locator('.report-section', { hasText: 'איפה קשה לי' }).isVisible());
+      noErrors(errors);
+      await close();
+    });
+
+    test('harmonic progressions: chord by chord, hear a wrong choice, cadences, all stages fit the screen', async () => {
+      const { page, errors, close } = await openPage(vp, 'music_theory_exercise_tool.html', { mt_app_mode: 'ear' });
+      await page.locator('#exTypeRow button[data-type="progressions"]').click();
+      const first = await page.evaluate(() => currentExercise.prog.chords[0].text);
+      assert.match(first, /^(I|i)$/, 'first chord is the tonic');
+      assert.match(await page.locator('#progSlots .prog-slot.given').textContent(), /^(I|i)$/);
+      const right = await page.evaluate(() => currentExercise.prog.tokens[1]);
+      const wrong = await page.evaluate(r => [...document.querySelectorAll('#progButtons .opt-btn')].map(b => b.dataset.token).find(t => t !== r), right);
+      await page.locator(`#progButtons .opt-btn[data-token="${wrong}"]`).click();
+      await page.locator('#feedback .hear-choice').click();
+      await page.locator(`#progButtons .opt-btn[data-token="${right}"]`).click();
+      assert.strictEqual(await page.evaluate(() => progIndex), 2, 'second slot filled');
+      // עזרה: לאט, קו הבס, משפחה, ואז התשובה בספרות רומיות
+      for (let i = 0; i < 4; i++) await page.locator('#helpBtn').click();
+      assert.match(await page.locator('#helpPopover').textContent(), /–/);
+      await page.locator('#settingsCollapse summary').click();
+      for (const id of ['progStageGroup', 'progModeGroup', 'progAskGroup']) assert.ok(await page.locator('#' + id).isVisible(), id);
+      assert.ok(!(await page.locator('#optionsGroup').isVisible()), 'no options list for progressions');
+      await page.locator('#progStageGroup .seg button[data-value="9"]').click();
+      await page.locator('#settingsCollapse summary').click();
+      await page.waitForFunction(() => currentExercise.stage === 9);
+      const bar = await page.locator('.action-bar').boundingBox();
+      const vh = page.viewportSize().height;
+      assert.ok(bar.y + bar.height <= vh, `action bar visible with all stage 9 chords (${bar.y + bar.height} > ${vh})`);
+      await answerCorrectly(page);
+      await waitForNextExercise(page);
+      await page.locator('#settingsCollapse summary').click();
+      await page.locator('#progAskGroup .seg button[data-value="cad"]').click();
+      await page.locator('#settingsCollapse summary').click();
+      await page.waitForFunction(() => currentExercise.kind === 'cad');
+      assert.ok(await page.locator('#progQuestion').isVisible(), 'cadence question');
+      assert.ok(await page.locator('#progButtons .opt-btn', { hasText: 'קדנצה מדומה' }).count(), 'deceptive cadence offered at stage 9');
+      await answerCorrectly(page);
+      await waitForNextExercise(page);
+      noErrors(errors);
+      await close();
+    });
+
+    test('harmonic progressions in step-by-step training: own group of stages, confusions in the report', async () => {
+      const { page, errors, close } = await openPage(vp, 'music_theory_exercise_tool.html', { mt_app_mode: 'train' });
+      assert.match(await page.locator('#trainingPanel .level-group').textContent(), /מהלכים הרמוניים/);
+      const stage = await page.evaluate(() => EAR_LEVELS.findIndex(l => l.group) + 3);
+      await page.locator('#trainingPanel .level-item').nth(stage).click();
+      assert.strictEqual(await page.evaluate(() => currentExercise.type), 'progressions');
+      const q = await page.evaluate(() => ({ kind: currentExercise.kind, tokens: currentExercise.prog.tokens }));
+      if (q.kind === 'prog') {
+        const wrong = await page.evaluate(r => [...document.querySelectorAll('#progButtons .opt-btn')].map(b => b.dataset.token).find(t => t !== r), q.tokens[1]);
+        await page.locator(`#progButtons .opt-btn[data-token="${wrong}"]`).click();
+      }
+      await answerCorrectly(page);
+      await waitForNextExercise(page);
+      await page.evaluate(() => { training.index = training.plan.length; goToNextExercise(); });
+      assert.ok(await page.locator('.report-score').isVisible(), 'report shown');
+      if (q.kind === 'prog') assert.match(await page.locator('#trainingPanel').textContent(), /שמעת .+ וענית/);
       noErrors(errors);
       await close();
     });
